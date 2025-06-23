@@ -1,0 +1,72 @@
+.document-viewer {
+  flex: 1;
+  overflow: auto;
+  padding: 2rem;
+  background: #f9f9f9;
+  min-height: 0;
+  color:black;
+}
+
+.active-line {
+  background: #ffe066;
+  transition: background 0.3s;
+  border: 1px solid #ccc;
+}
+
+.active-line-no-match {
+  background: #f4a897;
+  transition: background 0.3s;
+}
+
+.speech-highlight {
+  background: #b3e6ff !important;
+  border: 1px solid #3399cc;
+}
+
+.sound-cue, .Sound_20_A, .P3 {
+  background-color: #ff0000;
+  color: white;
+  font-weight: bold;
+  margin-bottom: 0;
+}
+
+.lights-cue, .Light {
+  background-color: #2a6099;
+  color: white;
+  font-weight: bold;
+}
+
+.name-highlight {
+  color: black;
+  font-weight: bold;
+}
+
+.Stage_20_Direction {
+  font-style: italic;
+  font-family: serif;
+  color: #555;
+  margin-left: 5em;
+}
+
+.Scene {
+  font-weight: bold;
+  color: #333;
+}
+
+.PageNumber {
+  background-color: #ddd;
+  color: #333;
+}
+
+.play-sound-btn {
+  margin-left: 0em;
+  cursor: pointer;
+}
+.sound-missing {
+  color: red;
+  margin-left: 0.5em;
+}
+.sound-time-left {
+  color: #007bff;
+  font-size: 0.95em;
+}

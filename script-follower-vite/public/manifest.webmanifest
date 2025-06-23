@@ -1,0 +1,21 @@
+{
+  "name": "Script Follower",
+  "short_name": "ScriptFollower",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f9f9f9",
+  "theme_color": "#ffe066",
+  "description": "A web app for following and highlighting scripts.",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

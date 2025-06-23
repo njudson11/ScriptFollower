@@ -32,3 +32,28 @@ export function highlightLine(line, highlightRules) {
   }
   return htmlLine
 }
+
+/**
+ * Extracts and cleans dialogue lines from an array of lines.
+ * @param {string[]} lines - Array of script lines.
+ * @returns {Array<{ clean: string, idx: number }>}
+ */
+export function extractCleanLines(lines) {
+  // Regex: start of line, any text up to the first colon, then the dialogue
+  const dialogueRegex = /^([^:\n]+):\s*(.*)$/i
+  return lines
+    .map((line, idx) => {
+      // Remove HTML tags
+      const noHtml = line.replace(/<[^>]*>/g, '')
+      const match = noHtml.match(dialogueRegex)
+      if (match) {
+        // match[2] is the dialogue section after the character name and colon
+        let dialogue = match[2] || ''
+        // Remove grammatical characters, including en dash (–) and em dash (—)
+        dialogue = dialogue.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'’”“[\]\\|<>–—]/g, '')
+        return { clean: dialogue.trim(), idx }
+      }
+      return null
+    })
+    .filter(Boolean)
+}

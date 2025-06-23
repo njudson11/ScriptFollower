@@ -10,3 +10,12 @@ export function stripHtmlAndPunctuation(line) {
   clean = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'’”“[\]\\|<>]/g, '')
   return clean
 }
+
+export function isSoundCue(line) {
+  return /SOUND.*\d{4}/.test(line)
+}
+
+export function extractSoundRef(line) {
+  const match = line.match(/\b(\d{4})\b/)
+  return match ? match[1] : null
+}
