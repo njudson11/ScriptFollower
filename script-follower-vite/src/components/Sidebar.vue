@@ -1,18 +1,18 @@
 <template>
   <div class="sidebar">
     <div
-      v-for="item in reactiveSidebarItems"
-      :key="`${item.idx}-${item.className}-${item.text}`"
-      :class="['sidebar-item', item.className, { selected: isSidebarItemSelected(item) }]"
+      v-for="(item,idx) in sidebarItems"
+      :key="`${item.idx}-${item.style}-${item.text}`"
+      :class="['sidebar-item', sidebarTypes[item.type].style, { selected: isSidebarItemSelected(item) , nextSidebarItem:isSidebarItemNext(item) }]"
       :style="getSidebarItemStyle(item)"
       :data-line-idx="item.idx"
-      :data-sound-ref="item.soundRef || null"
+      :data-sound-ref="item.ref || null"
       @click="selectSidebarItem(item)"
     >        
-      <span class="sound-controls" v-if="isSoundCue(item.text)">
-          <button
-            class="play-sound-btn" @click.stop="soundManager.playOrStopSound(extractSoundRef(item.text))" :disabled="!soundManager.isSoundAvailable(extractSoundRef(item.text)) && !soundManager.isPlaying(extractSoundRef(item.text))" >
-            <span v-if="playingAudios[extractSoundRef(item.text)]">
+      <span class="sound-controls" v-if="item.type=='SOUND'">
+          <button 
+            class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item.ref)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
+            <span v-if="soundManager.playingAudios && soundManager.playingAudios.value && soundManager.playingAudios.value[item.ref]">
               <i  class="fa-solid fa-stop"></i>
             </span>
             <span v-else>
@@ -27,7 +27,7 @@
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
-import { isSoundCue, extractSoundRef}  from '../modules/utilities'
+import { sidebarTypeMap } from '../modules/constants.js'
 
 const props = defineProps({
   lines: Array,
@@ -37,82 +37,36 @@ const props = defineProps({
   soundManager: Object
 })
 
-const sidebarClasses = [
-  { className: 'Act', level: 0 },
-  { className: 'Scene', level: 0 },
-  { className: 'sound-cue', level: 1 },
-  { className: 'lights-cue', level: 1 }
-]
+const sidebarTypes = sidebarTypeMap
+
 
 const sidebarItems = ref([])
 
-function getParentParagraphWithLineIdx(el) {
-  let parent = el
-  while (
-    parent &&
-    (
-      typeof parent.tagName === 'undefined' ||
-      parent.tagName !== 'P' ||
-      !parent.hasAttribute('data-line-idx')
-    )
-  ) {
-    parent = parent.parentElement
-  }
-  return parent
-}
-
-function createSidebarItem(parentP, el, sc) {
-  const idx = Number(parentP.getAttribute('data-line-idx'))
-  if (isNaN(idx)) return null
-  const text = (sc.className === 'Scene')
-    ? parentP.textContent.trim()
-    : el.textContent.trim()
-  const soundRef = sc.className === 'sound-cue' ? extractSoundRefFromItem(text) : null
-  return {
-    idx,
-    className: sc.className,
-    level: sc.level,
-    text,
-    soundRef
-  }
-}
-
-function extractSidebarItemsFromClass(sc, viewer) {
-  const items = []
-  const elements = viewer.querySelectorAll(`.${sc.className}`)
-  elements.forEach(el => {
-    const parentP = getParentParagraphWithLineIdx(el)
-    if (parentP) {
-      const item = createSidebarItem(parentP, el, sc)
-      if (item) items.push(item)
-    }
-  })
-  return items
-}
-
 async function updateSidebarItems() {
   await nextTick()
-  const viewerEl = document.querySelector('.document-viewer')
-  const items = []
-  if (viewerEl) {
-    sidebarClasses.forEach(sc => {
-      items.push(...extractSidebarItemsFromClass(sc, viewerEl))
-    })
-  }
-  sidebarItems.value = items
-    .filter((item, i, arr) =>
-      arr.findIndex(it =>
-        it.idx === item.idx &&
-        it.className === item.className &&
-        it.text === item.text
-      ) === i
-    )
+
+  sidebarItems.value = props.lines
+    .filter((item, i, arr) => sidebarTypes[item.type] )
     .sort((a, b) => a.idx - b.idx)
 }
 
 watch(() => props.lines, updateSidebarItems, { immediate: true })
+// Watch for activeLineIdx changes to update selectedSidebarItem
+
+watch( () => props.activeLineIdx, findSelectedSidebarItem, { immediate: true } )
+
+async function findSelectedSidebarItem() {
+  await nextTick()
+  const found = sidebarItems.value.find(item => item.idx === props.activeLineIdx)
+  if (found) {
+    selectedSidebarItem.value = { idx: found.idx, className: found.className }
+  } else {
+    selectedSidebarItem.value = { idx: -1, className: '' }
+  }
+}
 
 const selectedSidebarItem = ref({ idx: -1, className: '' })
+const nextSidebarItem = ref({ idx: -1, className: '' })
 
 function selectSidebarItem(item) {
   selectedSidebarItem.value = { idx: item.idx, className: item.className }
@@ -128,16 +82,32 @@ function isSidebarItemSelected(item) {
   )
 }
 
-function extractSoundRefFromItem(item) {
-  // Accepts either a string or an object with a text property
-  const text = typeof item === 'string' ? item : item.text
-  if (!text) return null
-  const match = text.match(/\b(\d{4})\b/)
-  return match ? match[1] : null
+watch(() => props.activeLineIdx, findNextSidebarItem, { immediate: true })
+
+async function findNextSidebarItem() {
+  await nextTick()
+  // Find the first item with idx greater than activeLineIdx
+  const found = sidebarItems.value.find(item => item.idx > props.activeLineIdx)
+  if (found) {
+    nextSidebarItem.value = { idx: found.idx, className: found.className }
+    scrollToLineIndex(found.idx)
+  } else {
+    nextSidebarItem.value = { idx: -1, className: '' }
+  }
+}
+
+function isSidebarItemNext(item) {
+  return (
+    item.idx === nextSidebarItem.value.idx &&
+    item.className === nextSidebarItem.value.className
+  )
 }
 
 function getSoundProgress(ref) {
-  const audioState = props.playingAudios?.[ref]
+  if (!props.soundManager || !props.soundManager.playingAudios || !props.soundManager.playingAudios.value) {
+    return 0
+  }
+  const audioState = props.soundManager.playingAudios.value[ref]
   if (audioState && audioState.duration > 0) {
     return 1 - (audioState.timeLeft / audioState.duration)
   }
@@ -145,7 +115,7 @@ function getSoundProgress(ref) {
 }
 
 function getSidebarItemStyle(item) {
-  const ref = item.soundRef
+  const ref = item.ref
   const progress = getSoundProgress(ref)
   const level = typeof item === 'object' && item.level !== undefined ? item.level : 0
   const baseStyle = {
@@ -160,15 +130,23 @@ function getSidebarItemStyle(item) {
   return baseStyle
 }
 
-const reactiveSidebarItems = computed(() => {
-  // This line ensures Vue tracks both keys and timeLeft values
-  const _ = props.playingAudios
-    ? Object.entries(props.playingAudios)
-        .map(([ref, state]) => `${ref}:${state.timeLeft}`)
-        .join(',')
-    : ''
-  return sidebarItems.value
-})
+function scrollToLineIndex(newIdx){
+  const activeLineEl = document.querySelector(`.sidebar-item[data-line-idx="${nextSidebarItem.value.idx}"]`)
+  if (newIdx === -1) {
+    const viewer = document.querySelector('.sidebar')
+    if (viewer) viewer.scrollTo({ top: 0, behavior: 'smooth' })
+  } else if (activeLineEl) {
+    const viewer = document.querySelector('.sidebar')
+    const el = activeLineEl
+    if (viewer && el) {
+      const viewerRect = viewer.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const offset = elRect.top - viewerRect.top + viewer.scrollTop - (10 * 16)
+      viewer.scrollTo({ top: offset, behavior: 'smooth' })
+      el.focus({ preventScroll: true })
+    }
+  }
+}
 
 
 </script>

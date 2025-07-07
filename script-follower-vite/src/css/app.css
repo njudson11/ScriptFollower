@@ -12,13 +12,15 @@ html, body, #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
 }
 
-
-
-
 .main-content {
   display: flex;
   flex: 1 1 0;
   min-height: 0;
+}
+
+.sound-preloaded{
+  color: green;
+  margin-left: 5px;
 }
 
 

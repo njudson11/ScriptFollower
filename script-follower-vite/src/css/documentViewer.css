@@ -1,3 +1,52 @@
+
+.sound-cue {
+  background-color: #ff0000;
+  color: white;
+  font-weight: bold;
+}
+
+.lights-cue {
+  background-color: #2a6099;
+  color: white;
+  font-weight: bold;
+}
+
+.Stage-Direction {
+  font-style: italic;
+  font-family: serif;
+  color: #555;
+  margin-left: 5em;
+}
+
+.Scene, .Act {
+  font-weight: bold;
+  color: #333;
+}
+
+.PageNumber {
+  background-color: #ddd;
+  color: #333;
+}
+
+.dialogue {
+  margin-left: 1em;
+  margin-right: 1em;
+  vertical-align: top;
+}
+
+.textContent{
+  display: inline-block;
+  max-width: 40rem;
+}
+
+.name-highlight {
+  color: black;
+  font-weight: bold;
+  min-width: 10em;
+  vertical-align: top;
+  display: inline-block;
+}
+
 .document-viewer {
   flex: 1;
   overflow: auto;
@@ -7,10 +56,19 @@
   color:black;
 }
 
+.heading{
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
 .active-line {
   background: #ffe066;
-  transition: background 0.3s;
-  border: 1px solid #ccc;
+  color: black ;
+  transition: background 0.3s, box-shadow 0.3s; /* Added box-shadow to transition */
+  border: 4px solid #ff2222;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.7); /* Added drop-shadow */
 }
 
 .active-line-no-match {
@@ -23,39 +81,20 @@
   border: 1px solid #3399cc;
 }
 
-.sound-cue, .Sound_20_A, .P3 {
-  background-color: #ff0000;
-  color: white;
-  font-weight: bold;
-  margin-bottom: 0;
+.Sound_20_A{
+  height: reset;
 }
 
-.lights-cue, .Light {
-  background-color: #2a6099;
-  color: white;
-  font-weight: bold;
+.document-viewer .sound-cue {
+  margin-bottom: 1em;
 }
 
-.name-highlight {
-  color: black;
-  font-weight: bold;
+.light{
+
 }
 
 .Stage_20_Direction {
-  font-style: italic;
-  font-family: serif;
-  color: #555;
-  margin-left: 5em;
-}
 
-.Scene {
-  font-weight: bold;
-  color: #333;
-}
-
-.PageNumber {
-  background-color: #ddd;
-  color: #333;
 }
 
 .play-sound-btn {
@@ -69,4 +108,27 @@
 .sound-time-left {
   color: #007bff;
   font-size: 0.95em;
+}
+.Removed{
+  text-decoration: line-through;
+  color: #b5b5b5;
+}
+
+.document-viewer .sound-controls{
+  background-color: #f4e8b4;
+  display: inline-block;
+  width: 100%;
+}
+
+.name-highlight + .tab {
+  padding: 0;
+}
+
+.sound-cue  .tab , .lights-cue  .tab{
+  padding-left: 4em;
+}
+
+.tab{
+  display: inline;
+  padding-left: 10em;
 }
