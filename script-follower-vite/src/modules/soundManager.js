@@ -10,6 +10,7 @@ export class SoundManager {
    * @type {import('vue').Ref<Record<string, {audio: HTMLAudioElement, timeLeft: number, duration: number, interval: number, url: string}>>}
    */
   playingAudios = ref({})
+  onSoundEndCallbacks = []
 
   /**
    * @param {import('./soundProcessor').SoundProcessor} soundProcessor - An instance of SoundProcessor to find audio files.
@@ -34,23 +35,54 @@ export class SoundManager {
     }
   }
 
+  isPreloaded(ref) {
+    return this.soundProcessor.findPreloadedSound(ref) !== null
+  }
+
   /**
    * Plays a sound cue by its reference ID.
    * @param {string} ref - The reference ID of the sound cue.
    * @private
    */
   playSound(ref) {
-    if (! this.isSoundAvailable(ref) ) return;
+    if (!this.isSoundAvailable(ref)) return;
     const file = this.soundProcessor.findSoundFile(ref)
     if (!file) {
       console.warn(`Sound file for ref ${ref} not found.`)
       return
     }
-
+    let audio = this.soundProcessor.findPreloadedSound(ref)
     const url = URL.createObjectURL(file)
-    const audio = new Audio(url)
+    if (!audio) {
+      audio = new Audio(url)
+    }
 
-    audio.onloadedmetadata = () => {
+    // Helper to start tracking playback
+    const startTracking = () => {
+      this.updatePlayingAudios(ref, audio, url)
+    }
+
+    // If metadata is already loaded (preloaded), start tracking immediately
+    if (audio.readyState >= 1 && audio.duration) {
+      startTracking()
+    } else {
+      // Otherwise, wait for metadata to load
+      audio.onloadedmetadata = startTracking
+    }
+
+    audio.play().catch(e => console.error(`Error playing sound ref ${ref}:`, e))
+
+    audio.onended = () => {
+      if (this.playingAudios.value[ref]) {
+        this.stopSound(ref)
+        if (this.onSoundEndCallbacks.length > 0) {
+          this.onSoundEndCallbacks.forEach(callback => callback(ref))
+        }
+      }
+    }
+  }
+
+  updatePlayingAudios(ref, audio, url) {
       const duration = audio.duration
       const interval = setInterval(() => {
         const sound = this.playingAudios.value[ref]
@@ -58,10 +90,8 @@ export class SoundManager {
           clearInterval(interval)
           return
         }
-
         const newTimeLeft = Math.max(0, duration - audio.currentTime)
         sound.timeLeft = newTimeLeft
-
         if (audio.ended || newTimeLeft <= 0) {
           this.stopSound(ref)
         }
@@ -78,15 +108,6 @@ export class SoundManager {
         }
       }
     }
-
-    audio.play().catch(e => console.error(`Error playing sound ref ${ref}:`, e))
-
-    audio.onended = () => {
-      if (this.playingAudios.value[ref]) {
-        this.stopSound(ref)
-      }
-    }
-  }
 
   /**
    * Stops a currently playing sound cue by its reference ID.
@@ -128,6 +149,12 @@ export class SoundManager {
 
   isSoundAvailable(ref) {
     return this.soundProcessor.isSoundAvailable(ref)
+  }
+
+  clear(){
+    this.stopAllSounds()
+    this.playingAudios.value = {}
+    this.soundProcessor.clear()
   }
 }
 

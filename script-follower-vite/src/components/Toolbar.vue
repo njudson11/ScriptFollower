@@ -34,16 +34,11 @@
           Autoscroll
         </label>
         <button class="btn btn-primary btn-sm me-2" @click="resetView">Reset</button>
-        <button
-          class="btn btn-primary btn-sm me-2"
-          @click="reloadFile"
-          :disabled="!lastFile"
-        >
-          Reload
-        </button>
+<!--        <button class="btn btn-primary btn-sm me-2" @click="reloadFile" :disabled="!lastFile" >Reload</button>-->
         <label class="btn btn-primary btn-sm file-label mb-0">
           <input
             type="file"
+            @click="clearDocument"
             @change="handleFile"
             accept=".docx,.pdf,.odt"
             style="display:none;"
@@ -63,12 +58,40 @@
       <span v-if="soundFolderPath" style="font-size:0.9em;color:#666;">{{ soundFolderPath }}</span>
     </label>
       </div>
-      <div class="toolbar-row toolbar-messages">
-        <span  v-if="transcript" :class="['heard-text', { 'heard-no-match': noMatch }]"  >
-          Heard: "{{ transcript }}"
-        </span>
-        <span v-if="loading" class="message">Loading...</span>
-        <span v-if="error" class="error">{{ error }}</span>
+      <div class="toolbar-row toolbar-bottom-row">
+        <div class="toolbar-messages">
+          <span  v-if="transcript" :class="['heard-text', { 'heard-no-match': noMatch }]"  >
+            Heard: "{{ transcript }}"
+          </span>
+          <span v-if="error" class="error">{{ error }}</span>
+          <span v-if="message!=''" class="message">{{ message }}</span>
+        </div>
+        <div class="toolbar-navigation">
+          <label>Page Number     
+            <input
+            id="page-number-input"
+              class="page-number-input"
+              type="number"
+              v-model="pageNumberInput"
+              @change="onPageNumberChange"
+              @keyup.enter="onPageNumberChange"
+              min="1"
+            />
+          </label>
+          <label>Find Text
+            <input
+              type="text"
+              class="find-text-input"
+              placeholder="Find text..."
+              v-model="findText"
+              @blur="onFindNext"
+            />
+            <button
+              class="btn btn-secondary btn-sm"
+              @click="onFindNext"
+              :disabled="!findText">Next</button>
+          </label>
+        </div>
       </div>
 
     </div>
@@ -80,30 +103,47 @@
 </template>
 
 <script setup>
-defineProps({
+
+
+import { ref ,watch } from 'vue'
+
+const props = defineProps({
   listening: Boolean,
   autoscroll: Boolean,
   transcript: String,
   noMatch: Boolean,
-  loading: Boolean,
+  message: String,
   error: String,
   appVersion: String,
   version: String,
   filename: String,
-  lastFile: String,
-  soundFolderPath: String
+  lastFile: Object,
+  soundFolderPath: String,
+  selectedLine: Object
 })
-const emit = defineEmits(['select-sound-folder'])
+const emit = defineEmits(['select-sound-folder','file-loaded','reload-file','reset-view','clear-document','goto-page-number','find-text'])
 const base = import.meta.env.BASE_URL
+const pageNumberInput = ref('')
+const findText = ref('')
 
-function handleFile(event) {
-  emit('file-loaded', event)
-}
 function resetView() { emit('reset-view') }
 function reloadFile() { emit('reload-file') }
-function onFolderChange(e) {
-  emit('select-sound-folder', e)
-}
+function handleFile(event) { emit('file-loaded', event)}
+function clearDocument(event) { emit('clear-document', event)}
+function onFolderChange(e) { emit('select-sound-folder', e)}
+function onPageNumberChange(e) { emit('goto-page-number', Number(pageNumberInput.value))}
+function onFindNext(e) { emit('find-text', findText.value) }
+
+watch(
+  () => props.selectedLine?.pageNumber,
+  (newPageNumber) => {
+    pageNumberInput.value = newPageNumber || 1
+  },
+  { immediate: true }
+)
+
+
+
 </script>
 
 <!-- filepath: /Users/nigeljudson/Documents/VSCode/ScriptFollower/script-follower-vite/src/components/Toolbar.vue -->

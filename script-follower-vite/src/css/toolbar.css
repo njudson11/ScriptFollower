@@ -19,9 +19,26 @@
   padding: 0.1rem 0;
 }
 
+.toolbar-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 2em; /* Optional: space between the two divs */
+}
+
 .toolbar-messages {
-  min-height: 1.5em;
-  gap: 2rem;
+  flex: 1 1 auto;
+}
+
+.toolbar-navigation {
+  flex: 0 0 auto;
+}
+
+.toolbar-navigation .page-number-input{
+  width: 5em;
+}
+
+.toolbar-navigation .find-text-input {
+  width: 30em;
 }
 
 .toolbar-listening {
@@ -58,7 +75,15 @@
   padding: 0.1em 0.5em;
   border-radius: 4px;
   transition: background 0.3s;
+  max-width: 50%;
+  white-space: nowrap;       /* Single line only */
+  overflow: hidden;          /* Hide overflow */
+  text-overflow: ellipsis;   /* Show ... for overflow */
+  display: inline-block;
+  direction: rtl;            /* Show end of text */
+  text-align: left;          /* Keep text readable */
 }
+
 .heard-no-match {
   background: #f4a897 !important; /* or any red shade you prefer */
   color: #900 !important;
@@ -71,4 +96,5 @@
     color: #888;
     align-self: center;
 }
+
 

@@ -1,25 +1,29 @@
 <template>
   <div id="app">
     <Toolbar
-      :transcript="transcript"
-      :noMatch="noMatch"
-      :loading="loading"
-      :error="error"
       v-model:listening="listening"
       v-model:autoscroll="autoscroll"
-      @file-loaded="handleFile"
-      @reset-view="resetView"
-      @reload-file="reloadFile"
+      :transcript="transcript"
+      :noMatch="noMatch"
+      :message="message"
+      :error="error"
       :version="appVersion"
       :filename="filename"
       :lastFile="lastFile"
       :soundFolderPath="soundFolderPath"
+      :selectedLine="lines[userSelectedLineIdx]"
+      @file-loaded="handleFile"
+      @reset-view="resetView"
+      @reload-file="reloadFile"
+      @clear-document="clearDocument"
       @select-sound-folder="handleSoundFolderChange"
+      @goto-page-number="highlightLineByPageNumber"
+      @find-text="findNextText" 
     />
     <div class="main-content">
       <Sidebar
         :lines="lines"
-        :activeLineIdx="activeLineIdx"
+        :activeLineIdx="userSelectedLineIdx"
         :onSelectUserLine="selectUserLine"
         :playingAudios="playingAudios"
         :soundManager="soundManager"
@@ -45,66 +49,65 @@ import Sidebar from './components/Sidebar.vue'
 import DocumentViewer from './components/DocumentViewer.vue'
 import { DocumentProcessor } from './modules/documentProcessor'
 import { useSpeechRecognition } from './modules/speechRecognition'
-import { findClosestLine } from './modules/textMatcher'
+import { findClosestLine2 } from './modules/textMatcher'
 import { SoundProcessor } from './modules/soundProcessor'
 import { SoundManager } from './modules/soundManager'
 import { isSoundCue, extractSoundRef}  from './modules/utilities'
 
+
 const docProcessor = new DocumentProcessor()
 
-const text = docProcessor.text
-const lines = docProcessor.lines
-const cleanLines = docProcessor.cleanLines
-
-const loading = ref(false)
+const lines = ref(docProcessor.lines)
+const message = ref('')
 const error = ref('')
 const transcript = ref('')
 const listening = ref(false)
-const activeLineIdx = ref(-1)
 const prevActiveLineIdx = ref(-1)
 const noMatch = ref(false)
 const hasMatched = ref(false)
-const userSelectedLineIdx = ref(-1) // For user selection (keyboard/mouse)
+const userSelectedLineIdx = ref(0) // For user selection (keyboard/mouse)
 const speechActiveLineIdx = ref(-1) // For speech recognition highlight
 const autoscroll = ref(false)        // For the toolbar checkbox
 
 const fileInput = ref(null)
 const soundFolderPath = ref('')
-const soundFiles = ref([])
+//const soundFiles = ref([])
 
-//const playingAudios = ref({}) // { [ref]: { timeLeft, duration, ... } }
-
-const soundProcessor = ref(new SoundProcessor(soundFiles || []))
-const soundManager = new SoundManager(soundProcessor.value)
+const soundProcessor = ref(new SoundProcessor([]))
+const soundManager = ref(new SoundManager(soundProcessor.value))
 const playingAudios = soundManager.playingAudios
+
+soundManager.value.onSoundEndCallbacks.push(advanceLineOnSoundEnd);
 
 async function handleFile(event) {
   error.value = ''
-  docProcessor.clear()
-  loading.value = true
-  activeLineIdx.value = -1
+  clearDocument();
   hasMatched.value = false
   const file = event.target.files[0]
   if (!file) {
-    loading.value = false
     return
   }
   lastFile.value = file
   filename.value = file.name
+  message.value = 'Loading ' + filename.value + ' ...'
   try {
+    //await docProcessor.loadFile(file)
     await docProcessor.loadFile(file)
-    localStorage.setItem('scriptFollowerFilename', file.name)
+   // lines.value = docProcessor.lines
+    saveToLocalStorage()
   } catch (e) {
+    message.value=""
     error.value = 'Error loading document: ' + e.message
   }
-  loading.value = false
+    message.value=""
   if (fileInput.value) fileInput.value.value = ''
 }
 
 function handleSoundFolderChange(e) {
-  soundFiles.value = Array.from(e.target.files)
+  //soundFiles.value = Array.from(e.target.files)
+  soundProcessor.value = new SoundProcessor(e.target.files)
+  soundManager.value = new SoundManager(soundProcessor.value)
   soundFolderPath.value = e.target.files[0]?.webkitRelativePath?.split('/')[0] || ''
-  soundManager.value.soundProcessor.setFiles(soundFiles.value)
 }
 
 let restartAttempts = 0
@@ -138,25 +141,23 @@ function restartSpeechRecognition() {
   speech.start()
 }
 
-
 const speech = useSpeechRecognition(
   (spoken) => {
+    const activeLines=lines.value
     restartAttempts=0;
     transcript.value = spoken
-    const cleanArr = cleanLines.value.map(obj => obj.clean)
-    // Find the index in cleanLines that matches the userSelectedLineIdx
-    let baseIdx = cleanLines.value.findIndex(obj => obj.idx === userSelectedLineIdx.value)
+    let baseIdx = activeLines.findIndex(obj => obj.idx === userSelectedLineIdx.value)
     if (baseIdx === -1) {
       // Find the next nearest item after userSelectedLineIdx
-      baseIdx = cleanLines.value.findIndex(obj => obj.idx > userSelectedLineIdx.value)
+      baseIdx = activeLines.findIndex(obj => obj.idx > userSelectedLineIdx.value)
       // If still not found, use the last item
-      if (baseIdx === -1 && cleanLines.value.length > 0) {
-        baseIdx = cleanLines.value.length - 1
+      if (baseIdx === -1 && activeLines.length > 0) {
+        baseIdx = activeLines.length - 1
       }
     }
 
     // Use speechActiveLineIdx if it's close to the user selection
-    let speechBaseIdx = cleanLines.value.findIndex(obj => obj.idx === speechActiveLineIdx.value)
+    let speechBaseIdx = activeLines.findIndex(obj => obj.idx === speechActiveLineIdx.value)
     if (
       speechActiveLineIdx.value !== -1 &&
       speechBaseIdx !== -1 &&
@@ -165,9 +166,9 @@ const speech = useSpeechRecognition(
       baseIdx = speechBaseIdx
     }
 
-    const idx = findClosestLine(cleanArr, spoken, baseIdx)
+    const idx = findClosestLine2(activeLines, spoken, baseIdx)
     if (idx !== -1) {
-      speechActiveLineIdx.value = cleanLines.value[idx].idx
+      speechActiveLineIdx.value = activeLines[idx].idx
       noMatch.value = false
       if (autoscroll.value) {
         scrollToSpeechLine()
@@ -184,8 +185,27 @@ const speech = useSpeechRecognition(
   }
 )
 
+function highlightLineByPageNumber(pageNumber) {
+  const idx = lines.value.findIndex(line => line.type === 'PAGE_NUMBER' && line.pageNumber === pageNumber)
+  if (idx !== -1) {
+    userSelectedLineIdx.value = idx
+   // activeLineIdx.value = idx
+  //  speechActiveLineIdx.value = idx
+    noMatch.value = false
+    //scrollToSpeechLine()
+  } else {
+    error.value = `No line found for page number ${pageNumber}`
+  }
+}
+
+function clearDocument(){
+  docProcessor.clear();
+  clearLocalStorage()
+  resetView();
+}
+
 function resetView() {
-  activeLineIdx.value = -1
+  //activeLineIdx.value = -1
   prevActiveLineIdx.value = -1
   userSelectedLineIdx.value = -1
   speechActiveLineIdx.value = -1
@@ -198,28 +218,13 @@ function resetView() {
   }
 }
 
-// Scroll to active line using Vue refs
-watch(activeLineIdx, async (newIdx) => {
-  await nextTick()
-  if (newIdx === -1) {
-    const viewer = document.querySelector('.document-viewer')
-    if (viewer) viewer.scrollTo({ top: 0, behavior: 'smooth' })
-  } else if (activeLineEl.value) {
-    const viewer = document.querySelector('.document-viewer')
-    const el = activeLineEl.value
-    if (viewer && el) {
-      const viewerRect = viewer.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      const offset = elRect.top - viewerRect.top + viewer.scrollTop - (10 * 16) // 10rem = 160px
-      viewer.scrollTo({ top: offset, behavior: 'smooth' })
-      el.focus({ preventScroll: true })
-    }
-  }
-})
-
 // Scroll to user-selected line using Vue refs
 watch(userSelectedLineIdx, async (newIdx) => {
   await nextTick()
+  scrollToLineIndex(newIdx)
+})
+
+function scrollToLineIndex(newIdx){
   if (newIdx === -1) {
     const viewer = document.querySelector('.document-viewer')
     if (viewer) viewer.scrollTo({ top: 0, behavior: 'smooth' })
@@ -234,7 +239,15 @@ watch(userSelectedLineIdx, async (newIdx) => {
       el.focus({ preventScroll: true })
     }
   }
-})
+}
+
+function advanceLineOnSoundEnd(finishedRef) {
+  // If the current userSelectedLineIdx matches and it's not the last line, increment
+  const selectedLine = lines.value[userSelectedLineIdx.value]
+  if (selectedLine && selectedLine.ref === finishedRef) {
+    userSelectedLineIdx.value = userSelectedLineIdx.value + 1
+  }
+}
 
 const activeLineEl = ref(null)
 function setActiveLineEl(el) {
@@ -243,13 +256,15 @@ function setActiveLineEl(el) {
 
 function onKeyDown(e) {
   let userSelectedLine=lines.value[userSelectedLineIdx.value];
-  if (e.code === 'Space' && isSoundCue(userSelectedLine)) {
-    const soundRef = extractSoundRef(userSelectedLine);
-    if (soundManager.isSoundAvailable(soundRef)){
-      if (soundRef && soundManager.isPlaying(soundRef)) {
-        soundManager.stopSound(soundRef);
+  if (!userSelectedLine) return;
+  if (e.code === 'Space' && userSelectedLine.type === 'SOUND') {
+    const soundRef = userSelectedLine.ref;
+    const tempSoundManager = soundManager.value;
+    if (tempSoundManager.isSoundAvailable(soundRef)){
+      if (soundRef && tempSoundManager.isPlaying(soundRef)) {
+        tempSoundManager.stopSound(soundRef);
       } else {
-        soundManager.playSound(soundRef);
+        tempSoundManager.playSound(soundRef);
         e.preventDefault();
         return;
       } 
@@ -268,16 +283,30 @@ function onKeyDown(e) {
   } 
 }
 
-onMounted(() => {
-  const saved = localStorage.getItem('scriptFollowerDocument')
+function saveToLocalStorage() {
+  localStorage.setItem(LS_SCRIPT_FOLLOWER_DOCUMENT, JSON.stringify(lines.value))
+  localStorage.setItem(LS_SCRIPT_FOLLOWER_FILENAME, filename.value)
+}
+
+function restoreFromLocalStorage() {
+  const saved = localStorage.getItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
   if (saved) {
-    text.value = saved
+    lines.value = JSON.parse(saved)
   }
-  // Restore filename from localStorage
-  const savedFilename = localStorage.getItem('scriptFollowerFilename')
+  const savedFilename = localStorage.getItem(LS_SCRIPT_FOLLOWER_FILENAME)
   if (savedFilename) {
     filename.value = savedFilename
   }
+}
+
+function clearLocalStorage() {
+  localStorage.removeItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
+  localStorage.removeItem(LS_SCRIPT_FOLLOWER_FILENAME)
+}
+
+onMounted(() => {
+  restoreFromLocalStorage()
+
   const viewer = document.querySelector('.document-viewer')
   if (viewer) viewer.focus()
   requestWakeLock()
@@ -289,17 +318,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
 })
 
-// Watch for activeLineIdx changes to update selectedSidebarItem
-watch(activeLineIdx, (newIdx) => {
-  // Optionally, select the first sidebar item for the active line
-  const found = sidebarItems.value.find(item => item.idx === newIdx)
-  if (found) {
-    selectedSidebarItem.value = { idx: found.idx, className: found.className }
-  } else {
-    selectedSidebarItem.value = { idx: -1, className: '' }
-  }
-})
-
 const lastFile = ref(null)
 const filename = ref('')
 
@@ -309,9 +327,8 @@ async function reloadFile() {
     return
   }
   error.value = ''
-  text.value = ''
   loading.value = true
-  activeLineIdx.value = -1
+  //activeLineIdx.value = -1
   hasMatched.value = false
   try {
     text.value = await processDocument(lastFile.value)
@@ -322,6 +339,21 @@ async function reloadFile() {
 }
 
 let wakeLock = null
+
+function findNextText(text) {
+  if (!text) return
+  // Example: search through lines for the next occurrence after userSelectedLineIdx
+  const startIdx = userSelectedLineIdx.value + 1
+  const idx = lines.value.findIndex(
+    (line, i) => i >= startIdx && line.text && line.text.includes(text)
+  )
+  if (idx !== -1) {
+    userSelectedLineIdx.value = idx
+    scrollToLineIndex(idx)
+  } else {
+    error.value = 'No more occurrences found.'
+  }
+}
 
 async function requestWakeLock() {
   try {
@@ -352,14 +384,7 @@ function selectUserLine(idx) {
 
 function scrollToSpeechLine() {
   nextTick(() => {
-    const viewer = document.querySelector('.document-viewer')
-    const el = viewer?.querySelector(`[data-line-idx="${speechActiveLineIdx.value}"]`)
-    if (viewer && el) {
-      const viewerRect = viewer.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      const offset = elRect.top - viewerRect.top + viewer.scrollTop - (10 * 16)
-      viewer.scrollTo({ top: offset, behavior: 'smooth' })
-    }
+    scrollToLineIndex(speechActiveLineIdx.value)
   })
 }
 
@@ -396,6 +421,8 @@ watch(listening, (val) => {
 })
 
 const appVersion = __APP_VERSION__
+const LS_SCRIPT_FOLLOWER_DOCUMENT = 'scriptFollowerDocument'
+const LS_SCRIPT_FOLLOWER_FILENAME = 'scriptFollowerFilename'
 
 </script>
 

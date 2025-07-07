@@ -1,16 +1,18 @@
 import { ref, computed } from 'vue'
+import { extractCleanLines } from './textFormatter'
 import { processDocx } from './docxProcessor'
 import { processPdf } from './pdfProcessor'
-import { odtProcessor } from './odtProcessor'
+import { processOdt } from './odtProcessor'
 
 export class DocumentProcessor {
   constructor() {
-    this.text = ref({})
-    this.lines = ref([])
+    this.text = ref('')
+    this.lines = computed(() => this.text.value.split(/\r?\n/))
+    this.cleanLines = computed(() => extractCleanLines(this.lines.value))
   }
 
   async loadFile(file) {
-    this.lines.value = await this.processDocument(file)
+    this.text.value = await this.processDocument(file)
   }
 
   /**
@@ -20,26 +22,22 @@ export class DocumentProcessor {
    */
   async processDocument(file) {
     const ext = file.name.split('.').pop().toLowerCase()
-    let processor=null;
     if (ext === 'docx') {
       return await processDocx(file)
     } else if (ext === 'pdf') {
       return await processPdf(file)
     } else if (ext === 'odt') {
-      processor= new odtProcessor()
+      return await processOdt(file)
     } else {
       throw new Error('Unsupported file type. Please upload a .docx, .odt, or .pdf file.')
     }
-    return await processor.processFile(file)
   }
 
   setText(newText) {
     this.text?.value && (this.text.value = newText)
-
   }
 
   clear() {
     this.setText('') 
-    this.lines.value = []
   }
 }
