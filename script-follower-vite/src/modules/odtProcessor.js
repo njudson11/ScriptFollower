@@ -1,8 +1,8 @@
 import JSZip from 'jszip'
 import { DOMParser } from '@xmldom/xmldom'
 import { ref } from 'vue'
-import {  extractSoundRef, getTag, getTypeByTag}  from './utilities'
 import { lineTypeLabel } from './constants.js'
+import { lineDefinition } from './documentProcessor.js'
 
 export class odtProcessor {
   constructor() {
@@ -15,7 +15,8 @@ export class odtProcessor {
   /**
    * Main ODT processing function.
    * @param {File} file
-   * @returns {Promise<string>} HTML string
+   * @returns {Promise<string>} Array of processed lines.
+   * @throws {Error} If file processing fails.Hi
    */
   async processFile(file) {
     try{
@@ -68,16 +69,9 @@ export class odtProcessor {
 
   getLine(node){
     let lineText= this.processLineNode(node)
-    let line= {
-      text: lineText,
-      style: this.resolveStyle(node.getAttribute('text:style-name') || ''),
-      outlineLevel: node.getAttribute('text:outline-level') || '0',
-      ref: extractSoundRef(lineText),
-      cleanText: lineText.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'’”“[\]\\|<>–—]/g, '')
-    }
-    line["tag"]=getTag(line)
-    line["type"]=getTypeByTag(line)
-    line["pageNumber"]=line.type==lineTypeLabel.pageNumber ? Number(lineText.replace(/\D+/g, '')) : ''
+    const line = new lineDefinition(lineText)
+    line.setStyle(this.resolveStyle(node.getAttribute('text:style-name') || ''))
+    line.outlineLevel = node.getAttribute('text:outline-level') || '0'
     return line;
   }
 

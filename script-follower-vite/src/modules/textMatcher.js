@@ -110,7 +110,7 @@ export function findClosestLine2(
   let bestScore = 0
 
   let start, end
-  if (activeIdx >= 0) {
+  if (activeIdx > 0) {
     start = Math.max(0, activeIdx - preWindow)
     end = Math.min(lines.length, activeIdx + postWindow + 1)
   } else {
@@ -120,13 +120,14 @@ export function findClosestLine2(
   }
 
   for (let i = start; i < end; i++) {
-    const line = lines[i].cleanText.toLowerCase()
-    const lineWords = line.split(/\s+/)
+    const line= lines[i]
+    const lineCleanText = line.description.toLowerCase()
+    const lineWords = lineCleanText.split(/\s+/)
     const spokenWords = spoken.split(/\s+/)
     let maxScore = 0
 
     // Always try the full spoken phrase against the line
-    const scoreFull = phoneticSimilarity(line, spoken)
+    const scoreFull = phoneticSimilarity(lineCleanText, spoken)
     if (scoreFull > maxScore) {
       maxScore = scoreFull
     }
@@ -135,7 +136,7 @@ export function findClosestLine2(
     if (spokenWords.length >= lineWords.length) {
       for (let offset = 0; offset <= spokenWords.length - lineWords.length; offset++) {
         const window = spokenWords.slice(offset, offset + lineWords.length).join(' ')
-        const score = phoneticSimilarity(line, window)
+        const score = phoneticSimilarity(lineCleanText, window)
         if (score > maxScore) {
           maxScore = score
         }

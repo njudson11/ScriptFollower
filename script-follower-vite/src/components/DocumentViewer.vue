@@ -4,15 +4,23 @@
       v-for="(line, idx) in lines"
       :key="idx"
       :data-line-idx="idx"
-      :data-line-tag=line.ref
-      :data-line-ref=line.ref
+      :data-line-idxInt=line.idx
       :data-line-page-number=line.pageNumber
+      :data-line-style=line.style
+      :data-line-ref=line.ref
+      :data-line-tag=line.tag
       :data-line-type=line.type
-      :ref="idx === userSelectedLineIdx ? setActiveLineEl : null"
+      :data-line-outline-level=line.outlineLevel
+      :data-line-text=line.text
+      :data-line-description=line.description
+      :data-line-sound-ref=line.soundRef
+      :data-line-sound-duration=line.soundDuration 
+      :data-line-sound-preloaded=line.soundPreloaded
+      :ref="idx === state.userSelectedLineIdx ? setActiveLineEl : null"
       :class="{
-        'active-line': idx === userSelectedLineIdx && !(idx === speechActiveLineIdx && noMatch),
-        'speech-highlight': idx === speechActiveLineIdx && !noMatch,
-        'active-line-no-match': idx === speechActiveLineIdx && noMatch,
+        'active-line': idx === state.userSelectedLineIdx && !(idx === state.speechActiveLineIdx && state.noMatch),
+        'speech-highlight': idx === state.speechActiveLineIdx && !state.noMatch,
+        'active-line-no-match': idx === state.speechActiveLineIdx && state.noMatch,
         [lineTypeDocClassMap[line.type]]: !!lineTypeDocClassMap[line.type]
       } "
       tabindex="0"
@@ -57,8 +65,11 @@ import { wrapWithSpans}  from '../modules/utilities'
 import { lineTypeDocClassMap, lineTypeLabel } from '../modules/constants.js'
 
 const props = defineProps([
-  'lines', 'userSelectedLineIdx', 'speechActiveLineIdx', 'noMatch',
-  'setActiveLineEl', 'selectUserLine', 'soundManager'
+  'lines',
+  'setActiveLineEl', 
+  'selectUserLine', 
+  'soundManager',
+  'state'
 ])
 
 const documentViewer = ref(null)

@@ -1,9 +1,11 @@
 .toolbar {
   display: flex;
+  position: relative;
   flex-direction: column;   /* <-- Add this line */
   align-items: flex-start;  /* <-- Optionally align left */
   gap: 0;                   /* Remove gap between rows */
   padding-left: 1rem;
+  padding-right: 6rem;
   background: #f0f0f0;
   border-bottom: 1px solid #ddd;
   transition: background 0.3s;
@@ -17,20 +19,64 @@
   align-items: center;
   gap: .5rem;
   padding: 0.1rem 0;
+  min-height: 3rem;
+  width: 100%;
 }
 
 .toolbar-bottom-row {
   display: flex;
   align-items: center;
-  gap: 2em; /* Optional: space between the two divs */
+  justify-content: space-between;
 }
 
 .toolbar-messages {
   flex: 1 1 auto;
+  height: 1.5rem;;
+  white-space: nowrap;       /* Single line only */
+  overflow: hidden;          /* Hide overflow */
+  text-overflow: ellipsis;   /* Show ... for overflow */
+  display: inline-block;
+  direction: rtl;            /* Show end of text */
+  text-align: left;          /* Keep text readable */
+
+}
+
+.toolbar-controls {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important; /* Ensure items stay in a single row */
+  align-items: center;
+  gap: 1em; /* Add some space between items */
+}
+
+.toolbar-controls .form-check-label {
+  display: inline-block;
+  align-items: center;
+}
+
+.toolbar-top-row #soundFolderButton{
+  font-size: 0.7rem;
+  padding: 0;
 }
 
 .toolbar-navigation {
-  flex: 0 0 auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row ;
+  flex-wrap: nowrap ; 
+  gap: 1em; /* Adjust as needed for spacing between page number and find text */
+  align-items: center;
+}
+
+.toolbar-navigation label {
+  display: flex;
+  align-items: center;
+  gap: 0.5em; /* Adjust as needed for spacing between label text and input */
+}
+
+.toolbar-navigation #FindText{
+  width: 100%; /* Ensure label takes full width */
 }
 
 .toolbar-navigation .page-number-input{
@@ -38,7 +84,7 @@
 }
 
 .toolbar-navigation .find-text-input {
-  width: 30em;
+ width: 100%;
 }
 
 .toolbar-listening {
@@ -72,21 +118,19 @@
 .heard-text {
   color: #333;
   background: #ffe;
-  padding: 0.1em 0.5em;
-  border-radius: 4px;
   transition: background 0.3s;
-  max-width: 50%;
-  white-space: nowrap;       /* Single line only */
-  overflow: hidden;          /* Hide overflow */
-  text-overflow: ellipsis;   /* Show ... for overflow */
-  display: inline-block;
-  direction: rtl;            /* Show end of text */
-  text-align: left;          /* Keep text readable */
 }
 
 .heard-no-match {
   background: #f4a897 !important; /* or any red shade you prefer */
   color: #900 !important;
+}
+
+.logo {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .version{
@@ -95,6 +139,40 @@
     font-size: 0.9em;
     color: #888;
     align-self: center;
+}
+
+.toggle-button {
+  display: none;
+}
+
+label{
+  width: unset;
+}
+
+@media (max-width: 700px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3em;
+    padding: 0.5em;
+  }
+  .toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar-navigation .page-number-input{
+    width: 5em;
+  }
+
+  .toolbar-navigation .find-text-input {
+    width: 75%;
+  }
+  .logo {
+    display: none;
+  }
+  .toggle-button {
+    display: block;
+  }
 }
 
 

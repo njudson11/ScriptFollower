@@ -1,6 +1,10 @@
-
 import { lineTypeLabel } from './constants.js'
+import { appValues } from './constants.js'
 
+
+export function isMobileSize(){
+  return window.innerWidth <= appValues.mobileMinWidth
+}
 /**
  * Removes all HTML tags and most grammatical characters (punctuation) from a string.
  * @param {string} line
@@ -24,8 +28,23 @@ export function extractSoundRef(line) {
   return match ? match[1] : null
 }
 
+export function extractTechDescription(line) {
+  // Match the rest of the line after a tab
+  const lineText = line.cleanText || line.text || '';
+  const match = lineText.match(/\t(.*)/);
+  if (match) {
+    // If a tab is found, return the description after the line.ref and any dashes or whitespace
+    // This assumes the description is everything after the tab
+    let description = match[1].trim();
+    description= description.replace(line.ref, ''); // Remove line ref
+    description = description.replace(/^\s*-+/, ''); // Remove leading dashes and spaces
+    return description.trim(); // Remove leading dashes and trim spaces
+  }
+  return lineText.replace(/^\s*\w+\s*:\s*/, '').trim(); // Remove tag and leading spaces
+}
+
 export function getTypeByTag(line) {
-  switch (line.tag) {
+  switch (line.tag.toUpperCase()) {
     case 'SFX':
     case 'SOUND':
     case 'SOUNDA':
@@ -36,6 +55,9 @@ export function getTypeByTag(line) {
       return lineTypeLabel.sound;
     case 'TECH':
       return lineTypeLabel.tech;
+    case 'CURTAINS':
+    case 'CURTAIN':
+      return lineTypeLabel.curtain;
     case 'LIGHT':
     case 'LIGHTS':
       return lineTypeLabel.light;
@@ -145,5 +167,52 @@ export function getTag(line) {
       }
       return current;
   }
-  
+
+/**
+ * Generate a CSV string of sound cues from a DocumentProcessor and SoundManager.
+ * @param {object} docProcessor - The DocumentProcessor instance (should have .lines).
+ * @param {object} soundManager - The SoundManager instance (should have .soundProcessor with .findSoundFile(ref)).
+ * @returns {string} CSV content
+ */
+export function generateSoundCueCSV(docProcessor, soundManager) {
+  const lines = docProcessor.lines.value || [];
+  const csvRows = [
+    ['Page', 'Cue #', 'Description', 'Filename']
+  ];
+
+  for (const line of lines) {
+    if (line.type === lineTypeLabel.sound && line.ref) {
+      const page = line.pageNumber || line.page || '';
+      const cue = line.ref;
+      const description = line.description || '';
+      let filename = '';
+      if (
+        soundManager &&
+        soundManager.soundProcessor &&
+        typeof soundManager.soundProcessor.findSoundFile === 'function'
+      ) {
+        const file = soundManager.soundProcessor.findSoundFile(cue);
+        filename = file ? file.name : '';
+      }
+      csvRows.push([
+        page,
+        cue,
+        description.replace(/—/g, '-').replace(/"/g, '""'), // Replace emdash, then escape quotes
+        filename.replace(/—/g, '-').replace(/"/g, '""')
+      ]);
+    }
+  }
+
+  // Convert to CSV string
+  return csvRows
+    .map(row =>
+      row
+        .map(field =>
+          `"${String(field).replace(/"/g, '""')}"`
+        )
+        .join(',')
+    )
+    .join('\n');
+}
+
 

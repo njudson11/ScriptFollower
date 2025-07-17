@@ -1,5 +1,16 @@
 <template>
-  <div class="sidebar">
+  <div class="sidebar" :style="style">
+    <div class="sidebar-filters mb-2">
+      <label v-for="(type, key) in sidebarTypes" :key="key" class="sidebar-filter">
+        <input type="checkbox" v-model="visibleTypes[key]" />
+        {{ type.label }}
+      </label>
+            <button
+        class="sidebar-toggle-btn"
+        @click="onToggleSidebar"
+        aria-label="Hide sidebar"
+      >&#10094;</button>
+    </div>
     <div
       v-for="(item,idx) in sidebarItems"
       :key="`${item.idx}-${item.style}-${item.text}`"
@@ -34,25 +45,34 @@ const props = defineProps({
   activeLineIdx: Number,
   onSelectUserLine: Function,
   playingAudios: Object,
-  soundManager: Object
+  soundManager: Object,
+  state: Object,
+  style: Object,
+  onToggleSidebar: Function
 })
 
 const sidebarTypes = sidebarTypeMap
 
+// --- Add filter state ---
+const visibleTypes = ref({})
+for (const key in sidebarTypes) {
+  visibleTypes.value[key] = true // All checked by default
+}
 
+// --- Filtered sidebar items ---
 const sidebarItems = ref([])
 
 async function updateSidebarItems() {
   await nextTick()
-
   sidebarItems.value = props.lines
-    .filter((item, i, arr) => sidebarTypes[item.type] )
+    .filter((item) => sidebarTypes[item.type] && visibleTypes.value[item.type])
     .sort((a, b) => a.idx - b.idx)
 }
 
 watch(() => props.lines, updateSidebarItems, { immediate: true })
-// Watch for activeLineIdx changes to update selectedSidebarItem
+watch(visibleTypes, updateSidebarItems, { deep: true })
 
+// Watch for activeLineIdx changes to update selectedSidebarItem
 watch( () => props.activeLineIdx, findSelectedSidebarItem, { immediate: true } )
 
 async function findSelectedSidebarItem() {
@@ -147,6 +167,8 @@ function scrollToLineIndex(newIdx){
     }
   }
 }
+
+
 
 
 </script>

@@ -11,6 +11,12 @@
   font-weight: bold;
 }
 
+.curtain-cue {
+  background-color: #ff9900;
+  color: white;
+  font-weight: bold;
+}
+
 .Stage-Direction {
   font-style: italic;
   font-family: serif;
@@ -124,7 +130,7 @@
   padding: 0;
 }
 
-.sound-cue  .tab , .lights-cue  .tab{
+.sound-cue  .tab , .lights-cue .tab, .curtain-cue .tab{
   padding-left: 4em;
 }
 

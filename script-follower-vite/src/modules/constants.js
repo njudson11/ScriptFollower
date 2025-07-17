@@ -2,6 +2,7 @@ export const lineTypeLabel = {
   tech: 'TECH',
   sound: 'SOUND',
   light: 'LIGHT',
+  curtain: 'CURTAIN',
   dialogue: 'DIALOGUE',
   stageDirection: 'DIRECTION',
   scene: 'SCENE',
@@ -14,6 +15,7 @@ export const lineTypeLabel = {
 export const lineTypeDocClassMap = {
   [lineTypeLabel.sound]: 'sound-cue',
   [lineTypeLabel.light]: 'lights-cue',
+  [lineTypeLabel.curtain]: 'curtain-cue',
   [lineTypeLabel.stageDirection]: 'Stage-Direction',
   [lineTypeLabel.pageNumber]: 'PageNumber',
   [lineTypeLabel.dialogue]: 'dialogue',
@@ -24,6 +26,7 @@ export const lineTypeDocClassMap = {
 export const lineTypeSidebarClassMap = {
   [lineTypeLabel.sound]: 'sound-cue',
   [lineTypeLabel.light]: 'lights-cue',
+  [lineTypeLabel.curtain]: 'curtain-cue',
   [lineTypeLabel.stageDirection]: 'Stage_20_Direction',
   [lineTypeLabel.pageNumber]: 'PageNumber',
   [lineTypeLabel.dialogue]: 'dialogue',
@@ -31,7 +34,12 @@ export const lineTypeSidebarClassMap = {
 }
 
 export const sidebarTypeMap = {
-  [lineTypeLabel.scene]: { style: 'Act', level: 0 },
-  [lineTypeLabel.sound]: { style: 'sound-cue', level: 1 },
-  [lineTypeLabel.light]: { style: 'lights-cue', level: 1 }
+  [lineTypeLabel.scene]: { label:'Scene', style: 'Act', level: 0 },
+  [lineTypeLabel.sound]: { label:'Sound', style: 'sound-cue', level: 1 },
+  [lineTypeLabel.light]: { label:'Light',style: 'lights-cue', level: 1 }
+}
+
+export const appValues={
+  mobileMinWidth: 700,
+  sidebarDefaultWidth: 320
 }
