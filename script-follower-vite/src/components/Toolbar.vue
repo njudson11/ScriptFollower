@@ -64,7 +64,6 @@
 
 import { ref ,watch, onMounted, onUnmounted } from 'vue'
 import { isMobileSize } from '../modules/utilities.js'
-import { appValues } from '../modules/constants.js'
 
 
 const props = defineProps({
