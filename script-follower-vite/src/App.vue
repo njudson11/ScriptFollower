@@ -13,7 +13,6 @@
       @select-sound-folder="handleSoundFolderChange"
       @goto-page-number="highlightLineByPageNumber"
       @find-text="findNextText" 
-      @open-google-picker="openGooglePicker"
       @download-sound-csv="downloadSoundCSV"
     />
     <div class="main-content" style="display: flex;">
@@ -65,7 +64,6 @@ import { findClosestLine2 } from './modules/textMatcher'
 import { SoundProcessor } from './modules/soundProcessor'
 import { SoundManager } from './modules/soundManager'
 import { generateSoundCueCSV}  from './modules/utilities'
-import { openGooglePicker}  from './modules/googleWrapper'
 import { stripHtmlAndPunctuation, isMobileSize } from './modules/utilities'
 import { appValues, lineTypeLabel } from './modules/constants.js'
 

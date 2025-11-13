@@ -94,6 +94,19 @@ export function findClosestLine(
   return bestScore > threshold ? bestIdx : -1
 }
 
+/**
+ * Finds the index of the line in `lines` that most closely matches `spokenText`,
+ * searching a window of lines before and after the current active line.
+ * This version uses the `description` property of the line objects.
+ * If no match is found above threshold, returns -1.
+ * @param {Array<import('./documentProcessor').lineDefinition>} lines - Array of lineDefinition objects from the script.
+ * @param {string} spokenText - The recognized speech to match.
+ * @param {number} [activeIdx=-1] - The current active line index.
+ * @param {number} [preWindow=10] - How many lines before the current line to search.
+ * @param {number} [postWindow=40] - How many lines after the current line to search.
+ * @param {number} [threshold=0.3] - Minimum similarity (0-1) to consider a match.
+ * @returns {number} - Index of the best matching line, or -1 if none above threshold.
+ */
 export function findClosestLine2(
   lines,
   spokenText,
@@ -191,6 +204,11 @@ function wordOverlapSimilarity(a, b) {
   return common.length / Math.max(aWords.length, bWords.length)
 }
 
+/**
+ * Implements the Soundex algorithm to convert a word to a phonetic code.
+ * @param {string} word - The word to convert.
+ * @returns {string} - The 4-character Soundex code.
+ */
 function soundex(word) {
   // Simple Soundex implementation
   const s = word.toUpperCase().replace(/[^A-Z]/g, '')
@@ -206,6 +224,11 @@ function soundex(word) {
   return (result + '000').slice(0, 4)
 }
 
+/**
+ * Normalizes a string by converting to lowercase, removing punctuation, and trimming whitespace.
+ * @param {string} str - The string to normalize.
+ * @returns {string} - The normalized string.
+ */
 function normalize(str) {
   return str
     .toLowerCase()
@@ -215,6 +238,12 @@ function normalize(str) {
     .trim()
 }
 
+/**
+ * Computes a similarity score between two strings based on the phonetic similarity of their words.
+ * @param {string} a - The first string.
+ * @param {string} b - The second string.
+ * @returns {number} - A similarity score between 0 and 1.
+ */
 function phoneticSimilarity(a, b) {
   if (!a || !b) return 0
   const aWords = Array.from(

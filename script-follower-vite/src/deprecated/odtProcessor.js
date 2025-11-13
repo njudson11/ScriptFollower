@@ -61,6 +61,28 @@ function flattenNode(node, styleMap) {
 }
 
 /**
+ * Extracts content and metadata from an <office:annotation> node.
+ * @param {Node} annotationNode - The <office:annotation> node.
+ * @param {Object} styleMap - The style inheritance map.
+ * @returns {{creator: string, date: string, text: string}}
+ */
+function getNodeAnnotation(annotationNode, styleMap) {
+  const creatorNode = annotationNode.getElementsByTagName('dc:creator')[0];
+  const dateNode = annotationNode.getElementsByTagName('dc:date')[0];
+  const textNode = annotationNode.getElementsByTagName('text:p')[0];
+
+  const creator = creatorNode ? creatorNode.textContent : '';
+  const date = dateNode ? dateNode.textContent : '';
+  const text = textNode ? flattenNode(textNode, styleMap) : '';
+
+  return {
+    creator,
+    date,
+    text,
+  };
+}
+
+/**
  * Converts <text:p> and <text:h> nodes to HTML paragraphs with resolved styles.
  * @param {Element} officeText
  * @param {Object} styleMap

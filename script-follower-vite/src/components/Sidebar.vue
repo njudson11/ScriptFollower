@@ -14,7 +14,7 @@
     <div
       v-for="(item,idx) in sidebarItems"
       :key="`${item.idx}-${item.style}-${item.text}`"
-      :class="['sidebar-item', sidebarTypes[item.type].style, { selected: isSidebarItemSelected(item) , nextSidebarItem:isSidebarItemNext(item) }]"
+      :class="['sidebar-item', sidebarTypes[item.type].style, item.style, { selected: isSidebarItemSelected(item) , nextSidebarItem:isSidebarItemNext(item) }]"
       :style="getSidebarItemStyle(item)"
       :data-line-idx="item.idx"
       :data-sound-ref="item.ref || null"
@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
-import { sidebarTypeMap } from '../modules/constants.js'
+import { sidebarTypeMap,lineTypeLabel } from '../modules/constants.js'
 
 const props = defineProps({
   lines: Array,
@@ -87,6 +87,7 @@ async function findSelectedSidebarItem() {
 
 const selectedSidebarItem = ref({ idx: -1, className: '' })
 const nextSidebarItem = ref({ idx: -1, className: '' })
+const previousSideBarItem=ref(0)
 
 function selectSidebarItem(item) {
   selectedSidebarItem.value = { idx: item.idx, className: item.className }
@@ -103,6 +104,7 @@ function isSidebarItemSelected(item) {
 }
 
 watch(() => props.activeLineIdx, findNextSidebarItem, { immediate: true })
+watch(() => props.activeLineIdx, findPreviousSidebarItem, { immediate: true })
 
 async function findNextSidebarItem() {
   await nextTick()
@@ -113,6 +115,17 @@ async function findNextSidebarItem() {
     scrollToLineIndex(found.idx)
   } else {
     nextSidebarItem.value = { idx: -1, className: '' }
+  }
+}
+
+async function findPreviousSidebarItem() {
+  await nextTick()
+  // Find the last item with idx less than activeLineIdx
+  const found = sidebarItems.value.slice().reverse().find(item => item.idx < props.activeLineIdx)
+  if (found) {
+    previousSideBarItem.value = { idx: found.idx, className: found.className }
+  } else {
+    previousSideBarItem.value = { idx: -1, className: '' }
   }
 }
 
@@ -135,19 +148,41 @@ function getSoundProgress(ref) {
 }
 
 function getSidebarItemStyle(item) {
-  const ref = item.ref
-  const progress = getSoundProgress(ref)
   const level = typeof item === 'object' && item.level !== undefined ? item.level : 0
   const baseStyle = {
     paddingLeft: `${level * 1.5}em`
   }
-  if (progress > 0) {
-    return {
-      ...baseStyle,
-      background: `linear-gradient(to right, #007bff ${progress * 100}%, black ${progress * 100}%)`
-    }
+
+  const nextItemGradient = getNextItemGradient(item)
+  const soundProgressGradien = getSoundProgressBar(item,baseStyle)
+  return {
+    ...baseStyle,
+    background: soundProgressGradien ? soundProgressGradien : nextItemGradient
   }
-  return baseStyle
+}
+
+function getSoundProgressBar(item){
+  if (item.type !== lineTypeLabel.sound) return
+  const ref = item.ref
+  const progress = getSoundProgress(ref)
+  if (progress > 0) {
+    return `linear-gradient(to right, #007bff ${progress * 100}%, black ${progress * 100}%)`
+    
+  }
+  return 
+}
+
+function getNextItemGradient(item){
+  const previousSideBarItemIdx = previousSideBarItem.value.idx
+  if (item.idx < previousSideBarItemIdx) return 
+  const distanceToNextItem = nextSidebarItem.value.idx - previousSideBarItemIdx
+  const distanceFromLastItem = props.state.userSelectedLineIdx - previousSideBarItemIdx
+  const lineProximity= distanceToNextItem > 0 ? distanceFromLastItem / distanceToNextItem : 1
+  if (item.idx == nextSidebarItem.value.idx && lineProximity >= 0) {
+    return `linear-gradient(to right, #eaaa4f ${lineProximity * 100}%, #6e5b13 ${lineProximity * 100}%)`
+    
+  }
+  return 
 }
 
 function scrollToLineIndex(newIdx){

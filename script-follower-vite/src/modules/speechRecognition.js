@@ -33,18 +33,28 @@ export function useSpeechRecognition(onResult, onError, onEnd) {
   }
 
   return {
+    /**
+     * Starts the speech recognition service.
+     */
     start() {
       if (recognition && !listening) {
         recognition.start()
         listening = true
       }
     },
+    /**
+     * Stops the speech recognition service.
+     */
     stop() {
       if (recognition && listening) {
         recognition.stop()
         listening = false
       }
     },
+    /**
+     * Checks if the speech recognition service is currently listening.
+     * @returns {boolean} - True if listening, false otherwise.
+     */
     get isListening() {
       return listening
     },

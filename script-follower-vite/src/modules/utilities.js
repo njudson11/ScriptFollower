@@ -2,6 +2,10 @@ import { lineTypeLabel } from './constants.js'
 import { appValues } from './constants.js'
 
 
+/**
+ * Checks if the window width is considered mobile size.
+ * @returns {boolean} - True if the window width is less than or equal to the mobile minimum width.
+ */
 export function isMobileSize(){
   return window.innerWidth <= appValues.mobileMinWidth
 }
@@ -18,16 +22,31 @@ export function stripHtmlAndPunctuation(line) {
   return clean
 }
 
+/**
+ * Checks if a line is a sound cue.
+ * @param {string} line - The line to check.
+ * @returns {boolean} - True if the line is a sound cue, false otherwise.
+ */
 export function isSoundCue(line) {
   return /SOUND.*\d{4}/.test(line)
 }
 
+/**
+ * Extracts the sound reference from a line.
+ * @param {string} line - The line to extract the sound reference from.
+ * @returns {string|null} - The sound reference or null if not found.
+ */
 export function extractSoundRef(line) {
   if (!isSoundCue(line)) return null;
   const match = line.match(/\b(\d{4})\b/)
   return match ? match[1] : null
 }
 
+/**
+ * Extracts the technical description from a line.
+ * @param {import('./documentProcessor').lineDefinition} line - The line to extract the description from.
+ * @returns {string} - The technical description.
+ */
 export function extractTechDescription(line) {
   // Match the rest of the line after a tab
   const lineText = line.cleanText || line.text || '';
@@ -43,8 +62,13 @@ export function extractTechDescription(line) {
   return lineText.replace(/^\s*\w+\s*:\s*/, '').trim(); // Remove tag and leading spaces
 }
 
+/**
+ * Gets the line type from a line's tag.
+ * @param {import('./documentProcessor').lineDefinition} line - The line to get the type from.
+ * @returns {string} - The line type.
+ */
 export function getTypeByTag(line) {
-  switch (line.tag.toUpperCase()) {
+  switch (line.tag.replace(" ","").toUpperCase()) {
     case 'SFX':
     case 'SOUND':
     case 'SOUNDA':
@@ -78,6 +102,11 @@ export function getTypeByTag(line) {
   }
 }
 
+/**
+ * Gets the tag from a line.
+ * @param {import('./documentProcessor').lineDefinition} line - The line to get the tag from.
+ * @returns {string} - The tag.
+ */
 export function getTag(line) {
     const tagPattern = /^([\w ]+?)(:|\t)/g; // Matches # followed by word characters
     const match = line.text.match(tagPattern);
@@ -91,6 +120,7 @@ export function getTag(line) {
     { regex: /Act (One|Two).*$/igm, tag: lineTypeLabel.scene },
     { regex: /^\s*\(.*?\)\s*$/igm, tag: lineTypeLabel.stageDirection },
     { style: 'PageNumber',tag: lineTypeLabel.pageNumber },
+    { style: 'Page_20_Number',tag: lineTypeLabel.pageNumber },
     { style: 'Stage_20_Direction',tag: lineTypeLabel.stageDirection },
     { style: 'Title',tag: lineTypeLabel.heading },
     { style: 'Subtitle',tag: lineTypeLabel.heading },
@@ -98,6 +128,11 @@ export function getTag(line) {
     { style: 'Heading_20_1',tag: lineTypeLabel.heading }
   ]
 
+  /**
+   * Finds a tag for a line based on a set of rules.
+   * @param {import('./documentProcessor').lineDefinition} line - The line to find the tag for.
+   * @returns {string} - The tag.
+   */
   function findTagByRules(line) {
     for (const rule of tagRules) {
       if (rule.style && line.style === rule.style) {
@@ -215,4 +250,15 @@ export function generateSoundCueCSV(docProcessor, soundManager) {
     .join('\n');
 }
 
-
+/**
+ * Converts seconds to a string in the format "mm:ss.ms".
+ * @param {number} seconds - The number of seconds to convert.
+ * @returns {string} - The formatted time string.
+ */
+export function secondsToMinutes(seconds) {
+  if (typeof seconds !== 'number' || isNaN(seconds)) return '00:00';
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+  const milliseconds = Math.floor((seconds % 1)*100).toString().padStart(2, '0') ;
+  return `${mins}:${secs}.${milliseconds}`;
+}

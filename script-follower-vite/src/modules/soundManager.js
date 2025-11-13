@@ -14,6 +14,7 @@ export class SoundManager {
 
   /**
    * @param {import('./soundProcessor').SoundProcessor} soundProcessor - An instance of SoundProcessor to find audio files.
+   * @throws {Error} If a SoundProcessor instance is not provided.
    */
   constructor(soundProcessor) {
     if (!soundProcessor) {
@@ -35,6 +36,11 @@ export class SoundManager {
     }
   }
 
+  /**
+   * Checks if a sound is preloaded.
+   * @param {string} ref - The reference ID of the sound cue.
+   * @returns {boolean} - True if the sound is preloaded, false otherwise.
+   */
   isPreloaded(ref) {
     return this.soundProcessor.findPreloadedSound(ref) !== null
   }
@@ -82,6 +88,12 @@ export class SoundManager {
     }
   }
 
+  /**
+   * Updates the state of a playing audio.
+   * @param {string} ref - The reference ID of the sound cue.
+   * @param {HTMLAudioElement} audio - The audio element.
+   * @param {string} url - The URL of the audio file.
+   */
   updatePlayingAudios(ref, audio, url) {
       const duration = audio.duration
       const interval = setInterval(() => {
@@ -147,10 +159,18 @@ export class SoundManager {
     return false;
   }
 
+  /**
+   * Checks if a sound is available.
+   * @param {string} ref - The reference ID of the sound cue.
+   * @returns {boolean} - True if the sound is available, false otherwise.
+   */
   isSoundAvailable(ref) {
     return this.soundProcessor.isSoundAvailable(ref)
   }
 
+  /**
+   * Clears all sounds.
+   */
   clear(){
     this.stopAllSounds()
     this.playingAudios.value = {}

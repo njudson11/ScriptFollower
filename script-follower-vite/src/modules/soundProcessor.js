@@ -1,15 +1,27 @@
 export class SoundProcessor {
+  /**
+   * Processor for sound files.
+   * @constructor
+   * @param {File[]} files - An array of sound files.
+   */
   constructor(files = []) {
     this.audioMap = new Map()
    // this.files = files // Array of File objects
     this.setFiles(files)
   }
 
+  /**
+   * Sets the sound files to be processed.
+   * @param {File[]} files - An array of sound files.
+   */
   setFiles(files) {
     this.files = Array.from(files)
     this.preloadFiles(files)
   }
 
+  /**
+   * Clears all sound files and preloaded audio.
+   */
   clear(){
     this.files = []
     this.audioMap.forEach(audio => {
@@ -36,6 +48,11 @@ export class SoundProcessor {
     }
   }
 
+  /**
+   * Finds a preloaded sound by its reference.
+   * @param {string} ref - The reference of the sound to find.
+   * @returns {HTMLAudioElement|null} - The preloaded audio element or null if not found.
+   */
   findPreloadedSound(ref) {
     if (!this.audioMap || !ref) return null
     return this.audioMap.get(ref) || null
@@ -76,6 +93,11 @@ export class SoundProcessor {
     }
   }
 
+  /**
+   * Plays a sound by creating an audio element inline.
+   * @param {string} ref - The reference of the sound to play.
+   * @returns {Promise<void>} - A promise that resolves when the sound has finished playing.
+   */
   playSoundByInline(ref) {
     const file = this.findSoundFile(ref)
     if (!(file instanceof File)) {
@@ -86,6 +108,11 @@ export class SoundProcessor {
     return audio.play() 
   }
 
+  /**
+   * Plays a preloaded sound.
+   * @param {string} ref - The reference of the sound to play.
+   * @returns {Promise<void>} - A promise that resolves when the sound has finished playing.
+   */
   playSoundPreloaded(ref) {
     const audio = this.audioMap.get(ref)
     if (!audio) return Promise.reject(new Error('Sound not preloaded or not found'))

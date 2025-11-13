@@ -5,6 +5,11 @@
   font-weight: bold;
 }
 
+.Sound_20_B{
+  background-color: #0f8c37;
+  
+}
+
 .lights-cue {
   background-color: #2a6099;
   color: white;
@@ -29,7 +34,7 @@
   color: #333;
 }
 
-.PageNumber {
+.PageNumber, .Page_20_Number {
   background-color: #ddd;
   color: #333;
 }
@@ -137,4 +142,20 @@
 .tab{
   display: inline;
   padding-left: 10em;
+}
+
+.annotation{
+  background-color: white;
+  font-size: 0.9em;
+  margin-left: 1em;
+  display: none;
+}
+
+.active-line .annotation{
+  background-color: #7ab8e3;
+  display: block;
+}
+
+.raw{
+  display: none;
 }

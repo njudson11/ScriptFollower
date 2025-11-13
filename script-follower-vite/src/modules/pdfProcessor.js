@@ -5,6 +5,11 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
+/**
+ * Processes a .pdf file and extracts the text content.
+ * @param {File} file - The .pdf file to process.
+ * @returns {Promise<string>} - The text content of the document.
+ */
 export async function processPdf(file) {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise

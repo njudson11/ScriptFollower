@@ -8,12 +8,20 @@ import { lineTypeLabel } from './constants.js'
 const LS_SCRIPT_FOLLOWER_DOCUMENT = 'scriptFollowerDocument'
 const LS_SCRIPT_FOLLOWER_FILENAME = 'scriptFollowerFilename'
 export class DocumentProcessor {
+  /**
+   * Processor for documents.
+   * @constructor
+   */
   constructor() {
     this.text = ref({})
     this.lines = ref([])
     this.filename = ref('')
   }
 
+  /**
+   * Loads a file and processes it.
+   * @param {File} file - The file to load.
+   */
   async loadFile(file) {
     this.lines.value = await this.processDocument(file)
   }
@@ -38,17 +46,27 @@ export class DocumentProcessor {
     return await processor.processFile(file)
   }
 
+  /**
+   * Sets the text content of the document.
+   * @param {string} newText - The new text content.
+   */
   setText(newText) {
     this.text?.value && (this.text.value = newText)
 
   }
 
+  /**
+   * Clears the document content.
+   */
   clear() {
     this.setText('') 
     this.lines.value = []
     this.filename.value=""
   }
 
+  /**
+   * Restores the document from local storage.
+   */
   restoreFromLocalStorage() {
     const saved = localStorage.getItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
     if (saved) {
@@ -60,11 +78,17 @@ export class DocumentProcessor {
     }
   }
 
+  /**
+   * Clears the document from local storage.
+   */
   clearLocalStorage() {
     localStorage.removeItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
     localStorage.removeItem(LS_SCRIPT_FOLLOWER_FILENAME)
   }
 
+  /**
+   * Saves the document to local storage.
+   */
   saveToLocalStorage() {
     localStorage.setItem(LS_SCRIPT_FOLLOWER_DOCUMENT, JSON.stringify(this.lines.value))
     localStorage.setItem(LS_SCRIPT_FOLLOWER_FILENAME, this.filename.value)
@@ -73,7 +97,27 @@ export class DocumentProcessor {
 
 }
 
+export class lineAnnotation{
+  /**
+   * Represents an annotation for a line.
+   * @constructor
+   * @param {string} type - The type of annotation.
+   * @param {string} content - The content of the annotation.
+   */
+  constructor(content, date, creator, creatorInitials) {
+    this.content = content
+    this.date = date
+    this.creator = creator
+    this.creatorInitials = creatorInitials
+  }
+}
+
 export class lineDefinition{
+  /**
+   * Represents a line in the document.
+   * @constructor
+   * @param {string} text - The text of the line.
+   */
   constructor(text) {
     this.text = text
     this.cleanText = ''
@@ -84,9 +128,16 @@ export class lineDefinition{
     this.tag = ''
     this.style = ''
     this.pageNumber = ''
+    this.raw= '',
+    this.annotation= null,
     this.setLine(this.text)
   }
 
+  /**
+   * Sets the properties of the line.
+   * @param {string} lineText - The text of the line.
+   * @returns {lineDefinition} - The instance of the class.
+   */
   setLine(lineText){
       this.text= lineText,
       this.ref= extractSoundRef(lineText),
@@ -97,23 +148,38 @@ export class lineDefinition{
     return this;
   }
 
+  /**
+   * Sets the tag of the line.
+   */
   setTag(){
     this.tag = getTag(this)
   }
 
+  /**
+   * Sets the type of the line.
+   */
   setType(){
     this.type = getTypeByTag(this)
     this.pageNumber=this.type==lineTypeLabel.pageNumber ? Number(this.text.replace(/\D+/g, '')) : ''
   }
 
+  /**
+   * Sets the style of the line.
+   * @param {string} style - The style of the line.
+   */
   setStyle(style) {
     this.style = style
     this.setTag()
     this.setType()
   }
 
+  /**
+   * Checks if the line is empty.
+   * @returns {boolean} - True if the line is empty, false otherwise.
+   */
   get isEmpty() {
     return !this.text || this.text.trim() === ''
   }
 
 }
+

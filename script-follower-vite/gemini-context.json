@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "project_name": "Script Follower",
+  "project_root": "/Users/nigeljudson/SynologyDrive/Documents/Programming/web/ScriptFollower/script-follower-vite",
+  "project_type": "web",
+  "frameworks": ["vue", "vite", "electron"],
+  "main_entrypoint": "src/main.js",
+  "important_files": [
+    "src/App.vue",
+    "src/main.js",
+    "vite.config.js",
+    "package.json",
+    "src/electron-main.js"
+  ],
+  "directories": {
+    "components": "src/components",
+    "modules": "src/modules",
+    "assets": "src/assets",
+    "css": "src/css"
+  },
+  "build_command": "npm run build",
+  "dev_command": "npm run dev",
+  "test_command": "",
+  "conventions": {
+    "file_naming": "PascalCase for Vue components (e.g., `MyComponent.vue`), camelCase for other JavaScript files (e.g., `myModule.js`).",
+    "code_style": "Follows standard Vue.js and JavaScript conventions. Uses Composition API in Vue components. State is managed using `ref` and `reactive`.",
+    "commit_messages": "Conventional Commits standard (e.g., `feat: add new feature`, `fix: correct a bug`)."
+  }
+}

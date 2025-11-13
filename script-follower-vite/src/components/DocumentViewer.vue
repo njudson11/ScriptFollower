@@ -21,12 +21,16 @@
         'active-line': idx === state.userSelectedLineIdx && !(idx === state.speechActiveLineIdx && state.noMatch),
         'speech-highlight': idx === state.speechActiveLineIdx && !state.noMatch,
         'active-line-no-match': idx === state.speechActiveLineIdx && state.noMatch,
-        [lineTypeDocClassMap[line.type]]: !!lineTypeDocClassMap[line.type]
-      } "
+        [lineTypeDocClassMap[line.type]]: !!lineTypeDocClassMap[line.type],
+        [line.style]: true
+        
+      }"
       tabindex="0"
       @click="selectUserLine(idx)"
     >
-      <span :class="line.style" v-html="toHTML(line)"></span>
+    <pre class="raw">{{ line.raw }}</pre>
+    <span :class="line.style" v-html="toHTML(line)"></span>
+    <span v-if="line.annotation" class="annotation">[{{ line.annotation.creator }}:{{ line.annotation.content }}]</span>
 
     <template v-if="line.type=='SOUND'" >
       <span class="sound-controls">
@@ -47,7 +51,7 @@
         </span>
 
         <span v-if="soundManager?.playingAudios?.value && soundManager?.playingAudios && soundManager?.playingAudios?.value[line.ref]" class="sound-time-left">
-          {{ soundManager.playingAudios?.value[line.ref].timeLeft?.toFixed(2) }}s left
+          {{ secondsToMinutes(soundManager.playingAudios?.value[line.ref].timeLeft) }}s left
         </span>
 
         <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
@@ -61,7 +65,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { wrapWithSpans}  from '../modules/utilities'
+import { secondsToMinutes, wrapWithSpans}  from '../modules/utilities'
 import { lineTypeDocClassMap, lineTypeLabel } from '../modules/constants.js'
 
 const props = defineProps([

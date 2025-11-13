@@ -2,9 +2,13 @@ import JSZip from 'jszip'
 import { DOMParser } from '@xmldom/xmldom'
 import { ref } from 'vue'
 import { lineTypeLabel } from './constants.js'
-import { lineDefinition } from './documentProcessor.js'
+import { lineDefinition,lineAnnotation } from './documentProcessor.js'
 
 export class odtProcessor {
+  /**
+   * Processor for ODT files.
+   * @constructor
+   */
   constructor() {
     this.document = ref({})
     this.lines = ref({})
@@ -40,6 +44,11 @@ export class odtProcessor {
     }
   }
 
+  /**
+   * Populates the lines array by parsing the ODT document.
+   * @param {Document} doc - The parsed XML document.
+   * @returns {Array<lineDefinition>} - An array of lineDefinition objects.
+   */
   populateLines(doc) {
     const officeText = doc.getElementsByTagName('office:text')[0]
     if (!officeText) return []
@@ -67,28 +76,76 @@ export class odtProcessor {
   }
 
 
+  /**
+   * Processes a single line node from the ODT document.
+   * @param {Node} node - The XML node to process.
+   * @returns {lineDefinition} - A lineDefinition object.
+   */
   getLine(node){
-    let lineText= this.processLineNode(node)
+    let lineText= this.getNodeTextContent(node)
+    let annotation= this.getNodeAnnotation(node)
     const line = new lineDefinition(lineText)
     line.setStyle(this.resolveStyle(node.getAttribute('text:style-name') || ''))
     line.outlineLevel = node.getAttribute('text:outline-level') || '0'
+    line.raw= node.toString()
+    line.annotation= annotation
     return line;
   }
 
-  processLineNode(node){
+  getNodeAnnotation(node){
+    for (let child of node.childNodes) {
+      if (child.nodeType === 1 && child.nodeName.toLowerCase() === 'office:annotation') {
+        const creatorNode = child.getElementsByTagName('dc:creator')[0];
+        const dateNode = child.getElementsByTagName('dc:date')[0];
+        const textNode = child.getElementsByTagName('text:p')[0];
+
+        const creator = creatorNode ? creatorNode.textContent : '';
+        const date = dateNode ? dateNode.textContent : '';
+        const text = textNode ? this.getNodeTextContent(textNode) : '';
+        
+        return new lineAnnotation(text, date, creator);
+      }
+    }
+
+    // Fallback for text:note
+    for (let child of node.childNodes) {
+      if (child.nodeType === 1 && child.nodeName.toLowerCase() ==='text:note') {
+        const noteBody = child.getElementsByTagName('text:note-body')[0]
+        if (noteBody) {
+          const annotationText = this.getNodeTextContent(noteBody);
+          if (annotationText) {
+            return new lineAnnotation(annotationText);
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Processes the child nodes of a line node to extract the text content, ignoring annotations.
+   * @param {Node} node - The XML node to process.
+   * @returns {string} - The text content of the node.
+   */
+  getNodeTextContent(node){
     let lineText = ''
     for (let child of node.childNodes) {
-      //const child = node.childNodes[index]
       if (child.nodeType === 3) { // TEXT_NODE
-        lineText += child.nodeValue.trim()
+        lineText += child.nodeValue
       } else if (child.nodeType === 1) { // ELEMENT_NODE
         const name = child.nodeName.toLowerCase()
         switch (name) {
           case 'text:tab':
             lineText += '\t'
             break
+          case 'office:annotation':
+          case 'office:annotation-end':
+          case 'office:annotation-start':
+            // Ignore annotation-related tags
+            break
           default:
-            lineText+= child.textContent
+            lineText += this.getNodeTextContent(child)
         }
       }
     }
@@ -180,7 +237,7 @@ export class OdtStyleCollection {
   }
 
   getRootStyle(name){
-    const rootStyleList=["Text_20_body", "Title", "Subtitle","Heading_20_1", "Heading_20_2", "Act","Scene","Dialogue","Stage_20_Direction","Tech","Light","Sound_20_A","Sound_20_B","Effect","Curtains","PageNumber"]
+    const rootStyleList=["Text_20_body", "Title", "Subtitle","Heading_20_1", "Heading_20_2", "Act","Scene","Dialogue","Stage_20_Direction","Tech","Light","Sound_20_A","Sound_20_B","Effect","Curtains","PageNumber","Page_20_Number"]
     let currentStyle = this.get(name)
     if (currentStyle && rootStyleList.includes(currentStyle.name)) {
         return currentStyle
