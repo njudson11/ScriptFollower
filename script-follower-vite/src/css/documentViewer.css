@@ -39,21 +39,16 @@
   color: #333;
 }
 
-.dialogue {
-  margin-left: 1em;
-  margin-right: 1em;
-  vertical-align: top;
-}
 
 .textContent{
-  display: inline-block;
-  max-width: 40rem;
+    display: block;
+    text-indent: 0;
 }
 
 .name-highlight {
   color: black;
   font-weight: bold;
-  min-width: 10em;
+  min-width: 4rem;
   vertical-align: top;
   display: inline-block;
 }
@@ -123,6 +118,7 @@
 .Removed{
   text-decoration: line-through;
   color: #b5b5b5;
+  background-color: unset;
 }
 
 .document-viewer .sound-controls{
@@ -140,8 +136,8 @@
 }
 
 .tab{
-  display: inline;
-  padding-left: 10em;
+  display: none;
+  padding-left: 0;
 }
 
 .annotation{
@@ -158,4 +154,16 @@
 
 .raw{
   display: none;
+}
+
+.Dialogue  {
+    display: block;
+    padding-left: 4rem;
+    text-indent: -4rem;
+}
+
+
+.dialogue {
+  vertical-align: top;
+  display: block;
 }

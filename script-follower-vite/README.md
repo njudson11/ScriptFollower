@@ -46,6 +46,10 @@ my-vue-app
 
 This application serves as a starting point for building Vue.js applications. You can modify the components and views as needed to fit your requirements.
 
+## Build
+
+npm run build
+
 ## License
 
 This project is licensed under the MIT License.

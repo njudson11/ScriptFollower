@@ -45,6 +45,7 @@ export class SoundProcessor {
       // Use the 4-digit prefix as the key
       const ref = file.name.substring(0, 4)
       this.audioMap.set(ref, audio)
+      console.log(`Preloaded sound: ${file.name} as ref ${ref}`) 
     }
   }
 

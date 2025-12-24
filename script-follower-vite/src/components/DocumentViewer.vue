@@ -32,7 +32,7 @@
     <span :class="line.style" v-html="toHTML(line)"></span>
     <span v-if="line.annotation" class="annotation">[{{ line.annotation.creator }}:{{ line.annotation.content }}]</span>
 
-    <template v-if="line.type=='SOUND'" >
+    <template v-if="line.type=='SOUND' && line.style!='Removed'" >
       <span class="sound-controls">
         <button
           class="play-sound-btn" 

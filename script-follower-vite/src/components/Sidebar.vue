@@ -109,7 +109,7 @@ watch(() => props.activeLineIdx, findPreviousSidebarItem, { immediate: true })
 async function findNextSidebarItem() {
   await nextTick()
   // Find the first item with idx greater than activeLineIdx
-  const found = sidebarItems.value.find(item => item.idx > props.activeLineIdx)
+  const found = sidebarItems.value.find(item => item.idx > props.activeLineIdx && item.style !== 'Removed')
   if (found) {
     nextSidebarItem.value = { idx: found.idx, className: found.className }
     scrollToLineIndex(found.idx)
@@ -121,7 +121,7 @@ async function findNextSidebarItem() {
 async function findPreviousSidebarItem() {
   await nextTick()
   // Find the last item with idx less than activeLineIdx
-  const found = sidebarItems.value.slice().reverse().find(item => item.idx < props.activeLineIdx)
+  const found = sidebarItems.value.slice().reverse().find(item => item.idx < props.activeLineIdx && item.style !== 'Removed')
   if (found) {
     previousSideBarItem.value = { idx: found.idx, className: found.className }
   } else {

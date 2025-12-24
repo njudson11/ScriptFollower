@@ -28,7 +28,7 @@ export function stripHtmlAndPunctuation(line) {
  * @returns {boolean} - True if the line is a sound cue, false otherwise.
  */
 export function isSoundCue(line) {
-  return /SOUND.*\d{4}/.test(line)
+  return /SOUND.*\d{4}/.test(line.toUpperCase())
 }
 
 /**
@@ -89,6 +89,7 @@ export function getTypeByTag(line) {
       return lineTypeLabel.dialogue;
     case 'SCENE':
       return lineTypeLabel.scene;
+    case 'PAGE_20_NUMBER':
     case 'PAGE_NUMBER':
       return lineTypeLabel.pageNumber;
     case 'NOTE':

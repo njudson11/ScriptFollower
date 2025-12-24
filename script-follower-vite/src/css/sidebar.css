@@ -18,7 +18,8 @@
 }
 
 .sidebar-item.selected {
-  background: #1f891f;
+  background: #0fd480;
+    border: 3px solid #ffe30f;
 }
 
 .sidebar-item.nextSidebarItem {
@@ -59,4 +60,8 @@
 }
 .sidebar-toggle-btn:hover {
   color: #1f891f;
+}
+
+.sidebar-item.Removed{
+  display:none;
 }
