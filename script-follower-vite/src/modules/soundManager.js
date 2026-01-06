@@ -11,6 +11,7 @@ export class SoundManager {
    */
   playingAudios = ref({})
   onSoundEndCallbacks = []
+  onSoundEndCallbacks = []
 
   /**
    * @param {import('./soundProcessor').SoundProcessor} soundProcessor - An instance of SoundProcessor to find audio files.
@@ -52,13 +53,18 @@ export class SoundManager {
    */
   playSound(ref) {
     if (!this.isSoundAvailable(ref)) return;
+    if (!this.isSoundAvailable(ref)) return;
     const file = this.soundProcessor.findSoundFile(ref)
     if (!file) {
       console.warn(`Sound file for ref ${ref} not found.`)
       return
     }
     let audio = this.soundProcessor.findPreloadedSound(ref)
+    let audio = this.soundProcessor.findPreloadedSound(ref)
     const url = URL.createObjectURL(file)
+    if (!audio) {
+      audio = new Audio(url)
+    }
     if (!audio) {
       audio = new Audio(url)
     }
@@ -117,6 +123,9 @@ export class SoundManager {
           timeLeft: duration,
           interval,
           url
+        }
+      }
+    }
         }
       }
     }

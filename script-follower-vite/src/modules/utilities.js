@@ -38,6 +38,7 @@ export function isSoundCue(line) {
  */
 export function extractSoundRef(line) {
   if (!isSoundCue(line)) return null;
+  if (!isSoundCue(line)) return null;
   const match = line.match(/\b(\d{4})\b/)
   return match ? match[1] : null
 }

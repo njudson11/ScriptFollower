@@ -61,6 +61,7 @@ import DocumentViewer from './components/DocumentViewer.vue'
 import { DocumentProcessor } from './modules/documentProcessor'
 import { useSpeechRecognition } from './modules/speechRecognition'
 import { findClosestLine2 } from './modules/textMatcher'
+import { findClosestLine2 } from './modules/textMatcher'
 import { SoundProcessor } from './modules/soundProcessor'
 import { SoundManager } from './modules/soundManager'
 import { generateSoundCueCSV}  from './modules/utilities'
@@ -118,6 +119,7 @@ async function handleFile(event) {
   state.filename = docProcessor.filename.value
   state.message = 'Loading ' + state.filename + ' ...'
   try {
+    //await docProcessor.loadFile(file)
     await docProcessor.loadFile(file)
     saveToLocalStorage()
   } catch (e) {
@@ -231,6 +233,10 @@ watch(() => state.userSelectedLineIdx, async (newIdx) => {
 })
 
 function scrollToLineIndex(newIdx){
+  scrollToLineIndex(newIdx)
+})
+
+function scrollToLineIndex(newIdx){
   if (newIdx === -1) {
     const viewer = document.querySelector('.document-viewer')
     if (viewer) viewer.scrollTo({ top: 0, behavior: 'smooth' })
@@ -269,6 +275,7 @@ function onKeyDown(e) {
       if (soundRef && tempSoundManager.isPlaying(soundRef)) {
         tempSoundManager.stopSound(soundRef);
       } else {
+        tempSoundManager.playSound(soundRef);
         tempSoundManager.playSound(soundRef);
         e.preventDefault();
         return;

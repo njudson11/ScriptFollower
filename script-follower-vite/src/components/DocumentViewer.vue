@@ -49,11 +49,20 @@
         <span v-if="soundManager.isPreloaded(line.ref)" class="sound-preloaded">
           <i class="fa-solid fa-check"></i>
         </span>
+        </button>
+        <span v-if="soundManager.isPreloaded(line.ref)" class="sound-preloaded">
+          <i class="fa-solid fa-check"></i>
+        </span>
 
         <span v-if="soundManager?.playingAudios?.value && soundManager?.playingAudios && soundManager?.playingAudios?.value[line.ref]" class="sound-time-left">
           {{ secondsToMinutes(soundManager.playingAudios?.value[line.ref].timeLeft) }}s left
         </span>
 
+        <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </span>
+      </span>
+    </template>
         <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
           <i class="fa-solid fa-triangle-exclamation"></i>
         </span>
@@ -78,8 +87,24 @@ const props = defineProps([
 
 const documentViewer = ref(null)
 //const playingAudios = props.soundManager?.playingAudios 
+//const playingAudios = props.soundManager?.playingAudios 
 
 const highlightRules = [
+  { match: /(?<=^|>)(\b[\w ']+\b(:|\t))/gi, className: 'name-highlight', types:[lineTypeLabel.character,lineTypeLabel.dialogue] }
+  ,{ match: /(?<=(:|\t))(.*)$/gi, className: 'textContent', types:[lineTypeLabel.character,lineTypeLabel.dialogue] }
+]
+
+function toHTML(line) {
+  let html=wrapWithSpans(line,highlightRules)
+
+  html=html.replace(/\t/g,'<span class="tab"></span>') // replace tabs with a span
+  // Then wrap paragraphs
+  html = html
+    .split(/\r?\n\r?\n/) // split on double line breaks (paragraphs)
+    .map(p => `${p.replace(/\r?\n/g, '<br>')}`)
+    .join('')
+  return html
+}
   { match: /(?<=^|>)(\b[\w ']+\b(:|\t))/gi, className: 'name-highlight', types:[lineTypeLabel.character,lineTypeLabel.dialogue] }
   ,{ match: /(?<=(:|\t))(.*)$/gi, className: 'textContent', types:[lineTypeLabel.character,lineTypeLabel.dialogue] }
 ]
