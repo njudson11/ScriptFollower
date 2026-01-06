@@ -61,7 +61,6 @@ import DocumentViewer from './components/DocumentViewer.vue'
 import { DocumentProcessor } from './modules/documentProcessor'
 import { useSpeechRecognition } from './modules/speechRecognition'
 import { findClosestLine2 } from './modules/textMatcher'
-import { findClosestLine2 } from './modules/textMatcher'
 import { SoundProcessor } from './modules/soundProcessor'
 import { SoundManager } from './modules/soundManager'
 import { generateSoundCueCSV}  from './modules/utilities'
@@ -232,9 +231,6 @@ watch(() => state.userSelectedLineIdx, async (newIdx) => {
   scrollToLineIndex(newIdx)
 })
 
-function scrollToLineIndex(newIdx){
-  scrollToLineIndex(newIdx)
-})
 
 function scrollToLineIndex(newIdx){
   if (newIdx === -1) {

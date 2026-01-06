@@ -1,4 +1,3 @@
-
 .sound-cue {
   background-color: #ff0000;
   color: white;
@@ -104,22 +103,13 @@
 
 .document-viewer .sound-cue {
   margin-bottom: 1em;
-.Sound_20_A{
-  height: reset;
 }
-
-.document-viewer .sound-cue {
-  margin-bottom: 1em;
-}
-
-.light{
 
 .light{
 
 }
 
 .Stage_20_Direction {
-
 
 }
 
@@ -182,8 +172,6 @@
     text-indent: -4rem;
 }
 
-
 .dialogue {
-  vertical-align: top;
   display: block;
 }

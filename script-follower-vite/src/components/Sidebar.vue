@@ -18,13 +18,8 @@
       :style="getSidebarItemStyle(item)"
       :data-line-idx="item.idx"
       :data-sound-ref="item.ref || null"
-      :data-sound-ref="item.ref || null"
       @click="selectSidebarItem(item)"
     >        
-      <span class="sound-controls" v-if="item.type=='SOUND'">
-          <button 
-            class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item.ref)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
-            <span v-if="soundManager.playingAudios && soundManager.playingAudios.value && soundManager.playingAudios.value[item.ref]">
       <span class="sound-controls" v-if="item.type=='SOUND'">
           <button 
             class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item.ref)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
@@ -142,10 +137,6 @@ function isSidebarItemNext(item) {
 }
 
 function getSoundProgress(ref) {
-  if (!props.soundManager || !props.soundManager.playingAudios || !props.soundManager.playingAudios.value) {
-    return 0
-  }
-  const audioState = props.soundManager.playingAudios.value[ref]
   if (!props.soundManager || !props.soundManager.playingAudios || !props.soundManager.playingAudios.value) {
     return 0
   }

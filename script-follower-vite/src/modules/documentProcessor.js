@@ -24,7 +24,6 @@ export class DocumentProcessor {
    */
   async loadFile(file) {
     this.lines.value = await this.processDocument(file)
-    this.lines.value = await this.processDocument(file)
   }
 
   /**
@@ -35,18 +34,15 @@ export class DocumentProcessor {
   async processDocument(file) {
     const ext = file.name.split('.').pop().toLowerCase()
     let processor=null;
-    let processor=null;
     if (ext === 'docx') {
       return await processDocx(file)
     } else if (ext === 'pdf') {
       return await processPdf(file)
     } else if (ext === 'odt') {
       processor= new odtProcessor()
-      processor= new odtProcessor()
     } else {
       throw new Error('Unsupported file type. Please upload a .docx, .odt, or .pdf file.')
     }
-    return await processor.processFile(file)
     return await processor.processFile(file)
   }
 
@@ -56,9 +52,6 @@ export class DocumentProcessor {
    */
   setText(newText) {
     this.text?.value && (this.text.value = newText)
-
-    this.text?.value && (this.text.value = newText)
-
   }
 
   /**
@@ -89,7 +82,6 @@ export class DocumentProcessor {
    */
   clearLocalStorage() {
     localStorage.removeItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
-    localStorage.removeItem(LS_SCRIPT_FOLLOWER_FILENAME)
   }
 
   /**

@@ -11,12 +11,11 @@ export class SoundManager {
    */
   playingAudios = ref({})
   onSoundEndCallbacks = []
-  onSoundEndCallbacks = []
 
   /**
    * @param {import('./soundProcessor').SoundProcessor} soundProcessor - An instance of SoundProcessor to find audio files.
    * @throws {Error} If a SoundProcessor instance is not provided.
-   */
+   */ 
   constructor(soundProcessor) {
     if (!soundProcessor) {
       throw new Error('SoundManager requires a SoundProcessor instance.')
@@ -53,13 +52,11 @@ export class SoundManager {
    */
   playSound(ref) {
     if (!this.isSoundAvailable(ref)) return;
-    if (!this.isSoundAvailable(ref)) return;
     const file = this.soundProcessor.findSoundFile(ref)
     if (!file) {
       console.warn(`Sound file for ref ${ref} not found.`)
       return
     }
-    let audio = this.soundProcessor.findPreloadedSound(ref)
     let audio = this.soundProcessor.findPreloadedSound(ref)
     const url = URL.createObjectURL(file)
     if (!audio) {
@@ -126,10 +123,7 @@ export class SoundManager {
         }
       }
     }
-        }
-      }
-    }
-
+ 
   /**
    * Stops a currently playing sound cue by its reference ID.
    * @param {string} ref - The reference ID of the sound cue.
