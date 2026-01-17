@@ -40,20 +40,20 @@
           :disabled="!soundManager.isSoundAvailable(line.ref) "
         >
            <span v-if="soundManager?.playingAudios.value && soundManager?.playingAudios?.value[line.ref]">
-              <i  class="fa-solid fa-stop"></i>
+              <font-awesome-icon icon="stop" />
             </span>
             <span v-else>
-              <i class="fa-solid fa-play"></i>
+              <font-awesome-icon icon="play" />
             </span>
         </button>
         <span v-if="soundManager.isPreloaded(line.ref)" class="sound-preloaded">
-          <i class="fa-solid fa-check"></i>
+          <font-awesome-icon icon="check" />
         </span>
         <span v-if="soundManager?.playingAudios?.value && soundManager?.playingAudios && soundManager?.playingAudios?.value[line.ref]" class="sound-time-left">
           {{ secondsToMinutes(soundManager.playingAudios?.value[line.ref].timeLeft) }}s left
         </span>
         <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
-          <i class="fa-solid fa-triangle-exclamation"></i>
+          <font-awesome-icon icon="triangle-exclamation" />
         </span>
       </span>
     </template>

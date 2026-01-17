@@ -153,11 +153,11 @@
   background-color: white;
   font-size: 0.9em;
   margin-left: 1em;
-  display: none;
+  background-color: #7ab8e3;
+  display: block;
 }
 
 .active-line .annotation{
-  background-color: #7ab8e3;
   display: block;
 }
 

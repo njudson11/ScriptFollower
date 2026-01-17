@@ -21,13 +21,13 @@
       @click="selectSidebarItem(item)"
     >        
       <span class="sound-controls" v-if="item.type=='SOUND'">
-          <button 
+          <button
             class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item.ref)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
             <span v-if="soundManager.playingAudios && soundManager.playingAudios.value && soundManager.playingAudios.value[item.ref]">
-              <i  class="fa-solid fa-stop"></i>
+              <font-awesome-icon icon="stop" />
             </span>
             <span v-else>
-              <i class="fa-solid fa-play"></i>
+              <font-awesome-icon icon="play" />
             </span>
           </button>
       </span>
