@@ -26,13 +26,14 @@ export class SoundManager {
   /**
    * Toggles playback for a sound cue by its reference ID.
    * If the sound is playing, it will be stopped. If it's stopped, it will be played.
-   * @param {string} ref - The reference ID of the sound cue.
+   * @param {object} line - The line object for the sound cue.
+   * @param {Array<object>} lines - The array of all document lines.
    */
-  playOrStopSound(ref) {
-    if (this.isPlaying(ref)) {
-      this.stopSound(ref)
+  playOrStopSound(line, lines) {
+    if (this.isPlaying(line.ref)) {
+      this.stopSound(line.ref)
     } else {
-      this.playSound(ref)
+      this.playSound(line, lines)
     }
   }
 
@@ -47,10 +48,29 @@ export class SoundManager {
 
   /**
    * Plays a sound cue by its reference ID.
-   * @param {string} ref - The reference ID of the sound cue.
+   * @param {object} line - The line object for the sound cue.
+   * @param {Array<object>} lines - The array of all document lines.
    * @private
    */
-  playSound(ref) {
+  playSound(line, lines) {
+    const ref = line.ref;
+    if (line.soundCue && line.soundCue.stopAll) {
+      this.stopAllSounds();
+    }
+    if (line.soundCue && line.soundCue.stopPrev) {
+      const currentIdx = lines.findIndex(l => l.idx === line.idx);
+      if (currentIdx > 0) {
+        for (let i = currentIdx - 1; i >= 0; i--) {
+          const prevLine = lines[i];
+          if (prevLine.type === 'SOUND') {
+            if (this.isPlaying(prevLine.ref)) {
+              this.stopSound(prevLine.ref);
+            }
+            break; 
+          }
+        }
+      }
+    }
     if (!this.isSoundAvailable(ref)) return;
     const file = this.soundProcessor.findSoundFile(ref)
     if (!file) {
@@ -59,9 +79,6 @@ export class SoundManager {
     }
     let audio = this.soundProcessor.findPreloadedSound(ref)
     const url = URL.createObjectURL(file)
-    if (!audio) {
-      audio = new Audio(url)
-    }
     if (!audio) {
       audio = new Audio(url)
     }

@@ -22,7 +22,7 @@
     >        
       <span class="sound-controls" v-if="item.type=='SOUND'">
           <button
-            class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item.ref)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
+            class="play-sound-btn" @click.stop="soundManager.playOrStopSound(item)" :disabled="!soundManager || !soundManager.isSoundAvailable(item.ref) " >
             <span v-if="soundManager.playingAudios && soundManager.playingAudios.value && soundManager.playingAudios.value[item.ref]">
               <font-awesome-icon icon="stop" />
             </span>

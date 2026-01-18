@@ -43,6 +43,76 @@ export function extractSoundRef(line) {
   return match ? match[1] : null
 }
 
+export function extractSoundCue(lineText) {
+  const soundCue = {
+    stopAll: false,
+    stopPrev: false,
+    volume: 100,
+    balance: 0,
+    channel: 'A'
+  };
+  let cleanText = lineText;
+
+  const match = lineText.match(/\{([^}]+)\}\s*$/);
+  if (match) {
+    const settingsStr = match[1];
+    const parts = settingsStr.split(',');
+    parts.forEach(part => {
+      const [key, value] = part.split(':').map(s => s.trim());
+      switch (key) {
+        case 'stopAll':
+          soundCue.stopAll = value === 'true';
+          break;
+        case 'stopPrev':
+          soundCue.stopPrev = value === 'true';
+          break;
+        case 'vol':
+          soundCue.volume = parseInt(value, 10);
+          break;
+        case 'bal':
+          soundCue.balance = parseInt(value, 10);
+          break;
+        case 'chan':
+          soundCue.channel = value;
+          break;
+      }
+    });
+    cleanText = lineText.replace(/\{([^}]+)\}\s*$/, '').trim();
+  }
+  return { soundCue, cleanText };
+}
+
+export function generateSoundCueNotation(soundCue) {
+  if (!soundCue) {
+    return '';
+  }
+
+  const parts = [];
+  if (soundCue.stopAll) {
+    parts.push('stopAll:true');
+  }
+  if (soundCue.stopPrev) {
+    parts.push('stopPrev:true');
+  }
+  if (soundCue.volume !== 100) {
+    parts.push(`vol:${soundCue.volume}`);
+  }
+  if (soundCue.balance !== 0) {
+    parts.push(`bal:${soundCue.balance}`);
+  }
+  if (soundCue.channel !== 'A') {
+    parts.push(`chan:${soundCue.channel}`);
+  }
+
+  if (parts.length === 0) {
+    return '';
+  }
+
+  return ` {${parts.join(', ')}}`;
+}
+
+
+
 /**
  * Extracts the technical description from a line.
  * @param {import('./documentProcessor').lineDefinition} line - The line to extract the description from.

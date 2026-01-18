@@ -36,7 +36,7 @@
       <span class="sound-controls">
         <button
           class="play-sound-btn" 
-          @click.stop="soundManager.playOrStopSound(line.ref)" 
+          @click.stop="soundManager.playOrStopSound(line, lines)" 
           :disabled="!soundManager.isSoundAvailable(line.ref) "
         >
            <span v-if="soundManager?.playingAudios.value && soundManager?.playingAudios?.value[line.ref]">
@@ -55,6 +55,29 @@
         <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
           <font-awesome-icon icon="triangle-exclamation" />
         </span>
+        <div class="sound-controls-flex" v-if="idx === state.userSelectedLineIdx">
+          <label>
+            Stop All: <input type="checkbox" v-model="line.soundCue.stopAll" />
+          </label>
+          <label>
+            Stop Prev: <input type="checkbox" v-model="line.soundCue.stopPrev" />
+          </label>
+          <label>
+            Volume: <input type="range" min="0" max="100" v-model="line.soundCue.volume" /> <input type="number" min="0" max="100" v-model="line.soundCue.volume" />%
+          </label>
+          <label>
+            Balance (L/R): <input type="range" min="-100" max="100" v-model="line.soundCue.balance" /> 
+            L <input type="number" min="0" max="100" :value="getBalanceL(line.soundCue.balance)" @input="setBalanceFromL(line, $event.target.value)" />% 
+            R <input type="number" min="0" max="100" :value="getBalanceR(line.soundCue.balance)" @input="setBalanceFromR(line, $event.target.value)" />%
+          </label>
+          <label>
+            Channel:
+            <select v-model="line.soundCue.channel">
+              <option value="A">A Output</option>
+              <option value="B">B Output</option>
+            </select>
+          </label>
+        </div>
       </span>
     </template>
     </p>
@@ -94,6 +117,20 @@ function toHTML(line) {
     .join('')
   return html
 }
+
+function getBalanceL(balance) {
+  return 50 - balance / 2;
+}
+function getBalanceR(balance) {
+  return 50 + balance / 2;
+}
+function setBalanceFromL(line, lValue) {
+  line.soundCue.balance = (50-lValue)*2;
+}
+function setBalanceFromR(line, rValue) {
+  line.soundCue.balance = (rValue-50)*2;
+}
+
 
 </script>
 
