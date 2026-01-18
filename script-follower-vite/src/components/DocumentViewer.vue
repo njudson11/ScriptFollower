@@ -63,7 +63,7 @@
             Stop Prev: <input type="checkbox" v-model="line.soundCue.stopPrev" />
           </label>
           <label>
-            Volume: <input type="range" min="0" max="100" v-model="line.soundCue.volume" /> <input type="number" min="0" max="100" v-model="line.soundCue.volume" />%
+            Volume: <input type="range" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" /> <input type="number" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" />%
           </label>
           <label>
             Balance (L/R): <input type="range" min="-100" max="100" v-model="line.soundCue.balance" /> 
@@ -129,6 +129,10 @@ function setBalanceFromL(line, lValue) {
 }
 function setBalanceFromR(line, rValue) {
   line.soundCue.balance = (rValue-50)*2;
+}
+
+function handleVolumeChange(line, volume) {
+  props.soundManager.setVolume(line.ref, volume);
 }
 
 

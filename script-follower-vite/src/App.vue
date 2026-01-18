@@ -249,11 +249,15 @@ function scrollToLineIndex(newIdx){
   }
 }
 
-function advanceLineOnSoundEnd(finishedRef) {
-  // If the current userSelectedLineIdx matches and it's not the last line, increment
-  const selectedLine = lines.value[state.userSelectedLineIdx]
-  if (selectedLine && selectedLine.ref === finishedRef) {
-    state.userSelectedLineIdx = state.userSelectedLineIdx + 1
+function advanceLineOnSoundEnd(finishedLine) {
+  // Find the index of the line that just finished.
+  const finishedLineIndex = lines.value.findIndex(l => l.idx === finishedLine.idx);
+
+  if (finishedLineIndex !== -1) {
+    // If the line was found, and it's the currently selected line, advance to the next one.
+    if (state.userSelectedLineIdx === finishedLineIndex && finishedLineIndex < lines.value.length - 1) {
+      selectUserLine(finishedLineIndex + 1);
+    }
   }
 }
 
@@ -266,17 +270,17 @@ function onKeyDown(e) {
   if (!userSelectedLine) return;
   if (e.code === 'Space' && userSelectedLine.type === 'SOUND') {
     const soundRef = userSelectedLine.ref;
-    const tempSoundManager = soundManager.value;
-    if (tempSoundManager.isSoundAvailable(soundRef)){
-      if (soundRef && tempSoundManager.isPlaying(soundRef)) {
-        tempSoundManager.stopSound(soundRef);
-      } else {
-        tempSoundManager.playSound(soundRef);
-        tempSoundManager.playSound(soundRef);
-        e.preventDefault();
-        return;
-      } 
+    if (soundManager.value.isSoundAvailable(soundRef)){
+      const wasPlaying = soundManager.value.isPlaying(soundRef);
+      soundManager.value.playOrStopSound(userSelectedLine, lines.value);
+      e.preventDefault();
+      if (wasPlaying) {
+        if (state.userSelectedLineIdx < lines.value.length - 1) {
+          selectUserLine(state.userSelectedLineIdx + 1);
+        }
+      }
     }
+    return; // Prevent fall-through
   }
   if (e.key === 'ArrowDown' || (!state.allowSpaceCharacter && e.code === 'Space')) {
     if (state.userSelectedLineIdx < lines.value.length - 1) {

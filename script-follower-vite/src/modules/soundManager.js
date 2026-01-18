@@ -83,6 +83,13 @@ export class SoundManager {
       audio = new Audio(url)
     }
 
+    // Set initial volume
+    if (line.soundCue) {
+      audio.volume = (line.soundCue.volume !== undefined ? line.soundCue.volume : 100) / 100;
+    } else {
+      audio.volume = 1;
+    }
+
     // Helper to start tracking playback
     const startTracking = () => {
       this.updatePlayingAudios(ref, audio, url)
@@ -102,7 +109,7 @@ export class SoundManager {
       if (this.playingAudios.value[ref]) {
         this.stopSound(ref)
         if (this.onSoundEndCallbacks.length > 0) {
-          this.onSoundEndCallbacks.forEach(callback => callback(ref))
+          this.onSoundEndCallbacks.forEach(callback => callback(line))
         }
       }
     }
@@ -124,8 +131,8 @@ export class SoundManager {
         }
         const newTimeLeft = Math.max(0, duration - audio.currentTime)
         sound.timeLeft = newTimeLeft
-        if (audio.ended || newTimeLeft <= 0) {
-          this.stopSound(ref)
+        if (newTimeLeft <= 0) {
+          clearInterval(interval)
         }
       }, 100)
 
@@ -165,6 +172,18 @@ export class SoundManager {
     Object.keys(this.playingAudios.value).forEach(ref => {
       this.stopSound(ref)
     })
+  }
+
+  /**
+   * Sets the volume for a currently playing sound.
+   * @param {string} ref - The reference ID of the sound cue.
+   * @param {number} volume - The volume level from 0 to 100.
+   */
+  setVolume(ref, volume) {
+    const sound = this.playingAudios.value[ref];
+    if (sound && sound.audio) {
+      sound.audio.volume = parseFloat(volume) / 100;
+    }
   }
 
     /**
