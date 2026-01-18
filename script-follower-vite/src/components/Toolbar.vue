@@ -16,6 +16,23 @@
         <span v-if="state.soundFolderPath" class="soundFolderPath">{{ state.soundFolderPath }}</span>
       </label>
       <button class="btn btn-success btn-sm ms-4" @click="$emit('download-sound-csv')" :disabled="!state.filename" >Download Sound CSV</button> 
+
+      <!-- New Logical Channel and Output Device Selection -->
+      <div class="channel-output-selection ms-4">
+        <label>
+          Logical Channel:
+          <select :value="props.selectedLogicalChannel" @change="$emit('update:selectedLogicalChannel', $event.target.value)">
+            <option v-for="channel in props.logicalChannels" :key="channel" :value="channel">{{ channel }}</option>
+          </select>
+        </label>
+        <label class="ms-2">
+          Maps to Output:
+          <select :value="currentPhysicalOutputId" @change="onPhysicalOutputChange($event.target.value)">
+            <option value="">Default System Output</option> <!-- Option for default -->
+            <option v-for="device in props.outputDevices" :key="device.deviceId" :value="device.deviceId">{{ device.label }}</option>
+          </select>
+        </label>
+      </div>
     </div>
 
 
@@ -62,15 +79,33 @@
 <script setup>
 
 
-import { ref ,watch, onMounted, onUnmounted } from 'vue'
+import { ref ,watch, onMounted, onUnmounted, computed } from 'vue'
 import { isMobileSize } from '../modules/utilities.js'
 
 
 const props = defineProps({
   selectedLine: Object,
-  state: Object
+  state: Object,
+  outputDevices: Array,
+  logicalChannels: Array,
+  selectedLogicalChannel: String,
+  channelOutputMap: Object
 })
-const emit = defineEmits(['update:listening','update:autoscroll','select-sound-folder','file-loaded','reload-file','reset-view','clear-document','goto-page-number','find-text','open-google-picker','download-sound-csv'])
+const emit = defineEmits([
+  'update:listening',
+  'update:autoscroll',
+  'select-sound-folder',
+  'file-loaded',
+  'reload-file',
+  'reset-view',
+  'clear-document',
+  'goto-page-number',
+  'find-text',
+  'open-google-picker',
+  'download-sound-csv',
+  'update:selectedLogicalChannel',
+  'update:channelOutputMap'
+])
 const base = import.meta.env.BASE_URL
 const pageNumberInput = ref('')
 const findText = ref('')
@@ -84,6 +119,14 @@ function clearDocument(event) { emit('clear-document', event)}
 function onFolderChange(e) { emit('select-sound-folder', e)}
 function onPageNumberChange(e) { emit('goto-page-number', Number(pageNumberInput.value))}
 function onFindNext(e) { emit('find-text', findText.value) }
+
+const currentPhysicalOutputId = computed(() => {
+  return props.channelOutputMap[props.selectedLogicalChannel] || '';
+});
+
+function onPhysicalOutputChange(newDeviceId) {
+  emit('update:channelOutputMap', props.selectedLogicalChannel, newDeviceId);
+}
 
 watch(
   () => props.selectedLine?.pageNumber,

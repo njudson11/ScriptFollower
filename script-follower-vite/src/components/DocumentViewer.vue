@@ -73,8 +73,7 @@
           <label>
             Channel:
             <select v-model="line.soundCue.channel">
-              <option value="A">A Output</option>
-              <option value="B">B Output</option>
+              <option v-for="channel in props.logicalChannels" :key="channel" :value="channel">{{ channel }} Output</option>
             </select>
           </label>
         </div>
@@ -89,13 +88,17 @@ import { ref } from 'vue'
 import { secondsToMinutes, wrapWithSpans}  from '../modules/utilities'
 import { lineTypeDocClassMap, lineTypeLabel } from '../modules/constants.js'
 
-const props = defineProps([
-  'lines',
-  'setActiveLineEl', 
-  'selectUserLine', 
-  'soundManager',
-  'state'
-])
+const props = defineProps({
+  lines: Array,
+  setActiveLineEl: Function,
+  selectUserLine: Function,
+  soundManager: Object,
+  state: Object,
+  logicalChannels: {
+    type: Array,
+    default: () => []
+  }
+})
 
 const documentViewer = ref(null)
 //const playingAudios = props.soundManager?.playingAudios 

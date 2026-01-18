@@ -25,6 +25,9 @@ export class WebAudioSoundManager {
     this.playingAudios = reactive({}) // Now reactive object
     this.onSoundEndCallbacks = [] // Explicitly initialize here
 
+    this.channelOutputMap = reactive({}); // New: Map of logical channel to deviceId
+    this.mediaStreamDestinations = reactive({}); // New: Stores { destinationNode, audioElement } for each deviceId
+
     // Initialize AudioContext
     try {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
@@ -118,10 +121,27 @@ export class WebAudioSoundManager {
         pannerNode.pan.value = 0
       }
 
-      // Connect nodes: source -> gain -> panner -> destination
+      // Connect nodes: source -> gain -> panner -> MediaStreamDestinationNode for logical channel
       sourceNode.connect(gainNode)
       gainNode.connect(pannerNode)
-      pannerNode.connect(this.audioContext.destination)
+      
+      let targetLogicalChannel = line.soundCue.channel || 'A';
+      let targetDeviceId = this.channelOutputMap[targetLogicalChannel]; // Get deviceId from map
+
+      if (!targetDeviceId && this.audioContext.sinkId) { // Fallback to current AudioContext sinkId if mapping missing
+          targetDeviceId = this.audioContext.sinkId;
+      } else if (!targetDeviceId) {
+          targetDeviceId = 'default'; // Final fallback to browser default
+      }
+
+      const destinationInfo = this.getOrCreateMediaStreamDestination(targetDeviceId);
+      if (destinationInfo && destinationInfo.destinationNode) {
+        pannerNode.connect(destinationInfo.destinationNode);
+      } else {
+        // Fallback if destination node could not be created
+        pannerNode.connect(this.audioContext.destination);
+      }
+
 
       // Start tracking playback
       const startTracking = () => {
@@ -237,6 +257,74 @@ export class WebAudioSoundManager {
   }
 
   /**
+   * Sets the audio output device for the AudioContext.
+   * @param {string} deviceId - The deviceId of the audio output device.
+   */
+  async setOutputDevice(deviceId) {
+    if (this.audioContext && typeof this.audioContext.setSinkId === 'function') {
+      try {
+        await this.audioContext.setSinkId(deviceId);
+        console.log(`Audio output set to device: ${deviceId}`);
+      } catch (error) {
+        console.error('Error setting audio output device:', error);
+      }
+    } else {
+      console.warn('setSinkId is not supported in this browser or AudioContext is not available.');
+    }
+  }
+
+  /**
+   * Updates the internal mapping of logical channels to physical output device IDs.
+   * @param {object} newMap - An object mapping logical channel names to device IDs.
+   */
+  setChannelOutputMap(newMap) {
+    Object.assign(this.channelOutputMap, newMap);
+  }
+
+  /**
+   * Gets or creates a MediaStreamDestinationNode and associated HTMLAudioElement for a given deviceId.
+   * @param {string} deviceId - The ID of the audio output device.
+   * @returns {object} An object containing { destinationNode, audioElement }
+   */
+  getOrCreateMediaStreamDestination(deviceId) {
+    if (!this.audioContext) {
+      console.error("AudioContext not initialized.");
+      return null;
+    }
+    
+    // Use 'default' as deviceId if an empty string is provided, as per Web Audio API
+    const effectiveDeviceId = deviceId || 'default';
+
+    if (this.mediaStreamDestinations[effectiveDeviceId]) {
+      return this.mediaStreamDestinations[effectiveDeviceId];
+    }
+
+    const destinationNode = this.audioContext.createMediaStreamDestination();
+    const audioElement = new Audio();
+    audioElement.srcObject = destinationNode.stream;
+    audioElement.muted = false; // Important: Mute to avoid double audio
+    
+    // Set the sink ID for the HTMLAudioElement
+    if (typeof audioElement.setSinkId === 'function') {
+      audioElement.setSinkId(effectiveDeviceId)
+        .then(() => {
+          console.log(`MediaStreamDestinationNode for deviceId '${effectiveDeviceId}' initialized.`);
+        })
+        .catch(error => {
+          console.error(`Error setting sinkId for device '${effectiveDeviceId}':`, error);
+        });
+    } else {
+      console.warn(`setSinkId is not supported for HTMLAudioElement in this browser for deviceId '${effectiveDeviceId}'.`);
+    }
+
+    // Start playback of the muted audio element to activate the sink
+    audioElement.play().catch(e => console.warn(`Failed to play muted audio element for device ${effectiveDeviceId}:`, e));
+
+    this.mediaStreamDestinations[effectiveDeviceId] = { destinationNode, audioElement };
+    return this.mediaStreamDestinations[effectiveDeviceId];
+  }
+
+  /**
    * Checks if a sound matching the given reference ID is currently playing.
    * @param {string} ref - The reference ID of the sound cue.
    * @returns {boolean} - True if the sound is playing, false otherwise.
@@ -261,6 +349,16 @@ export class WebAudioSoundManager {
     this.stopAllSounds()
     Object.keys(this.playingAudios).forEach(key => delete this.playingAudios[key])
     this.soundProcessor.clear()
+    
+    // Clear all media stream destinations
+    Object.values(this.mediaStreamDestinations).forEach(({ audioElement }) => {
+      audioElement.pause();
+      audioElement.srcObject = null;
+      // Disconnect destination node if necessary, although closing AudioContext might handle this.
+    });
+    Object.keys(this.mediaStreamDestinations).forEach(key => delete this.mediaStreamDestinations[key]);
+
+
     if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close()
       this.audioContext = null

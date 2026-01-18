@@ -12,8 +12,15 @@
       @clear-document="clearDocument"
       @select-sound-folder="handleSoundFolderChange"
       @goto-page-number="highlightLineByPageNumber"
-      @find-text="findNextText" 
+      @find-text="findNextText"
       @download-sound-csv="downloadSoundCSV"
+
+      :outputDevices="state.outputDevices"
+      :logicalChannels="state.logicalChannels"
+      :selectedLogicalChannel="state.selectedLogicalChannel"
+      :channelOutputMap="state.channelOutputMap"
+      @update:selectedLogicalChannel="updateSelectedLogicalChannel"
+      @update:channelOutputMap="updateChannelOutputMap"
     />
     <div class="main-content" style="display: flex;">
       <Sidebar
@@ -46,6 +53,7 @@
         :selectUserLine="selectUserLine"
         :soundManager="soundManager"
         :state="state"
+        :logicalChannels="state.logicalChannels"
         style="flex: 1;"
       />
     </div>
@@ -85,7 +93,12 @@ const state = reactive({
   soundFolderPath: '',
   filename: '',
   loading: false,
-  allowSpaceCharacter: false
+  allowSpaceCharacter: false,
+  outputDevices: [],       // New: Array of available audio output devices
+  selectedOutputDeviceId: '', // New: ID of the selected audio output device
+  logicalChannels: ['A', 'B'], // New: List of user-defined logical channels, default to 'A'
+  selectedLogicalChannel: 'A', // New: Currently selected logical channel in the UI, default to 'A'
+  channelOutputMap: reactive({ 'A': '' }) // New: Maps logical channel to deviceId, default to 'A'
 })
 
 const docProcessor = new DocumentProcessor()
@@ -104,6 +117,13 @@ const sidebarVisible = ref(!isMobile.value) // Add this line
 
 let restartAttempts = 0
 let restartTimeout = null
+
+// Watch for selectedOutputDeviceId to initialize A channel's mapping
+watch(() => state.selectedOutputDeviceId, (newDeviceId) => {
+  if (newDeviceId && !state.channelOutputMap['A']) {
+    state.channelOutputMap['A'] = newDeviceId;
+  }
+}, { immediate: true });
 
 soundManager.value.onSoundEndCallbacks.push(advanceLineOnSoundEnd);
 
@@ -133,6 +153,41 @@ function handleSoundFolderChange(e) {
   soundProcessor.value = new SoundProcessor(e.target.files)
   soundManager.value = new WebAudioSoundManager(soundProcessor.value)
   state.soundFolderPath = e.target.files[0]?.webkitRelativePath?.split('/')[0] || ''
+}
+
+// Function to enumerate available audio output devices
+async function enumerateAudioOutputDevices() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+    console.warn('enumerateDevices() not supported.');
+    return;
+  }
+  try {
+    // Request permission for media devices (even though we only need output, this often triggers permission)
+    // A trick to get labels filled for devices on some browsers
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); 
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    state.outputDevices = devices.filter(device => device.kind === 'audiooutput');
+    // Set default output device if available
+    if (state.outputDevices.length > 0) {
+      state.selectedOutputDeviceId = state.outputDevices[0].deviceId;
+    }
+  } catch (err) {
+    console.error('Error enumerating devices:', err);
+    state.error = 'Error accessing media devices. Please ensure permissions are granted.';
+  }
+}
+
+function updateSelectedLogicalChannel(newChannel) {
+  state.selectedLogicalChannel = newChannel;
+}
+
+function updateChannelOutputMap(channel, deviceId) {
+  state.channelOutputMap[channel] = deviceId;
+  // Also inform the sound manager about the updated mapping
+  if (soundManager.value && typeof soundManager.value.setChannelOutputMap === 'function') {
+    soundManager.value.setChannelOutputMap(state.channelOutputMap);
+  }
 }
 
 function handleSpeechError(err) {
@@ -314,6 +369,7 @@ onMounted(() => {
   const viewer = document.querySelector('.document-viewer')
   if (viewer) viewer.focus()
   requestWakeLock()
+  enumerateAudioOutputDevices(); // Call to enumerate devices
 
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('resize', handleResize)
@@ -400,6 +456,13 @@ watch(() => state.speechActiveLineIdx, (newIdx) => {
     state.userSelectedLineIdx = newIdx
   }
 })
+
+// Watch for selectedOutputDeviceId changes to update the audio output device
+watch(() => state.selectedOutputDeviceId, async (newDeviceId) => {
+  if (newDeviceId && soundManager.value) {
+    await soundManager.value.setOutputDevice(newDeviceId);
+  }
+});
 
 watch(() => state.listening, (val) => {
   if (!speech.isSupported) {
