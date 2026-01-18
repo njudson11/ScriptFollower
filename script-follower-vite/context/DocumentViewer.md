@@ -24,7 +24,13 @@ The `DocumentViewer.vue` component is the primary view for displaying the conten
     - `active-line-no-match`: The line that is highlighted by speech recognition, but does not match the expected text.
 - Each line has a `click` event handler that calls the `selectUserLine` function with the line's index.
 - The `toHTML` function is used to format the text of each line, including highlighting character names and dialogue.
-- If a line is of type `SOUND`, it will display a set of controls for playing, stopping, and monitoring the sound.
+- If a line is of type `SOUND`, it will display a set of controls for playing, stopping, and monitoring the sound. The play button's `click` event calls `soundManager.playOrStopSound(line, lines)`, passing both the specific line and the entire array of lines.
+- When a `SOUND` line is the currently selected line (`state.userSelectedLineIdx`), an expanded set of advanced controls becomes visible:
+    - **Stop All**: A checkbox that, when ticked, causes all other playing sounds to stop when this cue is played.
+    - **Stop Prev**: A checkbox that, when ticked, causes the previous sound cue in the script to stop when this cue is played.
+    - **Volume**: A slider and number input to control the sound's volume.
+    - **Balance (L/R)**: A slider and number inputs to control the left/right stereo balance.
+    - **Channel**: A dropdown to select the audio output channel (A or B).
 
 ### Script
 

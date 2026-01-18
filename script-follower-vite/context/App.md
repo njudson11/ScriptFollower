@@ -45,7 +45,7 @@ The component uses a `reactive` object named `state` to manage various global ap
     - `handleSpeechError(err)`: Manages speech recognition errors and restart attempts.
     - `restartSpeechRecognition()`: Restarts the speech recognition service.
     - `speech` object: Provides `start()` and `stop()` methods for controlling listening.
-- **Sound Management**: Integrates `SoundProcessor` and `SoundManager` for handling audio cues.
+- **Sound Management**: Integrates `SoundProcessor` and `SoundManager` for handling audio cues. The `SoundManager` also handles advanced playback options based on properties set on the sound cue line (e.g., stopping all other cues or stopping the previous cue).
     - `handleSoundFolderChange(e)`: Sets the sound folder based on user selection.
     - `soundManager.value.onSoundEndCallbacks.push(advanceLineOnSoundEnd)`: Advances the `userSelectedLineIdx` when a sound ends.
     - `downloadSoundCSV()`: Generates and downloads a CSV file of sound cues.

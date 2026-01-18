@@ -25,15 +25,18 @@ This is the main class that encapsulates all sound management logic.
 
 ### Methods
 
-- **`playOrStopSound(ref)`**: A public toggle function. If the sound with the given `ref` is playing, it stops it; otherwise, it plays it. This is the main method used by UI buttons.
+- **`playOrStopSound(line, lines)`**: A public toggle function. If the sound is playing, it stops it; otherwise, it plays it. This is the main method used by UI buttons.
+    - `line`: The line object corresponding to the sound cue.
+    - `lines`: The full array of document lines, used to find the previous cue for the "Stop Prev" functionality.
 
-- **`playSound(ref)`**: The internal method to start playback.
-    1.  Checks if the sound is available via `soundProcessor`.
-    2.  Finds the sound file or preloaded audio object from `soundProcessor`.
-    3.  Creates a new `Audio` object if one isn't preloaded.
-    4.  Sets up an `onloadedmetadata` event to get the audio's duration and then calls `updatePlayingAudios` to add the sound to the reactive `playingAudios` record.
-    5.  Calls `audio.play()`.
-    6.  Sets up an `onended` event to clean up the sound state and trigger the `onSoundEndCallbacks`.
+- **`playSound(line, lines)`**: The internal method to start playback.
+    1.  **Stop Other Cues**: It first checks the line's `soundCue` properties. If `stopAll` is true, it stops all currently playing sounds. If `stopPrev` is true, it searches backwards through the `lines` array to find the most recent previous sound cue and stops it if it's playing.
+    2.  **Check Availability**: Checks if the sound is available via `soundProcessor`.
+    3.  **Get File**: Finds the sound file or preloaded audio object from `soundProcessor`.
+    4.  **Create Audio Object**: Creates a new `Audio` object if one isn't preloaded.
+    5.  **Track Playback**: Sets up an `onloadedmetadata` event to get the audio's duration and then calls `updatePlayingAudios` to add the sound to the reactive `playingAudios` record.
+    6.  **Play**: Calls `audio.play()`.
+    7.  **Handle End**: Sets up an `onended` event to clean up the sound state and trigger the `onSoundEndCallbacks`.
 
 - **`stopSound(ref)`**: Stops a currently playing sound.
     1.  Finds the sound in the `playingAudios` record.
