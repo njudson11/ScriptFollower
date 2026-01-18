@@ -62,7 +62,7 @@ import { DocumentProcessor } from './modules/documentProcessor'
 import { useSpeechRecognition } from './modules/speechRecognition'
 import { findClosestLine2 } from './modules/textMatcher'
 import { SoundProcessor } from './modules/soundProcessor'
-import { SoundManager } from './modules/soundManager'
+import { WebAudioSoundManager } from './modules/webAudioSoundManager'
 import { generateSoundCueCSV}  from './modules/utilities'
 import { stripHtmlAndPunctuation, isMobileSize } from './modules/utilities'
 import { appValues, lineTypeLabel } from './modules/constants.js'
@@ -93,7 +93,7 @@ const lines = ref(docProcessor.lines)
 const dialogueLines = computed(() => lines.value.filter(line => (line.type === lineTypeLabel.dialogue || line.type === lineTypeLabel.character)));
 const fileInput = ref(null)
 const soundProcessor = ref(new SoundProcessor([]))
-const soundManager = ref(new SoundManager(soundProcessor.value))
+const soundManager = ref(new WebAudioSoundManager(soundProcessor.value))
 const playingAudios = soundManager.value.playingAudios
 const activeLineEl = ref(null)
 const sidebarWidth = ref(appValues.sidebarDefaultWidth) // default width in px
@@ -131,7 +131,7 @@ async function handleFile(event) {
 
 function handleSoundFolderChange(e) {
   soundProcessor.value = new SoundProcessor(e.target.files)
-  soundManager.value = new SoundManager(soundProcessor.value)
+  soundManager.value = new WebAudioSoundManager(soundProcessor.value)
   state.soundFolderPath = e.target.files[0]?.webkitRelativePath?.split('/')[0] || ''
 }
 
@@ -250,11 +250,9 @@ function scrollToLineIndex(newIdx){
 }
 
 function advanceLineOnSoundEnd(finishedLine) {
-  // Find the index of the line that just finished.
   const finishedLineIndex = lines.value.findIndex(l => l.idx === finishedLine.idx);
 
   if (finishedLineIndex !== -1) {
-    // If the line was found, and it's the currently selected line, advance to the next one.
     if (state.userSelectedLineIdx === finishedLineIndex && finishedLineIndex < lines.value.length - 1) {
       selectUserLine(finishedLineIndex + 1);
     }

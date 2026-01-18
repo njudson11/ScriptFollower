@@ -1,6 +1,6 @@
 {
     "name": "script-follower",
-    "version": "2.7.2",
+    "version": "2.7.3",
     "description": "A desktop and web app for following scripts with speech recognition, autoscroll and sound playback features.",
     "main": "src/electron-main.js",
     "type": "module",

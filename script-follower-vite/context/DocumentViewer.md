@@ -28,8 +28,8 @@ The `DocumentViewer.vue` component is the primary view for displaying the conten
 - When a `SOUND` line is the currently selected line (`state.userSelectedLineIdx`), an expanded set of advanced controls becomes visible:
     - **Stop All**: A checkbox that, when ticked, causes all other playing sounds to stop when this cue is played.
     - **Stop Prev**: A checkbox that, when ticked, causes the previous sound cue in the script to stop when this cue is played.
-    - **Volume**: A slider and number input to control the sound's volume.
-    - **Balance (L/R)**: A slider and number inputs to control the left/right stereo balance.
+    - **Volume**: A slider and number input with `@input` event listeners calling `handleVolumeChange(line, $event.target.value)` to control the sound's volume.
+    - **Balance (L/R)**: A slider and number inputs with `@input` event listeners calling `handleBalanceChange(line, $event.target.value)` to control the left/right stereo balance.
     - **Channel**: A dropdown to select the audio output channel (A or B).
 
 ### Script
@@ -40,6 +40,8 @@ The `DocumentViewer.vue` component is the primary view for displaying the conten
 - The component imports and uses the following modules:
     - `secondsToMinutes` and `wrapWithSpans` from `../modules/utilities.js`.
     - `lineTypeDocClassMap` and `lineTypeLabel` from `../modules/constants.js`.
+- `handleVolumeChange(line, volume)`: A function that calls `props.soundManager.setVolume(line.ref, volume)` to update the volume of a playing sound.
+- `handleBalanceChange(line, balance)`: A function that calls `props.soundManager.setBalance(line.ref, balance)` to update the stereo balance of a playing sound.
 
 ### Styling
 

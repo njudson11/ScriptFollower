@@ -39,7 +39,7 @@
           @click.stop="soundManager.playOrStopSound(line, lines)" 
           :disabled="!soundManager.isSoundAvailable(line.ref) "
         >
-           <span v-if="soundManager?.playingAudios.value && soundManager?.playingAudios?.value[line.ref]">
+           <span v-if="soundManager?.playingAudios && soundManager?.playingAudios[line.ref]">
               <font-awesome-icon icon="stop" />
             </span>
             <span v-else>
@@ -49,8 +49,8 @@
         <span v-if="soundManager.isPreloaded(line.ref)" class="sound-preloaded">
           <font-awesome-icon icon="check" />
         </span>
-        <span v-if="soundManager?.playingAudios?.value && soundManager?.playingAudios && soundManager?.playingAudios?.value[line.ref]" class="sound-time-left">
-          {{ secondsToMinutes(soundManager.playingAudios?.value[line.ref].timeLeft) }}s left
+        <span v-if="soundManager?.playingAudios && soundManager?.playingAudios[line.ref]" class="sound-time-left">
+          {{ secondsToMinutes(soundManager.playingAudios[line.ref].timeLeft) }}s left
         </span>
         <span v-if="!soundManager.isSoundAvailable(line.ref)" class="sound-missing">
           <font-awesome-icon icon="triangle-exclamation" />
@@ -66,7 +66,7 @@
             Volume: <input type="range" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" /> <input type="number" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" />%
           </label>
           <label>
-            Balance (L/R): <input type="range" min="-100" max="100" v-model="line.soundCue.balance" /> 
+            Balance (L/R): <input type="range" min="-100" max="100" v-model="line.soundCue.balance" @input="handleBalanceChange(line, $event.target.value)" /> 
             L <input type="number" min="0" max="100" :value="getBalanceL(line.soundCue.balance)" @input="setBalanceFromL(line, $event.target.value)" />% 
             R <input type="number" min="0" max="100" :value="getBalanceR(line.soundCue.balance)" @input="setBalanceFromR(line, $event.target.value)" />%
           </label>
@@ -133,6 +133,10 @@ function setBalanceFromR(line, rValue) {
 
 function handleVolumeChange(line, volume) {
   props.soundManager.setVolume(line.ref, volume);
+}
+
+function handleBalanceChange(line, balance) {
+  props.soundManager.setBalance(line.ref, balance);
 }
 
 
