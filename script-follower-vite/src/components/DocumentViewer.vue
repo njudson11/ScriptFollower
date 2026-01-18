@@ -30,6 +30,14 @@
     >
     <pre class="raw">{{ line.raw }}</pre>
     <span :class="line.style" v-html="toHTML(line)"></span>
+    <button
+      v-if="line.type === 'SOUND'"
+      class="copy-line-text-btn"
+      @click.stop="copyToClipboard(line.text)"
+      title="Copy sound cue text to clipboard"
+    >
+      <font-awesome-icon icon="copy" />
+    </button>
     <span v-if="line.annotation" class="annotation">[{{ line.annotation.creator }}:{{ line.annotation.content }}]</span>
 
     <template v-if="line.type=='SOUND' && line.style!='Removed'" >
@@ -56,24 +64,24 @@
           <font-awesome-icon icon="triangle-exclamation" />
         </span>
         <div class="sound-controls-flex" v-if="idx === state.userSelectedLineIdx">
-          <label>
+          <label class="stopAll">
             Stop All: <input type="checkbox" v-model="line.soundCue.stopAll" />
           </label>
-          <label>
+          <label class="stopPrev">
             Stop Prev: <input type="checkbox" v-model="line.soundCue.stopPrev" />
           </label>
-          <label>
+          <label class="volume">
             Volume: <input type="range" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" /> <input type="number" min="0" max="100" v-model="line.soundCue.volume" @input="handleVolumeChange(line, $event.target.value)" />%
           </label>
-          <label>
+          <label class="balance">
             Balance (L/R): <input type="range" min="-100" max="100" v-model="line.soundCue.balance" @input="handleBalanceChange(line, $event.target.value)" /> 
-            L <input type="number" min="0" max="100" :value="getBalanceL(line.soundCue.balance)" @input="setBalanceFromL(line, $event.target.value)" />% 
-            R <input type="number" min="0" max="100" :value="getBalanceR(line.soundCue.balance)" @input="setBalanceFromR(line, $event.target.value)" />%
+            <input class="balance-Left" type="number" min="0" max="100" :value="getBalanceL(line.soundCue.balance)" @input="setBalanceFromL(line, $event.target.value)" /> 
+            /<input class="balance-Right" type="number" min="0" max="100" :value="getBalanceR(line.soundCue.balance)" @input="setBalanceFromR(line, $event.target.value)" />%
           </label>
-          <label>
+          <label class="channel">
             Channel:
             <select v-model="line.soundCue.channel">
-              <option v-for="channel in props.logicalChannels" :key="channel" :value="channel">{{ channel }} Output</option>
+              <option v-for="channel in props.logicalChannels" :key="channel" :value="channel">{{ channel }}</option>
             </select>
           </label>
         </div>
@@ -142,7 +150,30 @@ function handleBalanceChange(line, balance) {
   props.soundManager.setBalance(line.ref, balance);
 }
 
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      console.log('Text copied to clipboard:', text);
+      // Could add temporary visual feedback here
+    })
+    .catch(err => {
+      console.error('Failed to copy text:', err);
+    });
+}
 
 </script>
 
 <style src="../css/documentViewer.css"></style>
+<style>
+.copy-line-text-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0;
+  font-size: 0.8em;
+  opacity: 1; /* Always visible */
+  vertical-align: middle; /* Align with text */
+}
+</style>

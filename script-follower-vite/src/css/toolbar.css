@@ -175,4 +175,7 @@ label{
   }
 }
 
-
+.channel-output-selection{
+  background-color: #ccc;
+  padding: 4px;
+}

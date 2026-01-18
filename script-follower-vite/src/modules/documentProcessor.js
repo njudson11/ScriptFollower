@@ -69,23 +69,26 @@ export class DocumentProcessor {
   restoreFromLocalStorage() {
     const saved = localStorage.getItem(LS_SCRIPT_FOLLOWER_DOCUMENT)
     if (saved) {
-      this.lines.value = JSON.parse(saved).map(line => {
-        // Create a new lineDefinition instance to ensure reactivity and proper methods
-        const newLine = new lineDefinition("");
-        Object.assign(newLine, line); // Copy properties from stored line
+      this.lines.value = JSON.parse(saved).map(lineData => {
+        // Reconstruct the original full text from the saved parts, as the 'text' getter is not serialized.
+        const fullText = (lineData._baseText || '') + generateSoundCueNotation(lineData.soundCue || {});
         
-        // Ensure soundCue is initialized if missing (for older saved data)
-        if (!newLine.soundCue) {
-          newLine.soundCue = {
-            stopAll: false,
-            stopPrev: false,
-            volume: 100,
-            balance: 0,
-            channel: 'A'
-          };
+        // Create a new lineDefinition instance. The constructor will parse the text
+        // and set up all derived properties like ref, cleanText, type, etc.
+        const newLine = new lineDefinition(fullText);
+        
+        // Restore properties that are not derived from the line's text content itself.
+        newLine.annotation = lineData.annotation;
+        newLine.outlineLevel = lineData.outlineLevel;
+        newLine.idx = lineData.idx;
+        newLine.raw = lineData.raw;
+
+        // Restore the style and re-run the tag/type derivation process,
+        // as style can influence the line's type.
+        if (lineData.style) {
+          newLine.setStyle(lineData.style);
         }
-        // Update _baseText based on the restored text and soundCue (re-parse notation)
-        newLine.updateBaseTextFromFullText(line.text || "");
+
         return newLine;
       })
     }

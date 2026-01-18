@@ -20,13 +20,13 @@
       <!-- New Logical Channel and Output Device Selection -->
       <div class="channel-output-selection ms-4">
         <label>
-          Logical Channel:
+          Channel:
           <select :value="props.selectedLogicalChannel" @change="$emit('update:selectedLogicalChannel', $event.target.value)">
             <option v-for="channel in props.logicalChannels" :key="channel" :value="channel">{{ channel }}</option>
           </select>
         </label>
         <label class="ms-2">
-          Maps to Output:
+          -> Output:
           <select :value="currentPhysicalOutputId" @change="onPhysicalOutputChange($event.target.value)">
             <option value="">Default System Output</option> <!-- Option for default -->
             <option v-for="device in props.outputDevices" :key="device.deviceId" :value="device.deviceId">{{ device.label }}</option>

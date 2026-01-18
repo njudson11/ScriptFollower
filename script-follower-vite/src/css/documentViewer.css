@@ -174,3 +174,17 @@
 .dialogue {
   display: block;
 }
+
+.sound-controls-flex label {
+    margin-right: 3px;
+    background-color: #d1e0f5;
+    padding: 2px;
+}
+
+.sound-controls-flex .volume input[type="number"] {
+  width: 3.5em;
+}
+
+.sound-controls-flex .balance input[type="number"] {
+  width: 3em;
+}
