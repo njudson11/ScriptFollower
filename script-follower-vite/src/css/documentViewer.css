@@ -40,7 +40,7 @@
 
 
 .textContent{
-    display: block;
+    display: inline;
     text-indent: 0;
 }
 

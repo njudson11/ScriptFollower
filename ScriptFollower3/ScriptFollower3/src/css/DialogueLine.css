@@ -1,0 +1,79 @@
+.script-line {
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s, border-color 0.2s;
+  border: 1px solid transparent; /* No border for non-active lines */
+}
+
+.script-line.active {
+  border-color: #f1f530;
+  border-width: 4px;
+  border-style: solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.527);
+}
+
+.line-type-badge,
+.line-meta {
+  display: none; /* Hide line type and line number */
+}
+
+.line-content {
+  display: flex; /* Changed to flex for horizontal alignment */
+  align-items: baseline; /* Align first line of dialogue with character name */
+}
+
+.character-name {
+  margin: 0;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.9em;
+  color: #424242;
+  flex-shrink: 0; /* Prevent character name from shrinking */
+  white-space: nowrap; /* Ensure character name stays on one line */
+  width: 8rem; /* Fixed width for character name to align dialogue */;
+}
+
+.dialogue-text-no-char{
+  margin-left: 8rem; /* Indent dialogue when no character name */;
+}
+
+.dialogue-text {
+  flex-grow: 1; /* Allows dialogue to take up remaining space */
+  font-size: 1em;
+  line-height: 1.4;
+  color: #212121;
+  white-space: pre-wrap; /* Preserve whitespace and wrap text */
+}ß
+ß
+.line-annotation {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+  width: 100%; /* Ensure annotation takes full width below dialogue */
+  text-indent: -20px; /* For hanging indent of annotation itself */
+  padding-left: 20px; /* Align annotation with dialogue indent */
+}
+
+.line-annotation-no-char {
+  margin-left: 30px; /* Indent when no character name */
+}
+
+.script-line.dialogue-line.context-sidebar {
+  font-size: 8px;
+}
+
+.script-line.dialogue-line.context-sidebar .character-name {
+  margin: 0;
+  font-weight: bold;
+  flex-shrink: 0; /* Prevent character name from shrinking */
+  white-space: nowrap; /* Ensure character name stays on one line */
+  width: unset;
+  font-size: unset;
+  text-transform: unset;
+}
+
+.dialogue-line.context-sidebar .dialogue-text-no-char{
+  margin:0; /* Remove indent for dialogue without character name in sidebar */
+}

@@ -1,0 +1,1 @@
+{"root":["./src/app.vue","./src/main.ts","./src/components/documentviewer.vue","./src/components/rightpanel.vue","./src/components/sidebar.vue","./src/components/toolbar.vue","./src/core/eventbus.ts","./src/core/featuremanager.ts","./src/core/lineselectionmanager.ts","./src/parsers/odtparser.ts","./src/store/appstore.ts","./src/types/core.ts"],"version":"5.9.3"}

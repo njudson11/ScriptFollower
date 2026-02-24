@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Dev Server",
+      "name": "Dev Server (Vite)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/script-follower-vite/node_modules/.bin/vite",
@@ -11,7 +11,7 @@
       "restart": true
     },
     {
-      "name": "Build",
+      "name": "Build (Vite)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/script-follower-vite/node_modules/.bin/vite",
@@ -22,7 +22,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Launch Chrome",
+      "name": "Launch Chrome (Vite)",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
@@ -31,12 +31,21 @@
       "preLaunchTask": "npm: run dev"
     },
     {
-      "name": "Attach Chrome",
+      "name": "Attach Chrome (Vite)",
       "type": "chrome",
       "request": "attach",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/script-follower-vite/src",
       "sourceMaps": true
+    },
+    {
+      "name": "Launch Chrome (SF3)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/ScriptFollower3/ScriptFollower3/src",
+      "sourceMaps": true,
+      "preLaunchTask": "npm: run dev"
     }
   ]
 }

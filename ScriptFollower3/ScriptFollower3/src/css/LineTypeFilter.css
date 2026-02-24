@@ -1,0 +1,40 @@
+/* LineTypeFilter.css */
+
+.line-type-filter-container {
+  padding: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);  
+  background-color: var(--background-color-secondary);
+}
+
+.filter-summary {
+  font-weight: bold;
+  cursor: pointer;
+  padding: 5px 0;
+  color: var(--text-color-primary);
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px; /* Adjust gap for vertical list */
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 10px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-option input[type="checkbox"] {
+  accent-color: var(--accent-color); /* Uses a theme-defined accent color */
+}
+
+.filter-option label {
+  color: var(--text-color-secondary);
+  font-size: 0.9em;
+  user-select: none; /* Prevent text selection on labels */
+}

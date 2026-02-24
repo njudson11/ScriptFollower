@@ -2,12 +2,35 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npm: run dev",
+      "label": "npm: run dev (Vite)",
       "type": "shell",
       "command": "npm",
       "args": ["run", "dev"],
       "options": {
         "cwd": "${workspaceFolder}/script-follower-vite"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*VITE.*ready in.*",
+          "endsPattern": "^.*Local:.*"
+        }
+      }
+    },
+    {
+      "label": "npm: run dev (SF3)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/ScriptFollower3/ScriptFollower3"
       },
       "isBackground": true,
       "problemMatcher": {

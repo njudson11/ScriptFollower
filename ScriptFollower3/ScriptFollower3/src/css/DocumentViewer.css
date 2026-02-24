@@ -2,12 +2,51 @@
   grid-area: viewer;
   flex: 1;
   overflow-y: auto;
-  background-color: #fafafa;
-  padding: 24px;
-  outline: none;
+  background-color: white; /* Changed to white */
+  padding: 1em;
+  font-size: 10pt;
 }
 
 .document-content {
-  max-width: 900px;
+  
   margin: 0 auto;
 }
+
+/* Specific Line Type Styles */
+.line-type-title {
+  font-size: 2em;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 1em;
+  color: #1a237e; /* Dark blue */
+}
+
+.line-type-title.line-subtype-subtitle {
+  font-size: 1.3em;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 1em;
+  margin-top: 0.5em;
+  color: #3f51b5; /* Indigo */
+}
+
+.line-type-scene-heading, .line-type-act-heading {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #5d4037; /* Brown */
+  border-bottom: 1px solid #d7ccc8; /* Light brown border */
+  padding-bottom: 5px;
+}
+
+.line-type-stage-direction {
+  font-style: italic;
+  text-align: left; /* Changed from center to left */
+  margin-left: 15%; /* Significant left margin */
+  margin-right: 15%; /* Significant right margin */
+  max-width: 70%; /* Ensures centering with auto margins */
+  margin: 0 auto; /* Center the block */
+  color: #4a148c; /* Dark purple for stage directions */
+}
+

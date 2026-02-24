@@ -6,10 +6,6 @@ export class SoundProcessor {
    */
   constructor(files = []) {
     this.audioMap = new Map()
-   // this.files = files // Array of File objects
-    this.setFiles(files)
-    this.audioMap = new Map()
-   // this.files = files // Array of File objects
     this.setFiles(files)
   }
 
@@ -45,6 +41,9 @@ export class SoundProcessor {
       const audio = new Audio(url)
       // Optionally, force preloading
       audio.preload = 'auto'
+      // Reset audio state to prevent pitch/playback issues
+      audio.playbackRate = 1
+      audio.currentTime = 0
       // Use the 4-digit prefix as the key
       const ref = file.name.substring(0, 4)
       this.audioMap.set(ref, audio)
@@ -69,7 +68,6 @@ export class SoundProcessor {
    */
   findSoundFile(ref) {
     if (!this.files || !Array.isArray(this.files)) return null
-    if (!this.files || !Array.isArray(this.files)) return null
     return this.files.find(file => file.name.startsWith(ref))
   }
 
@@ -79,7 +77,6 @@ export class SoundProcessor {
    * @returns {boolean}
    */
   isSoundAvailable(ref) {
-    return !!this.findSoundFile(ref) //Convert object to boolean
     return !!this.findSoundFile(ref) //Convert object to boolean
   }
 
@@ -108,9 +105,6 @@ export class SoundProcessor {
    */
   playSoundByInline(ref) {
     const file = this.findSoundFile(ref)
-    if (!(file instanceof File)) {
-      return Promise.reject(new Error('Invalid file type'))
-    }
     if (!(file instanceof File)) {
       return Promise.reject(new Error('Invalid file type'))
     }

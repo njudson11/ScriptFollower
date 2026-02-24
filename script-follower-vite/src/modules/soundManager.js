@@ -77,11 +77,10 @@ export class SoundManager {
       console.warn(`Sound file for ref ${ref} not found.`)
       return
     }
-    let audio = this.soundProcessor.findPreloadedSound(ref)
+    // Always create a fresh Audio element to avoid state issues from reuse
+    // Don't use preloaded audio for playback - can cause pitch issues when switching lines
     const url = URL.createObjectURL(file)
-    if (!audio) {
-      audio = new Audio(url)
-    }
+    const audio = new Audio(url)
 
     // Set initial volume
     if (line.soundCue) {

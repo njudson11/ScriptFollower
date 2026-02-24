@@ -1,0 +1,83 @@
+/* Base Script Line Style (moved from components) */
+.script-line {
+  margin-bottom: 4px;
+  border-left-width: 0; /* Set width here */
+  border-left-style: solid; /* Set style here */
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  gap: 1px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.script-line:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(4px);
+}
+
+.script-line.active {
+  border-color: #f1f530;
+  border-width: 4px;
+  border-style: solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.527);
+}
+
+/* Also move .line-type-badge, .line-content etc. that are common */
+.line-type-badge {
+  flex-shrink: 0;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: white;
+  background-color: #2196f3;
+  padding: 4px 8px;
+  border-radius: 3px;
+  height: fit-content;
+  text-align: center;
+  min-width: 70px;
+}
+
+.line-type-badge,
+.line-meta {
+  display: none; /* Hide line type and line number */
+}
+
+.line-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.line-text {
+  margin: 0;
+  font-size: 0.8em;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.line-meta {
+  font-size: 0.8em;
+  color: #999;
+  margin-top: 8px;
+}
+
+.line-annotation {
+  font-size: 0.8em;
+  font-style: italic;
+  color: #c0392b; /* A distinct color for annotations */
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-left: 3px solid #e74c3c;
+  background-color: #fbe5e3;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.context-sidebar .line-annotation{
+  display: none; /* Hide annotations in context sidebar */
+
+}
