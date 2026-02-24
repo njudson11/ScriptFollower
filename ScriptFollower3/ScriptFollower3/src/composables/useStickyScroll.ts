@@ -1,4 +1,4 @@
-import { ref, watch, nextTick, type Ref, type ComputedRef } from 'vue'
+import { ref, watch, nextTick, type Ref, type ComputedRef, type Component } from 'vue'
 import type { ScriptLineBase } from '@/types/core'
 
 interface UseStickyScrollOptions {

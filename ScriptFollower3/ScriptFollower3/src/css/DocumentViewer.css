@@ -2,7 +2,7 @@
   grid-area: viewer;
   flex: 1;
   overflow-y: auto;
-  background-color: white; /* Changed to white */
+  background-color: var(--color-surface); /* Changed to white */
   padding: 1em;
   font-size: 10pt;
 }
@@ -18,7 +18,7 @@
   font-weight: bold;
   text-align: center;
   margin-top: 1em;
-  color: #1a237e; /* Dark blue */
+  color: var(--color-title); /* Dark blue */
 }
 
 .line-type-title.line-subtype-subtitle {
@@ -27,7 +27,7 @@
   text-align: center;
   margin-top: 1em;
   margin-top: 0.5em;
-  color: #3f51b5; /* Indigo */
+  color: var(--color-subtitle); /* Indigo */
 }
 
 .line-type-scene-heading, .line-type-act-heading {
@@ -35,8 +35,8 @@
   font-weight: bold;
   margin-top: 20px;
   margin-bottom: 10px;
-  color: #5d4037; /* Brown */
-  border-bottom: 1px solid #d7ccc8; /* Light brown border */
+  color: var(--color-heading); /* Brown */
+  border-bottom: 1px solid var(--color-heading-border); /* Light brown border */
   padding-bottom: 5px;
 }
 
@@ -47,6 +47,6 @@
   margin-right: 15%; /* Significant right margin */
   max-width: 70%; /* Ensures centering with auto margins */
   margin: 0 auto; /* Center the block */
-  color: #4a148c; /* Dark purple for stage directions */
+  color: var(--color-stage-direction); /* Dark purple for stage directions */
 }
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue' // Import watch
+import { computed, inject, ref, watch } from 'vue'
 import type { AppStore } from '@/store/AppStore'
-import type { LineSelectionManager } from '@/core/LineSelectionManager' // Import LineSelectionManager
+import type { LineSelectionManager } from '@/core/LineSelectionManager'
+import { ActionController } from '@/core/ActionController' // Import ActionController
+import { ACTION_TYPES } from '@/types/actions' // Import ACTION_TYPES
 import packageJson from '../../package.json'
 
 interface Props {
@@ -16,35 +18,32 @@ const emit = defineEmits<{
 }>()
 
 const appStore = inject('appStore') as AppStore
-const selectionManager = inject('selectionManager') as LineSelectionManager // Inject selectionManager
+const selectionManager = inject('selectionManager') as LineSelectionManager
+const actionController = inject('actionController') as ActionController // Inject ActionController
 
 const currentDocument = computed(() => appStore.getCurrentDocument())
-const currentLineId = computed(() => selectionManager.getCurrentLine()) // Get currentLineId
-const currentLine = computed(() => { // Get full current line object
+const currentLineId = computed(() => selectionManager.getCurrentLine())
+const currentLine = computed(() => {
   if (!currentLineId.value) return undefined;
   return appStore.getLineById(currentLineId.value);
 });
 
-// Reactive variable for the editable page number input
 const editablePageNumber = ref<number | null>(currentLine.value?.pageNumber ?? null);
 
-// Watch for changes in the currentLine's pageNumber and update editablePageNumber
 watch(() => currentLine.value?.pageNumber, (newPageNumber) => {
   editablePageNumber.value = newPageNumber ?? null;
 }, { immediate: true });
 
 const handlePageNumberChange = () => {
   if (editablePageNumber.value === null) {
-    // If input is cleared, clear selection or revert
     if (currentLine.value) {
-      editablePageNumber.value = currentLine.value.pageNumber; // Revert to current page
+      editablePageNumber.value = currentLine.value.pageNumber;
     }
     return;
   }
 
-  const newPage = parseInt(String(editablePageNumber.value), 10); // Ensure number
+  const newPage = parseInt(String(editablePageNumber.value), 10);
   if (isNaN(newPage) || newPage <= 0) {
-    // Invalid input, revert to current page
     if (currentLine.value) {
       editablePageNumber.value = currentLine.value.pageNumber;
     } else {
@@ -57,15 +56,16 @@ const handlePageNumberChange = () => {
   const firstLineOfTargetPage = allLines.find(line => line.pageNumber === newPage);
 
   if (firstLineOfTargetPage) {
-    selectionManager.selectLine(firstLineOfTargetPage.id);
+    actionController.dispatch({
+      type: ACTION_TYPES.SELECT_LINE,
+      payload: { lineId: firstLineOfTargetPage.id }
+    });
   } else {
-    // Page not found, revert input
     if (currentLine.value) {
       editablePageNumber.value = currentLine.value.pageNumber;
     } else {
       editablePageNumber.value = null;
     }
-    // Optionally, show a toast/notification about page not found
   }
 };
 </script>

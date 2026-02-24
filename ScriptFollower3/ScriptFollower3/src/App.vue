@@ -10,37 +10,50 @@ import Sidebar from '@/components/Sidebar.vue'
 import DocumentViewer from '@/components/DocumentViewer.vue'
 import RightPanel from '@/components/RightPanel.vue'
 import { DialogueRenderingFeature } from '@/features/DialogueRenderingFeature'
-import { ActionController } from '@/core/ActionController' // Import ActionController
-import { KeybindingFeature } from '@/features/KeybindingFeature' // Import KeybindingFeature
-import { NavigationFeature } from '@/features/NavigationFeature' // Import NavigationFeature
-import { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature' // Import SidebarProgressBarFeature
+import { ActionController } from '@/core/ActionController'
+import { KeybindingFeature } from '@/features/KeybindingFeature'
+import { NavigationFeature } from '@/features/NavigationFeature'
+import { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature'
+import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
+import { AudioTestFeature } from '@/features/AudioTestFeature'
 
 // Initialize managers
 const eventBus = new EventBus()
-const appStore = new AppStore(eventBus) // Instantiate AppStore first
-const selectionManager = new LineSelectionManager(eventBus, appStore) // Pass appStore to LineSelectionManager
-const actionController = new ActionController(eventBus) // Instantiate ActionController
-const featureManager = new FeatureManager(eventBus, actionController) // Pass ActionController to FeatureManager
+const appStore = new AppStore(eventBus)
+const actionController = new ActionController(eventBus)
+const audioPlaybackManager = new AudioPlaybackManager(eventBus)
+const selectionManager = new LineSelectionManager(eventBus, appStore, actionController)
+const featureManager = new FeatureManager(eventBus, actionController)
 
-// Register features
-const dialogueFeature = new DialogueRenderingFeature(featureManager)
-featureManager.registerFeature(dialogueFeature)
+const isInitialized = ref(false)
 
-const keybindingFeature = new KeybindingFeature(featureManager, actionController, appStore) // Instantiate KeybindingFeature
-featureManager.registerFeature(keybindingFeature) // Register KeybindingFeature
+onMounted(async () => {
+  // Register features
+  const dialogueFeature = new DialogueRenderingFeature(featureManager)
+  await featureManager.registerFeature(dialogueFeature)
 
-const navigationFeature = new NavigationFeature(featureManager, actionController, appStore, selectionManager) // Instantiate NavigationFeature
-featureManager.registerFeature(navigationFeature) // Register NavigationFeature
+  const keybindingFeature = new KeybindingFeature(featureManager, actionController, appStore)
+  await featureManager.registerFeature(keybindingFeature)
 
-const sidebarProgressBarFeature = new SidebarProgressBarFeature(selectionManager, appStore) // Instantiate SidebarProgressBarFeature
-featureManager.registerFeature(sidebarProgressBarFeature) // Register SidebarProgressBarFeature
+  const navigationFeature = new NavigationFeature(featureManager, actionController, appStore, selectionManager)
+  await featureManager.registerFeature(navigationFeature)
+
+  const sidebarProgressBarFeature = new SidebarProgressBarFeature(selectionManager, appStore)
+  await featureManager.registerFeature(sidebarProgressBarFeature)
+
+  const audioTestFeature = new AudioTestFeature(featureManager)
+  await featureManager.registerFeature(audioTestFeature)
+
+  isInitialized.value = true
+})
 
 // Provide managers to child components
 provide('eventBus', eventBus)
 provide('selectionManager', selectionManager)
 provide('featureManager', featureManager)
 provide('appStore', appStore)
-provide('actionController', actionController) // Provide ActionController
+provide('actionController', actionController)
+provide('audioPlaybackManager', audioPlaybackManager)
 
 const handleFileUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -75,13 +88,13 @@ const handleFileUpload = async (event: Event) => {
 const hasDocument = computed(() => appStore.state.currentDocument !== null)
 
 const gridTemplateColumns = computed(() => {
-  const rightPanelWidth = appStore.state.isRightPanelCollapsed ? '40px' : '350px'; // Changed from '0px' to '40px'
+  const rightPanelWidth = appStore.state.isRightPanelCollapsed ? '40px' : '350px';
   return `200px 1fr ${rightPanelWidth}`;
 });
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container" v-if="isInitialized">
     <Toolbar @file-upload="handleFileUpload" :has-document="hasDocument" :is-loading="appStore.state.isLoading" />
 
     <div v-if="appStore.state.error" class="error-banner">
@@ -89,25 +102,26 @@ const gridTemplateColumns = computed(() => {
       <button @click="appStore.setError(null)">×</button>
     </div>
 
-    <div v-if="hasDocument" class="main-content" :style="{ gridTemplateColumns: gridTemplateColumns }">
+    <div class="main-content" :style="{ gridTemplateColumns: gridTemplateColumns }">
       <Sidebar />
-      <DocumentViewer />
+      <DocumentViewer @file-upload="handleFileUpload" />
       <RightPanel />
     </div>
-
-    <div v-else class="empty-state">
-      <div class="empty-state-content">
-        <h1>ScriptFollower 3</h1>
-        <p>Load an ODT document to get started</p>
-        <label class="upload-button">
-          <input type="file" accept=".odt" @change="handleFileUpload" style="display: none" />
-          <span>{{ appStore.state.isLoading ? 'Loading...' : 'Choose File' }}</span>
-        </label>
-      </div>
-    </div>
+  </div>
+  <div v-else class="loading-screen">
+    Initializing features...
   </div>
 </template>
 
 <style scoped>
 @import './css/App.css';
+
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.2em;
+  color: var(--color-text-secondary);
+}
 </style>

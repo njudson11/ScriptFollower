@@ -1,6 +1,6 @@
 .sidebar-progress-bar-container {
   height: 3px; /* Height of the progress bar */
-  background-color: #e0e0e0; /* Background for the track */
+  background-color: var(--color-border); /* Background for the track */
   margin: 0 10px; /* Aligns with padding of line-item */
   border-radius: 1.5px;
   overflow: hidden; /* Ensures the bar inside is clipped */
@@ -9,7 +9,7 @@
 
 .sidebar-progress-bar {
   height: 100%;
-  background-color: #4caf50; /* Green color for progress */
+  background-color: var(--color-status-success-text); /* Green color for progress */
   transition: width 0.2s ease-out; /* Smooth transition for width changes */
   width: 0%; /* Default to 0% */
 }

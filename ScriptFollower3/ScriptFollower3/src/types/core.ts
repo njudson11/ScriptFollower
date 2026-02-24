@@ -168,3 +168,50 @@ export interface HighlightStyle {
   readonly borderWidth?: string;
   readonly opacity?: number;
 }
+
+/**
+ * Interface for an individual audio playback instance
+ */
+export interface IAudioPlayer {
+  readonly id: string;
+  readonly url: string;
+  readonly isLoaded: boolean;
+  readonly isPlaying: boolean;
+  readonly duration: number;
+  readonly loadStatus: 'idle' | 'loading' | 'decoding' | 'loaded' | 'error';
+  readonly loadProgress: number; // 0 to 100
+  currentTime: number;
+  volume: number;
+  balance: number;
+
+  load(): Promise<void>;
+  play(startTimeSeconds?: number, endTimeSeconds?: number, fadeInDurationMs?: number, fadeOutDurationMs?: number): Promise<void>;
+  pause(): void;
+  stop(): void;
+  destroy(): void;
+  getBuffer(): AudioBuffer | null;
+
+  onPlay(callback: () => void): void;
+  onPause(callback: () => void): void;
+  onStop(callback: () => void): void;
+  onEnded(callback: () => void): void;
+  onError(callback: (error: Error) => void): void;
+  onLoadProgress(callback: (progress: number, status: string) => void): void;
+}
+
+/**
+ * Standardized audio event types
+ */
+export const AUDIO_EVENT_TYPES = {
+  AUDIO_PLAYER_PLAYING: 'audio:playerPlaying',
+  AUDIO_PLAYER_PAUSED: 'audio:playerPaused',
+  AUDIO_PLAYER_STOPPED: 'audio:playerStopped',
+  AUDIO_PLAYER_LOADED: 'audio:playerLoaded',
+  AUDIO_PLAYER_ERROR: 'audio:playerError',
+  AUDIO_DEVICE_CHANGED: 'audio:deviceChanged',
+  AUDIO_DEVICES_UPDATED: 'audio:devicesUpdated',
+  AUDIO_GLOBAL_VOLUME_CHANGED: 'audio:globalVolumeChanged',
+  AUDIO_GLOBAL_MUTE_CHANGED: 'audio:globalMuteChanged',
+  AUDIO_ALL_PAUSED: 'audio:allPaused',
+  AUDIO_ALL_RESUMED: 'audio:allResumed',
+} as const;

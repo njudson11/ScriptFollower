@@ -7,6 +7,8 @@ import { ref, reactive } from 'vue' // Import ref and reactive
 import { Highlight, HighlightStyle, HighlightTypeRegistry as IHighlightTypeRegistry, LineType } from '@/types/core'
 import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import type { AppStore } from '@/store/AppStore' // Import AppStore
+import { ActionController } from '@/core/ActionController' // Import ActionController
+import { ACTION_TYPES, Action } from '@/types/actions' // Import ACTION_TYPES and Action
 
 /**
  * Built-in highlight type priorities
@@ -83,11 +85,25 @@ export class LineSelectionManager {
   private appStore: AppStore // Added AppStore dependency
   private selectionHistory: string[] = []
   private historyIndex: number = -1
+  private unsubscribeFromActions: (() => void)[] = [] // To store unsubscribe function
 
-  constructor(eventBus: EventBus, appStore: AppStore) { // Added appStore to constructor
+  constructor(eventBus: EventBus, appStore: AppStore, actionController: ActionController) { // Added appStore and ActionController to constructor
     this.eventBus = eventBus
     this.appStore = appStore // Initialize appStore
     this.highlightTypeRegistry = new HighlightTypeRegistry()
+
+    // Register action handlers
+    this.unsubscribeFromActions.push(
+      actionController.registerHandler(ACTION_TYPES.SELECT_LINE, this.handleSelectLineAction.bind(this))
+    );
+  }
+
+  private handleSelectLineAction(action: Action): void {
+    if (action.payload && action.payload.lineId) {
+      this.selectLine(action.payload.lineId);
+    } else {
+      console.warn(`[LineSelectionManager] SELECT_LINE action received without lineId payload:`, action);
+    }
   }
 
   /**
@@ -101,8 +117,8 @@ export class LineSelectionManager {
       this._selectedLineIds.add(lineId) // Add to reactive Set
     }
 
-    // Add to history only if lineId is not null
-    if (lineId) {
+    // Add to history only if lineId is not null and different from last entry
+    if (lineId && lineId !== this.selectionHistory[this.historyIndex]) {
       this.selectionHistory.splice(this.historyIndex + 1)
       this.selectionHistory.push(lineId)
       this.historyIndex = this.selectionHistory.length - 1
@@ -309,5 +325,13 @@ export class LineSelectionManager {
         timestamp: new Date()
       })
     }
+  }
+
+  /**
+   * Cleanup method to unregister action handlers.
+   */
+  destroy(): void {
+    this.unsubscribeFromActions.forEach(unsubscribe => unsubscribe());
+    this.unsubscribeFromActions = [];
   }
 }

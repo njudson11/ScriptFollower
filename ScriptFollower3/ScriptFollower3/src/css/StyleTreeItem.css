@@ -4,17 +4,17 @@
 
 .style-tree-item .style-name {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .style-tree-item .style-parent {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 0.8em;
   margin-left: 8px;
 }
 
 .style-tree-item .style-children {
   margin-top: 4px;
-  border-left: 1px dashed #ccc;
+  border-left: 1px dashed var(--color-border);
   padding-left: 5px;
 }

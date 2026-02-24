@@ -11,7 +11,7 @@
 .info-section label {
   display: block;
   font-size: 0.8em;
-  color: #666;
+  color: var(--color-text-secondary);
   font-weight: 600;
   margin-bottom: 4px;
   text-transform: uppercase;
@@ -21,20 +21,20 @@
 .info-section p {
   margin: 0;
   font-size: 0.9em;
-  color: #333;
+  color: var(--color-text-primary);
   word-break: break-word;
 }
 
 .divider {
   height: 1px;
-  background-color: #e0e0e0;
+  background-color: var(--color-border);
   margin: 16px 0;
 }
 
 .stats h4 {
   margin: 0 0 12px 0;
   font-size: 0.85em;
-  color: #666;
+  color: var(--color-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -44,18 +44,18 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85em;
-  color: #333;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
 .stat-item span:first-child {
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .styles-section h4 {
   margin: 0 0 12px 0;
   font-size: 0.85em;
-  color: #666;
+  color: var(--color-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;

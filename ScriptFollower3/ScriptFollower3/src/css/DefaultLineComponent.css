@@ -13,15 +13,15 @@
 }
 
 .script-line:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--color-shadow);
   transform: translateX(4px);
 }
 
 .script-line.active {
-  border-color: #f1f530;
+  border-color: var(--color-active);
   border-width: 4px;
   border-style: solid;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.527);
+  box-shadow: 0 4px 12px var(--color-shadow-heavy);
 }
 
 /* Also move .line-type-badge, .line-content etc. that are common */
@@ -29,8 +29,8 @@
   flex-shrink: 0;
   font-size: 0.75em;
   font-weight: 600;
-  color: white;
-  background-color: #2196f3;
+  color: var(--color-text-on-primary);
+  background-color: var(--color-primary);
   padding: 4px 8px;
   border-radius: 3px;
   height: fit-content;
@@ -53,7 +53,7 @@
 .line-text {
   margin: 0;
   font-size: 0.8em;
-  color: #333;
+  color: var(--color-text-primary);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -61,18 +61,18 @@
 
 .line-meta {
   font-size: 0.8em;
-  color: #999;
+  color: var(--color-text-tertiary);
   margin-top: 8px;
 }
 
 .line-annotation {
   font-size: 0.8em;
   font-style: italic;
-  color: #c0392b; /* A distinct color for annotations */
+  color: var(--color-annotation-text);
   margin-top: 8px;
   padding: 4px 8px;
-  border-left: 3px solid #e74c3c;
-  background-color: #fbe5e3;
+  border-left: 3px solid var(--color-annotation-border);
+  background-color: var(--color-annotation-bg);
   white-space: pre-wrap;
   word-break: break-word;
 }

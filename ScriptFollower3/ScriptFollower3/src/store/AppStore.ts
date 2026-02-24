@@ -38,13 +38,9 @@ export class AppStore {
   })
 
   private eventBus: EventBus
-  private selectionManager: LineSelectionManager
-  private featureManager: FeatureManager
 
-  constructor(eventBus: EventBus, selectionManager: LineSelectionManager, featureManager: FeatureManager) {
+  constructor(eventBus: EventBus) {
     this.eventBus = eventBus
-    this.selectionManager = selectionManager
-    this.featureManager = featureManager
   }
 
   /**

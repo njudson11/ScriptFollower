@@ -8,5 +8,14 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  server: {
+    proxy: {
+      '/audio-proxy': {
+        target: 'https://www.soundhelix.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/audio-proxy/, '')
+      }
+    }
   }
 })

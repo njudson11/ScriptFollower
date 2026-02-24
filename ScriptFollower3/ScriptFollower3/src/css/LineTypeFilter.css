@@ -2,16 +2,16 @@
 
 .line-type-filter-container {
   padding: 5px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);  
-  background-color: var(--background-color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;  
+  background-color: var(--color-background-soft);
 }
 
 .filter-summary {
   font-weight: bold;
   cursor: pointer;
   padding: 5px 0;
-  color: var(--text-color-primary);
+  color: var(--color-text-primary);
 }
 
 .filter-options {
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 5px; /* Adjust gap for vertical list */
   padding-top: 10px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border);
   margin-top: 10px;
 }
 
@@ -30,11 +30,11 @@
 }
 
 .filter-option input[type="checkbox"] {
-  accent-color: var(--accent-color); /* Uses a theme-defined accent color */
+  accent-color: var(--color-primary); /* Uses a theme-defined primary color */
 }
 
 .filter-option label {
-  color: var(--text-color-secondary);
+  color: var(--color-text-secondary);
   font-size: 0.9em;
   user-select: none; /* Prevent text selection on labels */
 }

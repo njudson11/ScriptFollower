@@ -1,0 +1,84 @@
+:root {
+  /* Brand Colors */
+  --color-primary: #2196f3;
+  --color-primary-dark: #1976d2;
+  --color-primary-light: #e3f2fd;
+  
+  /* UI Base */
+  --color-background: #f5f5f5;
+  --color-background-soft: #fafafa;
+  --color-surface: #ffffff;
+  --color-border: #e0e0e0;
+  --color-divider: #f1f1f1;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-heavy: rgba(0, 0, 0, 0.5);
+  
+  /* Text Colors */
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-on-primary: #ffffff;
+  --color-text-muted: #424242;
+  --color-text-dark: #212121;
+  
+  /* Feature Text Colors */
+  --color-title: #1a237e;
+  --color-subtitle: #3f51b5;
+  --color-heading: #5d4037;
+  --color-heading-border: #d7ccc8;
+  --color-stage-direction: #4a148c;
+  
+  /* Interaction */
+  --color-hover: rgba(0, 0, 0, 0.05);
+  --color-hover-dark: rgba(0, 0, 0, 0.1);
+  --color-active: #f1f530;
+  --color-selected: var(--color-primary-light);
+  --color-button-bg: #f5f5f5;
+  --color-button-hover: #e0e0e0;
+  --color-disabled-bg: #e0e0e0;
+  --color-disabled-text: #999999;
+  
+  /* Feedback */
+  --color-error: #c62828;
+  --color-error-background: #ffebee;
+  --color-error-border: #ef5350;
+  --color-warning: #f57f17;
+  --color-success: #2e7d32;
+  --color-info: #1565c0;
+  
+  /* Annotations */
+  --color-annotation-text: #c0392b;
+  --color-annotation-bg: #fbe5e3;
+  --color-annotation-border: #e74c3c;
+  
+  /* Status Badges */
+  --color-status-success-bg: rgba(76, 175, 80, 0.2);
+  --color-status-success-text: #4caf50;
+  --color-status-info-bg: rgba(33, 150, 243, 0.2);
+  --color-status-info-text: #2196f3;
+  --color-status-idle-bg: rgba(158, 158, 158, 0.2);
+  --color-status-idle-text: #9e9e9e;
+
+  /* Line Types (Borders) */
+  --line-type-title: #1a237e;
+  --line-type-subtitle: #283593;
+  --line-type-act-heading: #4a148c;
+  --line-type-scene-heading: #1565c0;
+  --line-type-character-list: #f57f17;
+  --line-type-dialogue: #424242;
+  --line-type-stage-direction: #2e7d32;
+  --line-type-blank: #9e9e9e;
+  
+  /* Line Types (Backgrounds) */
+  --line-type-tech-cue-bg: #d38210;
+  --line-type-sound-cue-bg: #d91515;
+  --line-type-sound-cue-subtype-b-bg: #24b005;
+  --line-type-light-cue-bg: #105fe7;
+  --line-type-tech-cue-subtype-curtains-bg: #9f0bb9;
+  --line-type-page-number-bg: #cacaca;
+
+  /* Dimensions */
+  --toolbar-height: 56px;
+  --sidebar-width: 200px;
+  --right-panel-width: 350px;
+}

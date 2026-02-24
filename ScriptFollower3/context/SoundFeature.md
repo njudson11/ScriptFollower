@@ -2,12 +2,13 @@
 
 ## Overview
 
-The Sound Feature is a complete reference implementation of `IFeaturePlugin` showing:
-- How to store feature data
-- How to declare keybindings
-- How to declare annotations
-- How to register custom highlights
-- How to respond to events
+The Sound Feature is a complete reference implementation of `IFeaturePlugin`. It now leverages a dedicated Audio Playback Component (`AudioPlaybackManager` and `IAudioPlayer`) for all audio-related operations, demonstrating:
+- How to integrate with a specialized audio playback system
+- How to store feature data (SoundCues)
+- How to declare keybindings that trigger audio actions
+- How to declare annotations that configure audio playback properties (volume, fades, start/end times)
+- How to register custom highlights for audio playback states
+- How to respond to document lifecycle events
 
 ## Feature Declaration
 
@@ -16,13 +17,14 @@ class SoundFeature implements FeaturePlugin {
   readonly id = 'sound'
   readonly name = 'Sound'
   readonly version = '1.0.0'
-  readonly description = 'Play audio cues synchronized with script lines'
+  readonly description = 'Play audio cues synchronized with script lines using a dedicated audio engine'
 }
 ```
 
 ## Data Structures
 
 ```typescript
+// Updated SoundCue interface to include playback offsets
 interface SoundCue {
   readonly id: string                    // Unique cue ID
   readonly lineId: string                // Which line plays this
@@ -35,18 +37,31 @@ interface SoundCue {
   readonly delay: number                 // ms before play
   readonly pan: 'left' | 'center' | 'right'
   readonly createdAt: Date
+  readonly startOffsetSeconds?: number;   // Start playback from this offset in the audio file
+  readonly endOffsetSeconds?: number;     // End playback at this offset in the audio file
 }
 
-class SoundFeature {
-  private cuesByLineId: Map<string, SoundCue[]> = new Map()
-  private currentlyPlaying: Set<string> = new Set()  // cue IDs
-  private audioElements: Map<string, HTMLAudioElement> = new Map()
+class SoundFeature implements FeaturePlugin {
+  // ... (other feature properties like id, name, version, description)
+  private cuesByLineId: Map<string, SoundCue[]> = new Map() // Feature-specific data for managing cues
+  private audioPlaybackManager: AudioPlaybackManager; // Injected dependency
+  private appStore: AppStore; // Injected dependency for document access
+  private selectionManager: LineSelectionManager; // Injected dependency for highlights and navigation
+  private eventBus: EventBus; // Injected dependency for event communication
 }
 ```
 
 ## Initialization
 
 ```typescript
+// Modified constructor to inject AudioPlaybackManager, AppStore, SelectionManager, EventBus
+constructor(eventBus: EventBus, appStore: AppStore, selectionManager: LineSelectionManager, audioPlaybackManager: AudioPlaybackManager) {
+    this.eventBus = eventBus;
+    this.appStore = appStore;
+    this.selectionManager = selectionManager;
+    this.audioPlaybackManager = audioPlaybackManager;
+}
+
 async init(): Promise<void> {
   // Subscribe to document events
   this.eventBus.subscribe(EVENT_TYPES.DOCUMENT_LOADED, (event) => {
@@ -56,6 +71,13 @@ async init(): Promise<void> {
   this.eventBus.subscribe(EVENT_TYPES.DOCUMENT_UNLOADED, (event) => {
     this.onDocumentUnloaded(event)
   })
+  
+  // Preload all known cues for the current document (example logic)
+  const currentDocument = this.appStore.getCurrentDocument();
+  if (currentDocument) {
+      const allCueUrls = Array.from(this.cuesByLineId.values()).flat().map(cue => cue.url);
+      await this.audioPlaybackManager.preloadAll(allCueUrls);
+  }
 
   console.log(`Sound Feature initialized`)
 }
@@ -63,14 +85,16 @@ async init(): Promise<void> {
 private onDocumentLoaded(event: Event) {
   const { documentId } = event.payload
   console.log(`Sound Feature: Preparing for document ${documentId}`)
-  // Initialize sound data for this document
+  // Here, we would typically load/parse sound cue data for this document
+  // and then instruct the audioPlaybackManager to preload relevant files.
+  // For this context file, we'll assume cue data is already populated.
 }
 
 private onDocumentUnloaded(event: Event) {
-  // Stop all playing sounds
-  this.stopAll()
-  // Clear sound data
-  this.cuesByLineId.clear()
+  // Stop all playing sounds managed by the AudioPlaybackManager
+  this.audioPlaybackManager.stopAll();
+  // Clear local sound cue data
+  this.cuesByLineId.clear();
 }
 ```
 
@@ -205,6 +229,22 @@ getAnnotations(): Annotation[] {
       validateValue: (v) => ['left', 'center', 'right'].includes(v)
     },
     {
+      name: 'start-offset',
+      description: 'Start playback from this offset (seconds) in the audio file',
+      type: 'number',
+      constraints: { min: 0 },
+      parseValue: (v) => parseFloat(v),
+      validateValue: (v) => v >= 0
+    },
+    {
+      name: 'end-offset',
+      description: 'End playback at this offset (seconds) in the audio file',
+      type: 'number',
+      constraints: { min: 0 },
+      parseValue: (v) => parseFloat(v),
+      validateValue: (v) => v >= 0
+    },
+    {
       name: 'stop',
       description: 'Stop behavior: "all" (stop all), "previous" (stop last), or comma-separated cue IDs',
       type: 'string',
@@ -245,162 +285,174 @@ registerHighlightTypes(registry: HighlightTypeRegistry) {
 ## Core Methods
 
 ```typescript
-playSoundForLine(lineId: string) {
-  const cues = this.cuesByLineId.get(lineId) ?? []
+// Refactored to use AudioPlaybackManager and IAudioPlayer
+async playSoundForLine(lineId: string) {
+  const cues = this.cuesByLineId.get(lineId) ?? [];
   
-  // Check for stop annotation
-  const stopAnnotation = this.getStopAnnotation(lineId)
+  // Check for stop annotation and execute action
+  const stopAnnotation = this.getStopAnnotation(lineId); // Assume this method extracts the 'stop' annotation value
   if (stopAnnotation) {
-    this.executeStopAction(stopAnnotation)
+    this.executeStopAction(stopAnnotation);
   }
   
-  // Play all cues for this line
+  // Play all cues for this line using the AudioPlaybackManager
   for (const cue of cues) {
-    this.playCue(cue)
+    await this.playCue(cue);
   }
   
-  this.selectionManager.addHighlight(lineId, 'sound:playing')
+  this.selectionManager.addHighlight(lineId, 'sound:playing');
 }
 
 async playCue(cue: SoundCue) {
   try {
-    const audio = new Audio(cue.url)
-    audio.volume = cue.volume / 100
-    audio.playbackRate = cue.speed
-    
-    if (cue.delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, cue.delay))
-    }
-    
-    audio.play()
-    this.currentlyPlaying.add(cue.id)
-    this.audioElements.set(cue.id, audio)
-    
-    audio.onended = () => {
-      this.currentlyPlaying.delete(cue.id)
-      this.audioElements.delete(cue.id)
-    }
+    const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url);
+    await player.load(); // Ensure the audio is loaded and ready
+
+    player.volume = cue.volume / 100;
+    player.balance = (cue.pan === 'left' ? -1 : cue.pan === 'right' ? 1 : 0);
+
+    // Subscribe to player events to update highlights
+    player.onEnded(() => {
+      this.selectionManager.removeHighlight(cue.lineId, 'sound:playing');
+      this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_PLAYER_STOPPED, payload: { playerId: cue.id, url: cue.url }, timestamp: new Date() });
+    });
+    player.onError((error) => {
+      this.selectionManager.removeHighlight(cue.lineId, 'sound:playing');
+      this.selectionManager.addHighlight(cue.lineId, 'sound:error', { message: error.message });
+      this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_PLAYER_ERROR, payload: { playerId: cue.id, url: cue.url, error: error.message }, timestamp: new Date() });
+    });
+
+    // Start playback
+    await player.play(cue.startOffsetSeconds, cue.endOffsetSeconds, cue.fadeIn, cue.fadeOut);
+    this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_PLAYER_PLAYING, payload: { playerId: cue.id, url: cue.url }, timestamp: new Date() });
+
   } catch (error) {
+    console.error(`SoundFeature: Failed to play cue ${cue.id}:`, error);
     this.eventBus.emit({
       type: EVENT_TYPES.FEATURE_ERROR,
       payload: {
         featureId: this.id,
-        error: `Failed to play cue ${cue.id}: ${error}`
+        error: `Failed to play cue ${cue.id}: ${error instanceof Error ? error.message : String(error)}`
       },
       timestamp: new Date()
-    })
+    });
+    this.selectionManager.addHighlight(cue.lineId, 'sound:error', { message: `Failed to play: ${error instanceof Error ? error.message : String(error)}` });
   }
 }
 
 stopAll() {
-  for (const audio of this.audioElements.values()) {
-    audio.pause()
-    audio.currentTime = 0
-  }
-  this.audioElements.clear()
-  this.currentlyPlaying.clear()
-  
-  // Remove all playing highlights
-  for (const line of this.cuesByLineId.keys()) {
-    this.selectionManager.removeHighlight(line, 'sound:playing')
-  }
+  this.audioPlaybackManager.stopAll();
+  // Ensure all 'sound:playing' highlights are removed
+  this.appStore.getLines().forEach(line => {
+    this.selectionManager.removeHighlight(line.id, 'sound:playing');
+  });
 }
 
 playOrPause(lineId: string | null) {
-  if (!lineId) return
+  if (!lineId) return;
+
+  // Assuming AudioPlaybackManager provides a way to check if any player is active
+  const isPlaying = this.audioPlaybackManager.getCurrentlyPlayingPlayers().length > 0; 
   
-  const isPlaying = this.currentlyPlaying.size > 0
   if (isPlaying) {
-    this.stopAll()
+    this.stopAll();
   } else {
-    this.playSoundForLine(lineId)
+    this.playSoundForLine(lineId);
   }
 }
 
 executeStopAction(action: string) {
   if (action === 'all') {
-    this.stopAll()
+    this.audioPlaybackManager.stopAll();
   } else if (action === 'previous') {
-    // Stop sound from previous line only
-    const currentLine = this.selectionManager.getCurrentLine()
+    const currentLine = this.selectionManager.getCurrentLine();
     if (currentLine) {
-      const lines = this.appStore.getLines()
-      const idx = lines.findIndex(l => l.id === currentLine)
+      const lines = this.appStore.getLines();
+      const idx = lines.findIndex(l => l.id === currentLine);
       if (idx > 0) {
-        const prevLine = lines[idx - 1]
-        this.stopLineSound(prevLine.id)
+        const prevLine = lines[idx - 1];
+        // Need a way to stop sounds specific to a line. 
+        // AudioPlaybackManager could provide stopByLineId(lineId)
+        // For now, assuming direct access to player by cue ID or enhance AudioPlaybackManager.
+        const cues = this.cuesByLineId.get(prevLine.id) ?? [];
+        cues.forEach(cue => {
+          const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url);
+          if (player.isPlaying) player.stop();
+        });
       }
     }
   } else {
     // Comma-separated cue IDs
-    const cueIds = action.split(',').map(id => id.trim())
-    for (const cueId of cueIds) {
-      const audio = this.audioElements.get(cueId)
-      if (audio) {
-        audio.pause()
-        audio.currentTime = 0
-      }
-    }
+    const cueIds = action.split(',').map(id => id.trim());
+    cueIds.forEach(cueId => {
+      const player = this.audioPlaybackManager.getPlayer(cueId, ''); // URL might not be needed for stopping if player exists
+      if (player && player.isPlaying) player.stop();
+    });
   }
 }
 
 increaseVolume() {
-  // Increase master volume for all currently playing sounds
-  for (const audio of this.audioElements.values()) {
-    audio.volume = Math.min(1.0, audio.volume + 0.1)
-  }
+  // Assuming AudioPlaybackManager could expose a global volume or iterate all players
+  // For now, iterate through all currently managed players and adjust
+  this.audioPlaybackManager.getCurrentlyPlayingPlayers().forEach(player => {
+    player.volume = Math.min(1.0, player.volume + 0.1);
+  });
 }
 
 decreaseVolume() {
-  for (const audio of this.audioElements.values()) {
-    audio.volume = Math.max(0.0, audio.volume - 0.1)
-  }
+  this.audioPlaybackManager.getCurrentlyPlayingPlayers().forEach(player => {
+    player.volume = Math.max(0.0, player.volume - 0.1);
+  });
 }
 
 jumpToNextCue(currentLineId: string | null) {
-  if (!currentLineId) return
+  if (!currentLineId) return;
   
-  const lines = this.appStore.getLines()
-  const currentIdx = lines.findIndex(l => l.id === currentLineId)
+  const lines = this.appStore.getLines();
+  const currentIdx = lines.findIndex(l => l.id === currentLineId);
   
-  // Find next line with sound cue
   for (let i = currentIdx + 1; i < lines.length; i++) {
     if (this.cuesByLineId.has(lines[i].id)) {
-      this.selectionManager.selectLine(lines[i].id)
-      break
+      this.selectionManager.selectLine(lines[i].id);
+      break;
     }
   }
 }
 
 jumpToPreviousCue(currentLineId: string | null) {
-  if (!currentLineId) return
+  if (!currentLineId) return;
   
-  const lines = this.appStore.getLines()
-  const currentIdx = lines.findIndex(l => l.id === currentLineId)
+  const lines = this.appStore.getLines();
+  const currentIdx = lines.findIndex(l => l.id === currentLineId);
   
-  // Find previous line with sound cue
   for (let i = currentIdx - 1; i >= 0; i--) {
     if (this.cuesByLineId.has(lines[i].id)) {
-      this.selectionManager.selectLine(lines[i].id)
-      break
+      this.selectionManager.selectLine(lines[i].id);
+      break;
     }
   }
 }
 
 addCueToLine(lineId: string, cue: SoundCue) {
   if (!this.cuesByLineId.has(lineId)) {
-    this.cuesByLineId.set(lineId, [])
+    this.cuesByLineId.set(lineId, []);
   }
-  this.cuesByLineId.get(lineId)!.push(cue)
+  this.cuesByLineId.get(lineId)!.push(cue);
+
+  // Preload the new cue immediately
+  this.audioPlaybackManager.getPlayer(cue.id, cue.url).load().catch(e => {
+    console.error(`SoundFeature: Failed to preload cue ${cue.id}:`, e);
+    // Potentially add an error highlight to the line
+  });
 }
 
 getCuesForLine(lineId: string): SoundCue[] {
-  return this.cuesByLineId.get(lineId) ?? []
+  return this.cuesByLineId.get(lineId) ?? [];
 }
 
 async destroy(): Promise<void> {
-  this.stopAll()
-  console.log(`Sound Feature destroyed`)
+  this.audioPlaybackManager.stopAll();
+  console.log(`Sound Feature destroyed`);
 }
 ```
 
@@ -413,7 +465,7 @@ User loads "my-script.odt"
 ↓
 EventBus emits DOCUMENT_LOADED
 ↓
-Sound Feature initializes cue data
+Sound Feature (in onDocumentLoaded) instructs AudioPlaybackManager to preload all cues for the document.
 ```
 
 ### Play Sound with Annotation
@@ -421,14 +473,18 @@ Sound Feature initializes cue data
 ```
 Script line:
   JOHN
-  {volume=60, speed=1.2}
+  {volume=60, speed=1.2, fade-in=100, start-offset=5}
   Hello there!
 
-User presses Space
+User presses Space (triggers playOrPause for current line)
 ↓
-Sound Feature plays cue at 60% volume, 1.2x speed
+Sound Feature gets IAudioPlayer for the cue from AudioPlaybackManager.
 ↓
-Line highlighted as "sound:playing"
+Sound Feature calls player.play(5, undefined, 100) with volume and balance set.
+↓
+AudioPlaybackManager plays the sound with specified parameters.
+↓
+Line highlighted as "sound:playing" (controlled by SoundFeature observing player state or directly).
 ```
 
 ### Stop All Sounds
@@ -438,18 +494,23 @@ Script line:
   CROWD_SOUND
   {stop=all}
 
-User navigates to this line
+User navigates to this line (triggering an action that leads to executeStopAction)
+OR User presses Escape (triggers stopAll)
 ↓
-Sound Feature stops all currently playing sounds
+Sound Feature calls audioPlaybackManager.stopAll().
+↓
+AudioPlaybackManager stops all currently playing IAudioPlayer instances.
 ```
 
 ## Benefits
 
 ✅ Reference implementation for developers
+✅ Shows integration with dedicated Audio Playback Component
 ✅ Shows keybinding integration
-✅ Shows annotation integration
-✅ Shows event integration
+✅ Shows annotation integration (including new start/end offset, fade annotations)
+✅ Shows event integration (now reacting to and triggering AudioPlaybackManager)
 ✅ Shows highlight registration
 ✅ Complete feature lifecycle
-✅ Error handling patterns
-✅ Feature data isolation
+✅ Error handling patterns (now via AudioPlaybackManager)
+✅ Feature data isolation (SoundCues managed by SoundFeature, audio handled by AudioPlaybackManager)
+✅ Improved control and lower latency via Web Audio API

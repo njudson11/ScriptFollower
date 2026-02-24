@@ -2,8 +2,8 @@
   grid-area: panel;
   min-width: 200px;
   max-width: 400px;
-  background-color: #fafafa;
-  border-left: 1px solid #e0e0e0;
+  background-color: var(--color-background-soft);
+  border-left: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -13,8 +13,8 @@
 .tab-header {
   display: flex;
   justify-content: space-between; /* Distribute space between tab buttons and collapse button */
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #f5f5f5;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-background);
   align-items: center;
   /* padding-right: 5px; Removed, let the button's padding handle it */
   padding-left: 5px; /* Add padding for the tabs */
@@ -32,7 +32,7 @@
   background-color: transparent;
   cursor: pointer;
   font-size: 0.9em;
-  color: #666;
+  color: var(--color-text-secondary);
   transition: all 0.2s ease;
   position: relative;
   display: flex;
@@ -41,14 +41,14 @@
 }
 
 .tab-header button:hover:not(:disabled) {
-  background-color: #e0e0e0;
+  background-color: var(--color-hover-dark);
 }
 
 .tab-header button.active {
-  color: #2196f3;
+  color: var(--color-primary);
   font-weight: 600;
-  border-bottom: 2px solid #2196f3;
-  background-color: #fff;
+  border-bottom: 2px solid var(--color-primary);
+  background-color: var(--color-surface);
 }
 
 .tab-header button:disabled {
@@ -58,8 +58,8 @@
 
 .line-data-badge {
   margin-left: 5px;
-  background-color: #2196f3;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
   padding: 2px 6px;
   border-radius: 12px;
   font-size: 0.7em;
@@ -70,7 +70,7 @@
   /* margin-left: auto; Removed - no longer needed with justify-content: space-between on parent */
   background: none;
   border: none;
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 1.2em;
   cursor: pointer;
   padding: 0 10px;
@@ -84,7 +84,7 @@
 }
 
 .collapse-button:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--color-hover);
 }
 
 /* Styles for collapsed state */
@@ -101,7 +101,7 @@
 
 .right-panel.is-collapsed .collapse-button {
   /* Keep visible */
-  color: #2196f3; /* Make it more prominent when collapsed */
+  color: var(--color-primary); /* Make it more prominent when collapsed */
   padding: 0 10px; /* Ensure padding for button space */
   font-size: 1.5em; /* Make icon larger when collapsed for better visibility */
   height: 100%;
@@ -109,4 +109,10 @@
 
 .right-panel.is-collapsed .panel-content {
   display: none;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--color-surface);
 }
