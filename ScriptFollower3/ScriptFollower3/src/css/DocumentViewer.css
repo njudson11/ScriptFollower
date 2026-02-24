@@ -1,0 +1,13 @@
+.document-viewer {
+  grid-area: viewer;
+  flex: 1;
+  overflow-y: auto;
+  background-color: #fafafa;
+  padding: 24px;
+  outline: none;
+}
+
+.document-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
