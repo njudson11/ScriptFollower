@@ -29,7 +29,7 @@ export class AudioPlayer implements IAudioPlayer {
     onLoadProgress: new Set<(progress: number, status: string) => void>()
   };
 
-  constructor(id: string, url: string, audioContext: AudioContext) {
+  constructor(id: string, url: string, audioContext: AudioContext, destination?: AudioNode) {
     this.id = id;
     this.url = url;
     this.audioContext = audioContext;
@@ -38,7 +38,7 @@ export class AudioPlayer implements IAudioPlayer {
     this.pannerNode = this.audioContext.createStereoPanner();
 
     this.pannerNode.connect(this.gainNode);
-    this.gainNode.connect(this.audioContext.destination);
+    this.gainNode.connect(destination || this.audioContext.destination);
   }
 
   get isLoaded() { return this._isLoaded; }
@@ -143,6 +143,11 @@ export class AudioPlayer implements IAudioPlayer {
     if (!this._isLoaded) await this.load();
     if (!this.buffer) return;
     if (this._isPlaying) this.stopSource();
+
+    // Ensure context is running (required for user gesture activation)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
 
     if (startTimeSeconds !== undefined) {
       this._offset = startTimeSeconds;

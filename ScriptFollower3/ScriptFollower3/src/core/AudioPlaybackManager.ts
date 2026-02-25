@@ -39,7 +39,7 @@ export class AudioPlaybackManager {
     }
 
     if (!player) {
-      player = new AudioPlayer(id, url, this.audioContext);
+      player = new AudioPlayer(id, url, this.audioContext, this.masterGainNode);
       
       this.audioPlayers.set(id, player);
 
@@ -138,6 +138,21 @@ export class AudioPlaybackManager {
 
   getCurrentlyPlayingPlayers(): IAudioPlayer[] {
     return Array.from(this.activePlayers.values());
+  }
+
+  /**
+   * Destroys specific audio players and removes them from management.
+   * @param playerIds Array of player IDs to destroy.
+   */
+  destroyPlayers(playerIds: string[]): void {
+    playerIds.forEach(id => {
+      const player = this.audioPlayers.get(id);
+      if (player) {
+        player.destroy();
+        this.audioPlayers.delete(id);
+        this.activePlayers.delete(id);
+      }
+    });
   }
 
   destroy(): void {

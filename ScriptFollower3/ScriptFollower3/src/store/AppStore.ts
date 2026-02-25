@@ -81,6 +81,22 @@ export class AppStore {
   }
 
   /**
+   * Update lines in the current document
+   */
+  updateLines(updatedLines: ScriptLineBase[]): void {
+    if (!this.state.currentDocument) return
+
+    const lineMap = new Map(updatedLines.map(line => [line.id, line]));
+    const newLines = this.state.currentDocument.lines.map(line => lineMap.get(line.id) || line);
+
+    this.state.currentDocument = {
+      ...this.state.currentDocument,
+      lines: newLines,
+      updatedAt: new Date()
+    }
+  }
+
+  /**
    * Update document version (increment by 1)
    */
   updateDocumentVersion(): void {

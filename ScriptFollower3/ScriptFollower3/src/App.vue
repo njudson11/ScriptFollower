@@ -16,6 +16,8 @@ import { NavigationFeature } from '@/features/NavigationFeature'
 import { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature'
 import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import { AudioTestFeature } from '@/features/AudioTestFeature'
+import { SoundFeature } from '@/features/SoundFeature'
+import { LineType, ScriptLineBase, SoundCue } from './types/core'
 
 // Initialize managers
 const eventBus = new EventBus()
@@ -43,6 +45,9 @@ onMounted(async () => {
 
   const audioTestFeature = new AudioTestFeature(featureManager)
   await featureManager.registerFeature(audioTestFeature)
+
+  const soundFeature = new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus)
+  await featureManager.registerFeature(soundFeature)
 
   isInitialized.value = true
 })
@@ -85,6 +90,86 @@ const handleFileUpload = async (event: Event) => {
   }
 }
 
+const handleSoundsUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+
+  if (!files || files.length === 0) {
+    return
+  }
+
+  const document = appStore.getCurrentDocument()
+  if (!document) {
+    appStore.setError('Please load a document first before loading sounds.')
+    return
+  }
+
+  try {
+    appStore.setLoading(true)
+    
+    // Valid audio extensions
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
+    
+    // Create a map of filename start patterns to File objects
+    const fileMap = new Map<string, File>()
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const lowerName = file.name.toLowerCase()
+      
+      if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
+        // Extract the leading alphanumeric part (e.g., "0101" from "0101 - sound.mp3")
+        const match = file.name.match(/^([a-zA-Z0-9]+)/)
+        if (match) {
+          fileMap.set(match[1], file)
+        }
+      }
+    }
+
+    const updatedLines: ScriptLineBase[] = []
+    let matchCount = 0
+
+    for (const line of document.lines) {
+      if (line.lineType === LineType.SOUND_CUE) {
+        const soundRef = line.metadata.soundRef
+        if (soundRef && fileMap.has(soundRef)) {
+          const file = fileMap.get(soundRef)!
+          const objectUrl = URL.createObjectURL(file)
+          
+          const soundCue: SoundCue = {
+            id: `cue_${line.id}`,
+            name: file.name,
+            url: objectUrl,
+            volume: 80, // Default volume
+            pan: 'center'
+          }
+
+          updatedLines.push({
+            ...line,
+            metadata: {
+              ...line.metadata,
+              sound: soundCue
+            }
+          })
+          matchCount++
+        }
+      }
+    }
+
+    if (updatedLines.length > 0) {
+      appStore.updateLines(updatedLines)
+      console.log(`[App] Matched ${matchCount} sound files to cues.`)
+    } else {
+      console.warn('[App] No sound files matched current document cues.')
+    }
+
+  } catch (error) {
+    appStore.setError(error instanceof Error ? error.message : 'Failed to process sound files')
+  } finally {
+    appStore.setLoading(false)
+    input.value = ''
+  }
+}
+
 const hasDocument = computed(() => appStore.state.currentDocument !== null)
 
 const gridTemplateColumns = computed(() => {
@@ -95,7 +180,12 @@ const gridTemplateColumns = computed(() => {
 
 <template>
   <div class="app-container" v-if="isInitialized">
-    <Toolbar @file-upload="handleFileUpload" :has-document="hasDocument" :is-loading="appStore.state.isLoading" />
+    <Toolbar 
+      @file-upload="handleFileUpload" 
+      @sounds-upload="handleSoundsUpload"
+      :has-document="hasDocument" 
+      :is-loading="appStore.state.isLoading" 
+    />
 
     <div v-if="appStore.state.error" class="error-banner">
       <span>{{ appStore.state.error }}</span>

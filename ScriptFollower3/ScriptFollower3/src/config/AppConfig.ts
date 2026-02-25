@@ -9,14 +9,21 @@ export interface ViewerConfig {
   scrollOffsetPx: number
 }
 
+export interface AudioConfig {
+  preloadCuesAhead: number
+  preloadCuesBehind: number
+}
+
 export const AppConfig: {
   lineTypes: Record<LineType, LineTypeConfig>,
   viewers: {
     documentViewer: ViewerConfig,
     sidebar: ViewerConfig
-  }
+  },
+  audio: AudioConfig
 } = {
   lineTypes: {
+    // ... existing line types
     [LineType.TITLE]: {
       defaultFilterValue: false
     },
@@ -39,27 +46,31 @@ export const AppConfig: {
       defaultFilterValue: false
     },
     [LineType.TECH_CUE]: {
-      defaultFilterValue: true // Often hidden by default
+      defaultFilterValue: true 
     },
     [LineType.SOUND_CUE]: {
-      defaultFilterValue: true // Often hidden by default
+      defaultFilterValue: true
     },
     [LineType.LIGHT_CUE]: {
-      defaultFilterValue: true // Often hidden by default
+      defaultFilterValue: true
     },
     [LineType.BLANK]: {
-      defaultFilterValue: false // Blank lines often hidden by default
+      defaultFilterValue: false
     },
     [LineType.PAGE_NUMBER]: {
-      defaultFilterValue: false // Page numbers often hidden by default
+      defaultFilterValue: false
     }
   },
   viewers: {
     documentViewer: {
-      scrollOffsetPx: 300 // Default scroll offset for document viewer
+      scrollOffsetPx: 300 
     },
     sidebar: {
-      scrollOffsetPx: 300 // Default scroll offset for sidebar
+      scrollOffsetPx: 300
     }
+  },
+  audio: {
+    preloadCuesAhead: 20,
+    preloadCuesBehind: 10
   }
 }

@@ -14,7 +14,8 @@ interface Props {
 defineProps<Props>()
 
 const emit = defineEmits<{
-  fileUpload: [event: Event]
+  fileUpload: [event: Event],
+  soundsUpload: [event: Event]
 }>()
 
 const appStore = inject('appStore') as AppStore
@@ -93,6 +94,17 @@ const handlePageNumberChange = () => {
     </div>
 
     <div class="toolbar-right">
+      <label class="file-input-label" v-if="hasDocument">
+        <input
+          type="file"
+          webkitdirectory
+          directory
+          @change="emit('soundsUpload', $event)"
+          style="display: none"
+          :disabled="isLoading"
+        />
+        <span>Load Sounds</span>
+      </label>
       <label class="file-input-label">
         <input
           type="file"

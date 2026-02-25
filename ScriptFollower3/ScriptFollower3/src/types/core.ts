@@ -200,6 +200,21 @@ export interface IAudioPlayer {
 }
 
 /**
+ * Configuration for a specific sound cue
+ */
+export interface SoundCue {
+  readonly id: string;
+  readonly url: string;
+  readonly name: string;
+  readonly volume: number; // 0-100
+  readonly pan: 'left' | 'right' | 'center';
+  readonly startOffsetSeconds?: number;
+  readonly endOffsetSeconds?: number;
+  readonly fadeIn?: number; // ms
+  readonly fadeOut?: number; // ms
+}
+
+/**
  * Standardized audio event types
  */
 export const AUDIO_EVENT_TYPES = {
