@@ -24,7 +24,15 @@
   font-style: italic;
 }
 
-.section {
+.section-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-column {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -78,13 +86,14 @@
 
 .grid-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   gap: 4px;
 }
 
@@ -99,6 +108,7 @@
   border-radius: 4px;
   background: var(--color-background-soft);
   color: var(--color-text-primary);
+  width:100%;
 }
 
 .input-group input:disabled {
@@ -132,7 +142,7 @@ input[type="range"] {
 .dropdown-toggle {
   width: 100%;
   text-align: left;
-  padding: 6px 12px;
+  padding: 9px 12px;
   background: var(--color-background-soft);
   border: 1px solid var(--color-border);
   border-radius: 4px;

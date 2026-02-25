@@ -245,55 +245,31 @@ onBeforeUnmount(() => {
 <template>
   <div class="sound-cue-panel">
     <div class="panel-header">
-      <h3>Sound Cue Settings</h3>
-      <div v-if="soundCue" class="cue-file-info">
-        File: {{ soundCue.name }}
-      </div>
-      <div v-else class="no-cue-label">
+      <span :class="['status-badge', isPlaying ? 'status-playing' : (soundCue ? 'status-loaded' : 'status-idle')]">
+        {{ isPlaying ? 'Playing' : (soundCue ? 'Ready' : 'No Audio') }}
+      </span>
+      <span v-if="soundCue" class="cue-file-info">
+        {{ soundCue.name }}
+      </span>
+      <span v-else class="no-cue-label">
         (No audio file associated)
-      </div>
+      </span>
     </div>
 
-    <div class="section">
-      <div class="playback-status">
-        <span :class="['status-badge', isPlaying ? 'status-playing' : (soundCue ? 'status-loaded' : 'status-idle')]">
-          {{ isPlaying ? 'Playing' : (soundCue ? 'Ready' : 'No Audio') }}
-        </span>
-        <span class="time-display">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
-      </div>
+    <div class="section-row">
       
       <div class="main-controls">
         <button class="btn btn-primary" @click="togglePlayback" :disabled="!soundCue">
           {{ isPlaying ? 'Stop' : 'Play Preview' }}
         </button>
       </div>
-    </div>
-
-    <div class="section">
-      <div class="input-group">
-        <label>Virtual Channel</label>
-        <select v-model="selectedChannelId" class="channel-select">
-          <option v-for="ch in availableChannels" :key="ch.id" :value="ch.id">
-            {{ ch.name }} {{ ch.id === line.lineSubType ? '(Default)' : '' }}
-          </option>
-        </select>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="input-group">
-        <label>Volume: {{ volume }}%</label>
-        <input type="range" min="0" max="100" v-model.number="volume" />
-      </div>
-      
-      <div class="input-group">
-        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Center' }} ({{ balance.toFixed(1) }})</label>
-        <input type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
-      </div>
+      <span class="playback-status">
+        <span class="time-display">{{ formatTime(currentTime) }}/{{ formatTime(duration) }}</span>
+      </span>
     </div>
 
     <!-- Stop Behavior Section -->
-    <div class="section">
+    <div class="section-row">
       <div class="input-group">
         <label>Stop Behavior</label>
         <div class="custom-dropdown">
@@ -326,9 +302,30 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+      <div class="input-group">
+        <label>Virtual Channel</label>
+        <select v-model="selectedChannelId" class="channel-select">
+          <option v-for="ch in availableChannels" :key="ch.id" :value="ch.id">
+            {{ ch.name }} {{ ch.id === line.lineSubType ? '(Default)' : '' }}
+          </option>
+        </select>
+      </div>
     </div>
 
-    <div class="section" :class="{ 'is-disabled': !soundCue }">
+    <div class="section-column">
+      <div class="input-group">
+        <label>Volume: {{ volume }}%</label>
+        <input type="range" min="0" max="100" v-model.number="volume" />
+      </div>
+      
+      <div class="input-group">
+        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Center' }} ({{ balance.toFixed(1) }})</label>
+        <input type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
+      </div>
+    </div>
+
+
+    <div class="section-column" :class="{ 'is-disabled': !soundCue }">
       <h4>Waveform & Range</h4>
       <AudioWaveform 
         :player="currentPlayer"
@@ -339,14 +336,10 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div class="section grid-controls">
+    <div class="section-column grid-controls">
       <div class="input-group">
         <label>Start (s)</label>
         <input type="number" v-model.number="startTime" step="0.1" min="0" :disabled="!soundCue" />
-      </div>
-      <div class="input-group">
-        <label>End (s)</label>
-        <input type="number" v-model.number="endTime" step="0.1" min="0" :disabled="!soundCue" />
       </div>
       <div class="input-group">
         <label>Fade In (ms)</label>
@@ -355,6 +348,10 @@ onBeforeUnmount(() => {
       <div class="input-group">
         <label>Fade Out (ms)</label>
         <input type="number" v-model.number="fadeOut" step="100" min="0" />
+      </div>
+      <div class="input-group">
+        <label>End (s)</label>
+        <input type="number" v-model.number="endTime" step="0.1" min="0" :disabled="!soundCue" />
       </div>
     </div>
 

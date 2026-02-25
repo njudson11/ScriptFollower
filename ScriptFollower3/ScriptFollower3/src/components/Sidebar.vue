@@ -1,21 +1,27 @@
 <script setup lang="ts">
-import { computed, inject, type Component, ref } from 'vue' // Add ref
+import { computed, inject, type Component, ref, onMounted, onBeforeUnmount } from 'vue'
 import type { AppStore } from '@/store/AppStore'
-import type { LineSelectionManager } from '@/core/LineSelectionManager'
+import type { EventBus } from '@/core/EventBus'
+import { EVENT_TYPES } from '@/core/EventBus'
 import { LineType } from '@/types/core'
-import LineTypeFilter from './LineTypeFilter.vue' // Import the new component
+import LineTypeFilter from './LineTypeFilter.vue'
 import type { FeatureManager } from '@/core/FeatureManager'
-import DefaultLineComponent from './DefaultLineComponent.vue' // Import DefaultLineComponent
-import type { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature' // Import SidebarProgressBarFeature
-import { useStickyScroll } from '@/composables/useStickyScroll' // Import useStickyScroll
-import { AppConfig } from '@/config/AppConfig' // Import AppConfig
+import DefaultLineComponent from './DefaultLineComponent.vue'
+import type { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature'
+import { useStickyScroll } from '@/composables/useStickyScroll'
+import { AppConfig } from '@/config/AppConfig'
+import type { ActionController } from '@/core/ActionController'
+import { ACTION_TYPES } from '@/types/actions'
 
 const appStore = inject('appStore') as AppStore
-const selectionManager = inject('selectionManager') as LineSelectionManager
+const eventBus = inject('eventBus') as EventBus
 const featureManager = inject('featureManager') as FeatureManager
+const actionController = inject('actionController') as ActionController
 const sidebarProgressBarFeature = featureManager.getFeature('sidebar-progress-bar-feature') as SidebarProgressBarFeature
 
-// Modify 'lines' computed property to filter based on visibility
+// Active line tracking for the sidebar
+const activeSidebarLineId = ref<string | null>(null);
+
 const visibleLines = computed(() => {
   const allLines = appStore.getLines();
   const lineTypeVisibility = appStore.state.lineTypeVisibility;
@@ -26,19 +32,29 @@ const getLineComponent = (lineType: LineType): Component => {
   return featureManager.getLineRenderer(lineType, 'sidebar') || DefaultLineComponent
 }
 
-const sidebarContentRef = ref<HTMLElement | null>(null); // Ref for sidebar content div
-const scrollOffsetPx = ref(AppConfig.viewers.sidebar.scrollOffsetPx); // Get offset from AppConfig
+const sidebarContentRef = ref<HTMLElement | null>(null);
+const scrollOffsetPx = ref(AppConfig.viewers.sidebar.scrollOffsetPx);
 
 const { setLineRef } = useStickyScroll({
   viewerRef: sidebarContentRef,
-  lines: visibleLines, // Use visibleLines for scrolling in sidebar
-  currentLineId: sidebarProgressBarFeature.activeSidebarLineId,
+  lines: visibleLines,
+  currentLineId: activeSidebarLineId,
   scrollOffsetPx
 });
 
 const handleLineClick = (lineId: string) => {
-  selectionManager.selectLine(lineId)
+  actionController.dispatch({ type: ACTION_TYPES.SELECT_LINE, payload: { lineId } });
 }
+
+onMounted(() => {
+  const unsubscribe = eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
+    activeSidebarLineId.value = event.payload.lineId;
+  });
+  
+  onBeforeUnmount(() => {
+    unsubscribe();
+  });
+});
 </script>
 
 <template>
@@ -48,10 +64,11 @@ const handleLineClick = (lineId: string) => {
       <span class="line-count">{{ visibleLines.length }}</span>
     </div>
 
-    <LineTypeFilter></LineTypeFilter> <!-- Moved here outside sidebar-content -->
+    <LineTypeFilter></LineTypeFilter>
 
     <div class="sidebar-content" ref="sidebarContentRef">
       <template v-for="line in visibleLines" :key="line.id">
+        <!-- Progress bar integration via feature -->
         <div v-if="line.id === sidebarProgressBarFeature.activeSidebarLineId.value && sidebarProgressBarFeature.progressPercentage.value > 0" class="sidebar-progress-bar-container">
           <div class="sidebar-progress-bar" :style="{ width: sidebarProgressBarFeature.progressPercentage.value + '%' }"></div>
         </div>
@@ -59,7 +76,7 @@ const handleLineClick = (lineId: string) => {
           :is="getLineComponent(line.lineType)"
           :line="line"
           :ref="(el) => setLineRef(line.id, el)"
-          :is-active="line.id === sidebarProgressBarFeature.activeSidebarLineId.value"
+          :is-active="line.id === activeSidebarLineId"
           @click="handleLineClick(line.id)"
           context-class="context-sidebar"
         />
@@ -67,7 +84,6 @@ const handleLineClick = (lineId: string) => {
     </div>
   </div>
 </template>
-
 
 <style scoped>
 @import '../css/Sidebar.css';

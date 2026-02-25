@@ -36,46 +36,45 @@ const toggleFullXml = () => {
   <div v-if="currentLine" class="panel-content line-data-panel">
     <div class="panel-header line-data-panel-header">
       <h3>Line Data</h3>
-      <button @click="onClearSelection" class="clear-button" title="Clear selection">×</button>
     </div>
 
-    <div class="line-data-content">
-      <div class="info-section">
+    <div class="line-data-content flex-column">
+      <div class="info-section flex-row">
         <label>ID:</label>
         <p>{{ currentLine.id }}</p>
       </div>
 
-      <div class="info-section">
+      <div class="info-section flex-row">
         <label>Document ID:</label>
         <p>{{ currentLine.documentId }}</p>
       </div>
 
-      <div class="info-section">
+      <div class="info-section flex-row">
         <label>Line Number:</label>
         <p>{{ currentLine.lineNumber }}</p>
       </div>
 
-      <div v-if="currentLine.pageNumber !== null" class="info-section">
+      <div v-if="currentLine.pageNumber !== null" class="info-section flex-row">
         <label>Page Number:</label>
         <p>{{ currentLine.pageNumber }}</p>
       </div>
 
-      <div class="info-section">
+      <div class="info-section flex-row">
         <label>Line Type:</label>
         <p>{{ currentLine.lineType }}</p>
       </div>
 
-      <div v-if="currentLine.lineSubType" class="info-section">
+      <div v-if="currentLine.lineSubType" class="info-section flex-row">
         <label>Line SubType:</label>
         <p>{{ currentLine.lineSubType }}</p>
       </div>
 
-      <div v-if="currentLine.metadata.contentHint" class="info-section">
+      <div v-if="currentLine.metadata.contentHint" class="info-section flex-row">
         <label>Content Hint:</label>
         <p>{{ currentLine.metadata.contentHint }}</p>
       </div>
 
-      <div class="info-section">
+      <div class="info-section flex-row">
         <label>Text:</label>
         <p class="text-content">{{ currentLine.text }}</p>
       </div>

@@ -7,6 +7,7 @@ import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import type { AnnotationManager } from '@/core/AnnotationManager'
 import { ACTION_TYPES } from '@/types/actions'
+import { AppConfig } from '@/config/AppConfig'
 
 const props = defineProps({
   line: {
@@ -64,12 +65,12 @@ const formatTime = (seconds: number) => {
 
 /**
  * Resolves the channel ID, prioritizing annotations, then line subtypes,
- * and finally defaulting to the first available virtual channel (usually 'A').
+ * and finally defaulting to the base virtual channel from config.
  */
 const resolveChannelId = () => {
     return annotationManager.getValue(props.line.annotation, 'chan') 
            || props.line.lineSubType 
-           || (appStore.state.virtualChannels[0]?.id || 'A');
+           || AppConfig.audio.baseChannelId;
 };
 
 const togglePlayback = (event?: MouseEvent) => {
@@ -133,7 +134,7 @@ const updateState = () => {
 }
 
 onMounted(() => {
-  timeUpdateInterval = window.setInterval(updateState, 100)
+  timeUpdateInterval = window.setInterval(updateState, AppConfig.audio.refreshIntervalMs)
 })
 
 onBeforeUnmount(() => {

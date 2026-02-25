@@ -35,7 +35,13 @@ export class AppStore {
     })(),
     isRightPanelCollapsed: false,
     virtualChannels: [
-      { id: 'A', name: 'Channel A', volume: 0.8, isMuted: false, outputDeviceId: 'default' }
+      { 
+        id: AppConfig.audio.baseChannelId, 
+        name: `Channel ${AppConfig.audio.baseChannelId}`, 
+        volume: AppConfig.audio.defaultChannelVolume, 
+        isMuted: false, 
+        outputDeviceId: 'default' 
+      }
     ],
     availableOutputDevices: []
   })
@@ -49,13 +55,12 @@ export class AppStore {
   // --- Channel Management ---
 
   addVirtualChannel(channel: IVirtualChannel): void {
-    // Avoid duplicates
     if (this.state.virtualChannels.some(c => c.id === channel.id)) return;
     this.state.virtualChannels.push(channel);
   }
 
   removeVirtualChannel(id: string): void {
-    if (id === 'default') return;
+    if (id === AppConfig.audio.baseChannelId) return;
     this.state.virtualChannels = this.state.virtualChannels.filter(c => c.id !== id);
   }
 
@@ -72,29 +77,19 @@ export class AppStore {
 
   // --- Existing Methods ---
 
-  /**
-   * Set the visibility of a specific line type
-   */
   setLineTypeVisibility(lineType: LineType, visible: boolean): void {
     this.state.lineTypeVisibility[lineType] = visible;
   }
 
-  /**
-   * Toggle the collapsed state of the right panel
-   */
   toggleRightPanel(): void {
     this.state.isRightPanelCollapsed = !this.state.isRightPanelCollapsed;
   }
 
-  /**
-   * Load a document into the store
-   */
   loadDocument(document: Document): void {
     this.state.currentDocument = document
     this.state.isLoading = false
     this.state.error = null
     
-    // Emit document loaded event
     this.eventBus.emit({
       type: EVENT_TYPES.DOCUMENT_LOADED,
       payload: { documentId: document.id },
@@ -102,23 +97,14 @@ export class AppStore {
     });
   }
 
-  /**
-   * Set loading state
-   */
   setLoading(isLoading: boolean): void {
     this.state.isLoading = isLoading
   }
 
-  /**
-   * Set error
-   */
   setError(error: string | null): void {
-    this.state.error = error
+    this.error = error
   }
 
-  /**
-   * Update a single line in the current document
-   */
   updateLine(lineId: string, updates: Partial<ScriptLineBase>): void {
     if (!this.state.currentDocument) return
 
@@ -133,9 +119,6 @@ export class AppStore {
     }
   }
 
-  /**
-   * Update lines in the current document
-   */
   updateLines(updatedLines: ScriptLineBase[]): void {
     if (!this.state.currentDocument) return
 
@@ -149,9 +132,6 @@ export class AppStore {
     }
   }
 
-  /**
-   * Update document version (increment by 1)
-   */
   updateDocumentVersion(): void {
     if (!this.state.currentDocument) return
 
@@ -162,50 +142,28 @@ export class AppStore {
     }
   }
 
-  /**
-   * Get current state
-   */
   getState(): AppState {
     return this.state
   }
 
-  /**
-   * Get current document
-   */
   getCurrentDocument(): Document | null {
     return this.state.currentDocument
   }
 
-  /**
-   * Get lines from current document
-   */
   getLines(): readonly ScriptLineBase[] {
     return this.state.currentDocument?.lines ?? []
   }
 
-  /**
-   * Get line by ID
-   */
   getLineById(lineId: string): ScriptLineBase | undefined {
     return this.state.currentDocument?.lines.find(l => l.id === lineId)
   }
 
-  /**
-   * Get the CSS classes for a given ScriptLineBase object.
-   * Includes line type class and optionally line subtype class.
-   */
   getLineClasses(line: ScriptLineBase): string[] {
     const classes: string[] = [];
-
-    // Add line type class
     classes.push(`line-type-${line.lineType.toLowerCase().replace(/_/g, '-')}`);
-
-    // Add line subtype class if it exists
     if (line.lineSubType) {
-      // Assuming lineSubType can be directly converted to a kebab-case class name
       classes.push(`line-subtype-${line.lineSubType.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`);
     }
-
     return classes;
   }
 }

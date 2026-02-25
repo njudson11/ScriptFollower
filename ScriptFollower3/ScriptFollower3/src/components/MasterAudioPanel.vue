@@ -5,6 +5,7 @@ import type { IAudioPlayer, IVirtualChannel, IAudioOutputDevice } from '@/types/
 import type { AppStore } from '@/store/AppStore';
 import { EventBus } from '@/core/EventBus';
 import { AUDIO_EVENT_TYPES } from '@/types/core';
+import { AppConfig } from '@/config/AppConfig';
 import AudioWaveform from './AudioWaveform.vue';
 
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager;
@@ -23,7 +24,7 @@ const adhocStartTime = ref(0);
 const adhocEndTime = ref(0);
 const adhocFadeIn = ref(0);
 const adhocFadeOut = ref(0);
-const selectedChannelId = ref('A');
+const selectedChannelId = ref(AppConfig.audio.baseChannelId);
 
 const adhocPlayer = ref<IAudioPlayer | null>(null);
 const loadedFileName = ref<string>('');
@@ -170,7 +171,7 @@ const addChannel = () => {
 };
 
 const removeChannel = (id: string) => {
-  if (id === 'A' && virtualChannels.value.length === 1) return;
+  if (id === AppConfig.audio.baseChannelId && virtualChannels.value.length === 1) return;
   appStore.removeVirtualChannel(id);
 };
 
@@ -224,7 +225,7 @@ onMounted(async () => {
       await refreshDevices();
   });
 
-  // Sync initial routing if supported
+  // Ensure AudioPlaybackManager is aware of initial channel device mappings
   if (isMultiDeviceSupported) {
     virtualChannels.value.forEach(ch => {
         audioPlaybackManager.setChannelDevice(ch.id, ch.outputDeviceId);
@@ -236,7 +237,7 @@ onMounted(async () => {
       adhocCurrentTime.value = adhocPlayer.value.currentTime;
     }
     activePlayers.value = audioPlaybackManager.getCurrentlyPlayingPlayers();
-  }, 100);
+  }, AppConfig.audio.refreshIntervalMs);
 });
 
 onBeforeUnmount(() => {
@@ -268,7 +269,7 @@ onBeforeUnmount(() => {
         </div>
         
         <div class="input-group">
-          <label>Hardware Output Device</label>
+          <label>Global Default Output</label>
           <div class="input-row">
             <select v-model="currentOutputDeviceId" class="device-select">
                 <option value="default">System Default</option>
@@ -299,10 +300,9 @@ onBeforeUnmount(() => {
         <div v-for="channel in virtualChannels" :key="channel.id" class="channel-strip">
           <div class="channel-header">
             <span class="channel-name">{{ channel.name }}</span>
-            <button v-if="channel.id !== 'A'" class="btn-remove" @click="removeChannel(channel.id)">×</button>
+            <button v-if="channel.id !== AppConfig.audio.baseChannelId" class="btn-remove" @click="removeChannel(channel.id)">×</button>
           </div>
           
-          <!-- Only show device mapping if the browser actually supports it -->
           <div v-if="isMultiDeviceSupported" class="channel-device-mapping">
             <select 
               :value="channel.outputDeviceId" 

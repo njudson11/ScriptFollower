@@ -19,6 +19,7 @@ import { SoundFeature } from '@/features/SoundFeature'
 import { ProjectManager } from '@/core/ProjectManager'
 import { ACTION_TYPES } from './types/actions'
 import { AnnotationManager } from '@/core/AnnotationManager'
+import { AppConfig } from '@/config/AppConfig'
 
 // Initialize core managers
 const eventBus = new EventBus()
@@ -102,8 +103,10 @@ const onSoundsUpload = (event: Event) => {
 const hasDocument = computed(() => appStore.state.currentDocument !== null)
 
 const gridTemplateColumns = computed(() => {
-  const rightPanelWidth = appStore.state.isRightPanelCollapsed ? '40px' : '350px';
-  return `200px 1fr ${rightPanelWidth}`;
+  const rightPanelWidth = appStore.state.isRightPanelCollapsed 
+    ? AppConfig.layout.collapsedPanelWidth 
+    : AppConfig.layout.rightPanelWidth;
+  return `${AppConfig.layout.sidebarWidth} 1fr ${rightPanelWidth}`;
 });
 </script>
 

@@ -58,8 +58,8 @@
   margin-left: 8px;
   border: none;
   border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: var(--color-text-on-primary);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
   text-align: center;
   font-size: 1em;
   -moz-appearance: textfield; /* Hide Firefox number input arrows */
@@ -74,7 +74,7 @@
 
 .page-number-input:focus {
   outline: none;
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--color-surface);
 }
 
 .page-number-input:disabled {
@@ -89,12 +89,13 @@
 .file-input-label {
   display: inline-block;
   padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-primary-dark);
   color: var(--color-text-on-primary);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
   transition: background-color 0.3s;
+  margin:0.5rem;
 }
 
 .file-input-label:hover {

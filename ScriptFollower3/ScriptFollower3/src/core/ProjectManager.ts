@@ -5,6 +5,7 @@ import { EventBus, EVENT_TYPES } from './EventBus';
 import { ACTION_TYPES } from '@/types/actions';
 import { parseODT } from '@/parsers/ODTParser';
 import { LineType, ScriptLineBase, SoundCue } from '@/types/core';
+import { AppConfig } from '@/config/AppConfig';
 
 /**
  * ProjectManager encapsulates the high-level business logic for 
@@ -99,13 +100,13 @@ export class ProjectManager {
         return;
       }
 
-      const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+      const audioExtensions = AppConfig.audio.supportedExtensions;
       const fileMap = new Map<string, File>();
       
       for (const file of files) {
         const lowerName = file.name.toLowerCase();
         if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
-          const match = file.name.match(/^([a-zA-Z0-9_-]+)/);
+          const match = file.name.match(AppConfig.audio.soundRegex || AppConfig.audio.soundRefRegex);
           if (match && match[1]) {
             fileMap.set(match[1], file);
           }
@@ -124,9 +125,9 @@ export class ProjectManager {
               id: `cue_${line.id}`,
               name: file.name,
               url: objectUrl,
-              volume: 100,
-              pan: 'center',
-              channelId: line.lineSubType || 'A' // Consistent default logic
+              volume: AppConfig.audio.defaultVolume * 100,
+              pan: AppConfig.audio.defaultPan,
+              channelId: line.lineSubType || AppConfig.audio.baseChannelId
             };
 
             updatedLines.push({

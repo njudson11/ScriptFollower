@@ -32,12 +32,10 @@ export class SoundFeature implements FeaturePlugin {
   private unregisterActions: Array<() => void> = []
   private unregisterEvents: Array<() => void> = []
 
-  // Pre-bind handlers to ensure they are unique in the ActionController's Set
   private boundHandlePlaySound: any;
   private boundHandleStopSound: any;
   private boundHandleTogglePlaySound: any;
 
-  // Keep track of which players we've created for pre-loading
   private managedPlayerIds: Set<string> = new Set()
 
   constructor(
@@ -57,7 +55,6 @@ export class SoundFeature implements FeaturePlugin {
     this.annotationManager = annotationManager
     this.selectionManager = selectionManager
 
-    // Bind handlers once
     this.boundHandlePlaySound = this.handlePlaySound.bind(this);
     this.boundHandleStopSound = this.handleStopSound.bind(this);
     this.boundHandleTogglePlaySound = this.handleTogglePlaySound.bind(this);
@@ -78,7 +75,7 @@ export class SoundFeature implements FeaturePlugin {
         name: 'pan',
         description: 'Stereo pan (-1 to 1, or left/center/right)',
         type: 'string',
-        defaultValue: 'center',
+        defaultValue: AppConfig.audio.defaultPan,
         parseValue: (val) => {
           const lowerVal = val.toLowerCase();
           if (['left', 'center', 'right'].includes(lowerVal)) {
@@ -175,7 +172,6 @@ export class SoundFeature implements FeaturePlugin {
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
-    // Using pre-bound handlers prevents duplicate registration
     this.unregisterActions.push(
       this.actionController.registerHandler(ACTION_TYPES.PLAY_SOUND_CUE, this.boundHandlePlaySound),
       this.actionController.registerHandler(ACTION_TYPES.STOP_SOUND_CUE, this.boundHandleStopSound),
@@ -215,19 +211,19 @@ export class SoundFeature implements FeaturePlugin {
 
     const currentChannels = [...this.appStore.state.virtualChannels];
     currentChannels.forEach(ch => {
-        if (ch.id !== 'A') {
+        if (ch.id !== AppConfig.audio.baseChannelId) {
             this.appStore.removeVirtualChannel(ch.id);
         }
     });
 
     if (soundCueSubTypes.size === 0) {
-        this.appStore.updateVirtualChannel('A', { name: 'Channel A' });
+        this.appStore.updateVirtualChannel(AppConfig.audio.baseChannelId, { name: `Channel ${AppConfig.audio.baseChannelId}` });
     } else {
         soundCueSubTypes.forEach(subType => {
             this.appStore.addVirtualChannel({
                 id: subType,
                 name: `Channel ${subType}`,
-                volume: 0.8,
+                volume: AppConfig.audio.defaultChannelVolume,
                 isMuted: false,
                 outputDeviceId: 'default'
             });
@@ -248,7 +244,7 @@ export class SoundFeature implements FeaturePlugin {
 
     if (line.lineSubType) return line.lineSubType;
 
-    return this.appStore.state.virtualChannels[0]?.id || 'A';
+    return this.appStore.state.virtualChannels[0]?.id || AppConfig.audio.baseChannelId;
   }
 
   private managePreloading(currentLineId: string): void {
@@ -377,7 +373,7 @@ export class SoundFeature implements FeaturePlugin {
         if (fo !== undefined) fadeOut = fo;
       }
 
-      player.volume = (volume || 100) / 100
+      player.volume = (volume || (AppConfig.audio.defaultVolume * 100)) / 100
       
       if (overridePan !== undefined) {
         player.balance = overridePan;
