@@ -94,16 +94,16 @@ const handlePageNumberChange = () => {
     </div>
 
     <div class="toolbar-right">
-      <label class="file-input-label" v-if="hasDocument">
+      <label class="file-input-label">
         <input
           type="file"
           webkitdirectory
           directory
-          @change="emit('soundsUpload', $event)"
+          @change="e => { console.log('[Toolbar] Raw files from input (change event):', e.target.files); emit('soundsUpload', e) }"
           style="display: none"
           :disabled="isLoading"
         />
-        <span>Load Sounds</span>
+        <span>Load Project Folder</span>
       </label>
       <label class="file-input-label">
         <input

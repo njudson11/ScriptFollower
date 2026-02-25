@@ -86,6 +86,7 @@
 .annotation-label {
   font-weight: 600;
   flex-shrink: 0;
+  display: none;;
 }
 
 .annotation-text {

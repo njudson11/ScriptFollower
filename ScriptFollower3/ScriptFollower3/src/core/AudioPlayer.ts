@@ -3,6 +3,7 @@ import { IAudioPlayer } from '@/types/core';
 export class AudioPlayer implements IAudioPlayer {
   readonly id: string;
   readonly url: string;
+  readonly channelId: string; // New: Associated channel ID
   private audioContext: AudioContext;
   private buffer: AudioBuffer | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
@@ -29,9 +30,10 @@ export class AudioPlayer implements IAudioPlayer {
     onLoadProgress: new Set<(progress: number, status: string) => void>()
   };
 
-  constructor(id: string, url: string, audioContext: AudioContext, destination?: AudioNode) {
+  constructor(id: string, url: string, audioContext: AudioContext, destination?: AudioNode, channelId: string = 'default') {
     this.id = id;
     this.url = url;
+    this.channelId = channelId;
     this.audioContext = audioContext;
 
     this.gainNode = this.audioContext.createGain();

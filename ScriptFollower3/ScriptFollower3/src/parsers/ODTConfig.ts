@@ -122,7 +122,7 @@ export const defaultODTConfig: ODTParserConfig = {
       pattern: '^.*?\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
       mappings: {
         soundRef: '$1',
-        soundDescription: '$2' // Optionally capture the description after the sound reference
+        soundDescription: '$2' // Captures the description after the sound reference
       }
     },
     {

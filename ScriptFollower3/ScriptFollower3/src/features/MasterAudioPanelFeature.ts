@@ -1,23 +1,23 @@
 import { FeaturePlugin, KeyBinding, Annotation, HighlightTypeRegistry } from '@/types/core';
-import AudioTestPanel from '@/components/AudioTestPanel.vue';
+import MasterAudioPanel from '@/components/MasterAudioPanel.vue';
 import { FeatureManager } from '@/core/FeatureManager';
 
-export class AudioTestFeature implements FeaturePlugin {
-  readonly id = 'audio-test-feature';
-  readonly name = 'Audio Test';
+export class MasterAudioPanelFeature implements FeaturePlugin {
+  readonly id = 'master-audio-panel-feature';
+  readonly name = 'Master Audio Panel';
   readonly version = '1.0.0';
-  readonly description = 'A feature to test the AudioPlayback component.';
+  readonly description = 'Provides a comprehensive master audio control panel for the application.';
 
   constructor(private featureManager: FeatureManager) {}
 
   async init(): Promise<void> {
     // Register the UI component for the right panel
-    this.featureManager.registerLineRenderer('AUDIO_TEST' as any, AudioTestPanel, 'right-panel');
-    console.log('AudioTestFeature initialized');
+    this.featureManager.registerLineRenderer('MASTER_AUDIO_PANEL' as any, MasterAudioPanel, 'right-panel');
+    console.log('MasterAudioPanelFeature initialized');
   }
 
   async destroy(): Promise<void> {
-    console.log('AudioTestFeature destroyed');
+    console.log('MasterAudioPanelFeature destroyed');
   }
 
   // Not needed for this POC but required by interface if I don't make them optional

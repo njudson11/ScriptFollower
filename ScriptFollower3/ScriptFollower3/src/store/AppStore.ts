@@ -3,18 +3,18 @@
  */
 
 import { reactive } from 'vue'
-import { Document, ScriptLineBase, LineType } from '@/types/core' // LineType is still used in LineType enum for metadataExtractionRules in config.ts and elsewhere
+import { Document, ScriptLineBase, LineType, IVirtualChannel, IAudioOutputDevice } from '@/types/core'
 import { EventBus } from '@/core/EventBus'
-import { LineSelectionManager } from '@/core/LineSelectionManager'
-import { FeatureManager } from '@/core/FeatureManager'
-import { AppConfig } from '@/config/AppConfig' // Import AppConfig
+import { AppConfig } from '@/config/AppConfig'
 
 export interface AppState {
   currentDocument: Document | null
   isLoading: boolean
   error: string | null
-  lineTypeVisibility: Record<LineType, boolean> // New property for line type filtering
-  isRightPanelCollapsed: boolean // New: State for right panel collapse
+  lineTypeVisibility: Record<LineType, boolean>
+  isRightPanelCollapsed: boolean
+  virtualChannels: IVirtualChannel[]
+  availableOutputDevices: IAudioOutputDevice[]
 }
 
 export class AppStore {
@@ -28,13 +28,16 @@ export class AppStore {
         if (AppConfig.lineTypes[lineType]) {
           visibility[lineType] = AppConfig.lineTypes[lineType].defaultFilterValue
         } else {
-          // Default to true if a line type is not explicitly configured
           visibility[lineType] = true
         }
       }
       return visibility
-    })(), // Immediately invoke the function to set initial state
-    isRightPanelCollapsed: false // Initialize to not collapsed
+    })(),
+    isRightPanelCollapsed: false,
+    virtualChannels: [
+      { id: 'default', name: 'Master Out', volume: 1.0, isMuted: false, outputDeviceId: 'default' }
+    ],
+    availableOutputDevices: []
   })
 
   private eventBus: EventBus
@@ -42,6 +45,30 @@ export class AppStore {
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus
   }
+
+  // --- Channel Management ---
+
+  addVirtualChannel(channel: IVirtualChannel): void {
+    this.state.virtualChannels.push(channel);
+  }
+
+  removeVirtualChannel(id: string): void {
+    if (id === 'default') return;
+    this.state.virtualChannels = this.state.virtualChannels.filter(c => c.id !== id);
+  }
+
+  updateVirtualChannel(id: string, updates: Partial<IVirtualChannel>): void {
+    const index = this.state.virtualChannels.findIndex(c => c.id === id);
+    if (index !== -1) {
+      this.state.virtualChannels[index] = { ...this.state.virtualChannels[index], ...updates };
+    }
+  }
+
+  setAvailableOutputDevices(devices: IAudioOutputDevice[]): void {
+    this.state.availableOutputDevices = devices;
+  }
+
+  // --- Existing Methods ---
 
   /**
    * Set the visibility of a specific line type
@@ -173,5 +200,3 @@ export class AppStore {
     return classes;
   }
 }
-
-

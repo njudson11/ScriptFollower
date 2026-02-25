@@ -180,6 +180,7 @@ export interface IAudioPlayer {
   readonly duration: number;
   readonly loadStatus: 'idle' | 'loading' | 'decoding' | 'loaded' | 'error';
   readonly loadProgress: number; // 0 to 100
+  readonly channelId?: string; // Associated channel ID
   currentTime: number;
   volume: number;
   balance: number;
@@ -200,6 +201,25 @@ export interface IAudioPlayer {
 }
 
 /**
+ * Representation of a virtual audio mixing channel
+ */
+export interface IVirtualChannel {
+  readonly id: string;
+  readonly name: string;
+  readonly volume: number; // 0.0 to 1.0
+  readonly isMuted: boolean;
+  readonly outputDeviceId: string; // references deviceId
+}
+
+/**
+ * Representation of an available audio output device
+ */
+export interface IAudioOutputDevice {
+  readonly deviceId: string;
+  readonly label: string;
+}
+
+/**
  * Configuration for a specific sound cue
  */
 export interface SoundCue {
@@ -212,6 +232,7 @@ export interface SoundCue {
   readonly endOffsetSeconds?: number;
   readonly fadeIn?: number; // ms
   readonly fadeOut?: number; // ms
+  readonly channelId?: string; // Target virtual audio channel
 }
 
 /**

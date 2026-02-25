@@ -23,11 +23,12 @@ const currentLine = computed((): ScriptLineBase | undefined => {
 
 const isSoundCue = computed(() => currentLine.value?.lineType === LineType.SOUND_CUE)
 
-type Tab = 'documentInfo' | 'lineData' | 'audioTest' | 'soundCue';
+type Tab = 'documentInfo' | 'lineData' | 'masterAudio' | 'soundCue';
 const activeTab = ref<Tab>('documentInfo');
 
-const audioTestComponent = computed(() => {
-  return featureManager.getLineRenderer('AUDIO_TEST' as any, 'right-panel');
+const masterAudioComponent = computed(() => {
+  // Use the new registration ID
+  return featureManager.getLineRenderer('MASTER_AUDIO_PANEL' as any, 'right-panel');
 });
 
 const soundCueComponent = computed(() => {
@@ -39,7 +40,7 @@ const getFirstVisibleTab = (): Tab => {
   if (isSoundCue.value) return 'soundCue';
   if (currentLine.value) return 'lineData';
   if (currentDocument.value) return 'documentInfo';
-  return 'audioTest'; // Fallback
+  return 'masterAudio'; // Fallback
 };
 
 const updateCurrentLine = () => {
@@ -50,7 +51,7 @@ const updateCurrentLine = () => {
     activeTab.value = getFirstVisibleTab();
   } else {
     // No line selected, default to document info if a document is loaded
-    activeTab.value = currentDocument.value ? 'documentInfo' : 'audioTest';
+    activeTab.value = currentDocument.value ? 'documentInfo' : 'masterAudio';
   }
 };
 
@@ -84,10 +85,10 @@ onMounted(() => {
           <span v-if="currentLine" class="line-data-badge">{{ currentLine.lineNumber }}</span>
         </button>
         <button :class="{ active: activeTab === 'documentInfo' }" @click="activeTab = 'documentInfo'" :disabled="!currentDocument">
-          Document Info
+          Doc Info
         </button>
-        <button :class="{ active: activeTab === 'audioTest' }" @click="activeTab = 'audioTest'">
-          Audio Test
+        <button :class="{ active: activeTab === 'masterAudio' }" @click="activeTab = 'masterAudio'">
+          Master Audio
         </button>
       </div>
       <button @click="appStore.toggleRightPanel()" class="collapse-button">
@@ -105,7 +106,7 @@ onMounted(() => {
         <component v-if="activeTab === 'soundCue' && soundCueComponent" :is="soundCueComponent" :line="currentLine" />
         <LineDataPanel v-if="activeTab === 'lineData' && currentLine" :current-line="currentLine" :on-clear-selection="clearSelection" />
         <DocumentInfoPanel v-if="activeTab === 'documentInfo' && currentDocument" :current-document="currentDocument" />
-        <component v-if="activeTab === 'audioTest' && audioTestComponent" :is="audioTestComponent" />
+        <component v-if="activeTab === 'masterAudio' && masterAudioComponent" :is="masterAudioComponent" />
     </div>
   </div>
 </template>

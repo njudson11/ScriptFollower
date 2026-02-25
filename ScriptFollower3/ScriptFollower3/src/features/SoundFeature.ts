@@ -1,4 +1,4 @@
-import { FeaturePlugin, LineType, SoundCue, Annotation } from '@/types/core'
+import { FeaturePlugin, LineType, SoundCue, Annotation, KeyBinding } from '@/types/core'
 import type { FeatureManager } from '@/core/FeatureManager'
 import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
@@ -61,13 +61,13 @@ export class SoundFeature implements FeaturePlugin {
         type: 'number',
         defaultValue: 100,
         constraints: { min: 0, max: 100 },
-        parseValue: (val) => parseFloat(val), // Use parseFloat for volume too for consistency, though it's typically integer
+        parseValue: (val) => parseFloat(val),
         validateValue: (val) => val >= 0 && val <= 100
       },
       {
         name: 'pan',
         description: 'Stereo pan (-1 to 1, or left/center/right)',
-        type: 'string', // Can be string or number
+        type: 'string',
         defaultValue: 'center',
         parseValue: (val) => {
           const lowerVal = val.toLowerCase();
@@ -86,6 +86,14 @@ export class SoundFeature implements FeaturePlugin {
           }
           return false;
         }
+      },
+      {
+        name: 'chan',
+        description: 'Virtual audio channel ID (e.g., "A", "B")',
+        type: 'string',
+        defaultValue: 'default',
+        parseValue: (val) => val.trim(),
+        validateValue: (val) => val.length > 0
       },
       {
         name: 'start',
@@ -130,30 +138,40 @@ export class SoundFeature implements FeaturePlugin {
         parseValue: (val) => val.trim(),
         validateValue: (val) => {
           if (val === 'all' || val === 'previous') return true;
-          // Match a comma-separated list of sound refs in brackets
           return /^\[\s*\w+(\s*,\s*\w+)*\s*\]$/.test(val);
         }
       }
     ]
   }
 
-  async init(): Promise<void> {
-    // Register annotations with central manager
-    this.annotationManager.registerFeatureAnnotations(this.id, this.getAnnotations())
+  getKeybindings(): KeyBinding[] {
+    return [
+      {
+        id: 'sound-play-pause',
+        featureId: this.id,
+        keys: ['space'],
+        modifiers: {},
+        actionType: ACTION_TYPES.TOGGLE_PLAY_SOUND_CUE,
+        isActive: (context) => {
+          if (!context.hasDocument || !context.currentLineId) return false;
+          const line = this.appStore.getLineById(context.currentLineId);
+          return line?.lineType === LineType.SOUND_CUE && !!line?.metadata.sound;
+        },
+      },
+    ];
+  }
 
-    // Register the custom renderer for SOUND_CUE lines in the document viewer
+  async init(): Promise<void> {
+    this.annotationManager.registerFeatureAnnotations(this.id, this.getAnnotations())
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
-    
-    // Register the settings panel for the right hand side when a SOUND_CUE is selected
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
-    // Register action handlers
     this.unregisterActions.push(
       this.actionController.registerHandler(ACTION_TYPES.PLAY_SOUND_CUE, this.handlePlaySound.bind(this)),
-      this.actionController.registerHandler(ACTION_TYPES.STOP_SOUND_CUE, this.handleStopSound.bind(this))
+      this.actionController.registerHandler(ACTION_TYPES.STOP_SOUND_CUE, this.handleStopSound.bind(this)),
+      this.actionController.registerHandler(ACTION_TYPES.TOGGLE_PLAY_SOUND_CUE, this.handleTogglePlaySound.bind(this))
     )
 
-    // Listen for line selection to manage pre-loading
     const cleanupSelection = this.eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
       if (event.payload.lineId) {
         this.managePreloading(event.payload.lineId)
@@ -161,7 +179,6 @@ export class SoundFeature implements FeaturePlugin {
     })
     this.unregisterEvents.push(cleanupSelection)
 
-    // Listen for when sounds are loaded to trigger preloading
     const cleanupSoundsLoaded = this.eventBus.subscribe(EVENT_TYPES.SOUNDS_LOADED, () => {
       const currentLineId = this.selectionManager.getCurrentLine();
       if (currentLineId) {
@@ -180,9 +197,6 @@ export class SoundFeature implements FeaturePlugin {
     this.audioPlaybackManager.stopAll()
   }
 
-  /**
-   * Calculates which cues should be loaded and which should be removed based on proximity.
-   */
   private managePreloading(currentLineId: string): void {
     const lines = this.appStore.getLines()
     const currentIndex = lines.findIndex(l => l.id === currentLineId)
@@ -196,7 +210,6 @@ export class SoundFeature implements FeaturePlugin {
 
     const cuesToLoad = new Map<string, SoundCue>()
     
-    // Identify all sound cues in the active window
     for (let i = startIdx; i <= endIdx; i++) {
       const line = lines[i]
       if (line.lineType === LineType.SOUND_CUE && line.metadata.sound) {
@@ -205,7 +218,6 @@ export class SoundFeature implements FeaturePlugin {
       }
     }
 
-    // Unload players that are no longer in the window
     const idsToUnload: string[] = []
     this.managedPlayerIds.forEach(id => {
       if (!cuesToLoad.has(id)) {
@@ -218,7 +230,6 @@ export class SoundFeature implements FeaturePlugin {
       idsToUnload.forEach(id => this.managedPlayerIds.delete(id))
     }
 
-    // Pre-load players in the window
     cuesToLoad.forEach((cue, id) => {
       const player = this.audioPlaybackManager.getPlayer(id, cue.url)
       this.managedPlayerIds.add(id)
@@ -267,15 +278,15 @@ export class SoundFeature implements FeaturePlugin {
       const line = this.appStore.getLineById(lineId);
       if (!line) return;
 
-      // Handle stop annotation before playing
       const stopValue = this.annotationManager.getValue(line.annotation, 'stop');
       if (stopValue) {
         this.executeStopAction(lineId, stopValue);
       }
 
-      if (!cue) return; // If there's no cue on this line, we might just be stopping other sounds.
+      if (!cue) return; 
 
-      const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url)
+      const channelId = this.annotationManager.getValue(line.annotation, 'chan') || 'default';
+      const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId)
       this.managedPlayerIds.add(cue.id)
       
       if (!player.isLoaded) {
@@ -324,6 +335,26 @@ export class SoundFeature implements FeaturePlugin {
       await player.play(start, end, fadeIn, fadeOut)
     } catch (error) {
       console.error(`[Sound Feature] Failed to play cue ${cue.id}:`, error)
+    }
+  }
+
+  private handleTogglePlaySound(action: any): void {
+    const lineId = action.payload?.lineId;
+    if (!lineId) return;
+
+    const line = this.appStore.getLineById(lineId);
+    if (!line || line.lineType !== LineType.SOUND_CUE || !line.metadata.sound) return;
+
+    const cue = line.metadata.sound as SoundCue;
+    const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url);
+
+    if (player.isPlaying) {
+      player.stop();
+    } else {
+      this.actionController.dispatch({
+        type: ACTION_TYPES.PLAY_SOUND_CUE,
+        payload: { cue: cue, lineId: lineId }
+      });
     }
   }
 
