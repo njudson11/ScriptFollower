@@ -1,0 +1,343 @@
+<script setup lang="ts">
+import { ref, inject, onMounted, onBeforeUnmount, computed, watch, watchEffect } from 'vue';
+import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager';
+import type { IAudioPlayer, ScriptLineBase, SoundCue } from '@/types/core';
+import type { AppStore } from '@/store/AppStore';
+import type { ActionController } from '@/core/ActionController';
+import type { AnnotationManager } from '@/core/AnnotationManager';
+import { ACTION_TYPES } from '@/types/actions';
+import AudioWaveform from './AudioWaveform.vue';
+import { LineType } from '@/types/core';
+
+const props = defineProps<{
+  line: ScriptLineBase
+}>();
+
+const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager;
+const annotationManager = inject('annotationManager') as AnnotationManager;
+const appStore = inject('appStore') as AppStore;
+const actionController = inject('actionController') as ActionController;
+
+const volume = ref(100);
+const balance = ref(0);
+const startTime = ref(0);
+const endTime = ref(0);
+const fadeIn = ref(0);
+const fadeOut = ref(0);
+
+const isPlaying = ref(false);
+const currentTime = ref(0);
+const duration = ref(0);
+let timeUpdateInterval: number | null = null;
+
+const soundCue = computed<SoundCue | null>(() => props.line.metadata.sound || null);
+const currentPlayer = computed(() => {
+  if (!soundCue.value) return null;
+  return audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url);
+});
+
+// --- Stop Behavior State ---
+const isStopDropdownOpen = ref(false);
+type StopMode = 'none' | 'previous' | 'all' | 'refs';
+const stopMode = ref<StopMode>('none');
+const selectedStopRefs = ref<string[]>([]);
+
+const recentSoundCues = computed(() => {
+  const allLines = appStore.getLines();
+  const currentIndex = allLines.findIndex(l => l.id === props.line.id);
+  if (currentIndex === -1) return [];
+
+  return allLines
+    .slice(0, currentIndex)
+    .filter(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef)
+    .slice(-5) // Get the last 5
+    .map(l => ({
+      ref: l.metadata.soundRef,
+      text: l.text,
+      lineNumber: l.lineNumber,
+      soundDescription: l.metadata.soundDescription || l.text // Include soundDescription
+    }))
+    .reverse(); // Show most recent first
+});
+
+const stopDisplayValue = computed(() => {
+  switch (stopMode.value) {
+    case 'previous': return 'Stop Previous';
+    case 'all': return 'Stop All';
+    case 'refs':
+      if (selectedStopRefs.value.length === 0) return 'Select Cues...';
+      if (selectedStopRefs.value.length === 1) return `Stop [${selectedStopRefs.value[0]}]`;
+      return `Stop [${selectedStopRefs.value.length}] Cues`;
+    default: return 'None';
+  }
+});
+// --- End Stop Behavior State ---
+
+// Real-time property application to the active player
+watchEffect(() => {
+  if (currentPlayer.value) {
+    currentPlayer.value.volume = volume.value / 100;
+    currentPlayer.value.balance = balance.value;
+  }
+});
+
+// Parse existing annotations from line using central manager
+const parseAnnotations = () => {
+  const get = (key: string, fallback: any) => {
+    const val = annotationManager.getValue(props.line.annotation, key);
+    return val !== undefined ? val : fallback;
+  };
+
+  volume.value = get('volume', 100);
+  
+  const panVal = get('pan', 0);
+  if (panVal === 'left') balance.value = -1;
+  else if (panVal === 'right') balance.value = 1;
+  else if (panVal === 'center') balance.value = 0;
+  else balance.value = typeof panVal === 'number' ? panVal : parseFloat(panVal) || 0;
+
+  startTime.value = get('start', 0);
+  endTime.value = get('end', 0);
+  fadeIn.value = get('fade-in', 0);
+  fadeOut.value = get('fade-out', 0);
+
+  // Parse stop annotation
+  const stopValue = get('stop', null);
+  if (stopValue === 'previous' || stopValue === 'all') {
+    stopMode.value = stopValue;
+    selectedStopRefs.value = [];
+  } else if (typeof stopValue === 'string' && stopValue.startsWith('[') && stopValue.endsWith(']')) {
+    stopMode.value = 'refs';
+    selectedStopRefs.value = stopValue.slice(1, -1).split(',').map(s => s.trim());
+  } else {
+    stopMode.value = 'none';
+    selectedStopRefs.value = [];
+  }
+};
+
+const updateAnnotations = () => {
+  let stopValue: string | null = null;
+  if (stopMode.value === 'previous' || stopMode.value === 'all') {
+    stopValue = stopMode.value;
+  } else if (stopMode.value === 'refs' && selectedStopRefs.value.length > 0) {
+    stopValue = `[${selectedStopRefs.value.join(',')}]`;
+  }
+
+  const annotationString = annotationManager.update(props.line.annotation, {
+    'volume': volume.value !== 100 ? volume.value : null,
+    'pan': balance.value !== 0 ? balance.value.toFixed(1) : null,
+    'start': startTime.value > 0 ? startTime.value.toFixed(2) : null,
+    'end': endTime.value > 0 ? endTime.value.toFixed(2) : null,
+    'fade-in': fadeIn.value > 0 ? fadeIn.value : null,
+    'fade-out': fadeOut.value > 0 ? fadeOut.value : null,
+    'stop': stopValue
+  });
+  
+  if (props.line.annotation !== annotationString) {
+    actionController.dispatch({
+      type: ACTION_TYPES.UPDATE_LINE,
+      payload: {
+        lineId: props.line.id,
+        updates: { annotation: annotationString }
+      }
+    });
+  }
+};
+
+const setStopMode = (mode: StopMode) => {
+  stopMode.value = mode;
+  if (mode !== 'refs') {
+    selectedStopRefs.value = [];
+  }
+  isStopDropdownOpen.value = false;
+};
+
+const toggleStopRef = (refId: string) => {
+  stopMode.value = 'refs';
+  const index = selectedStopRefs.value.indexOf(refId);
+  if (index === -1) {
+    selectedStopRefs.value.push(refId);
+  } else {
+    selectedStopRefs.value.splice(index, 1);
+  }
+};
+
+
+watch([volume, balance, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs], () => {
+  updateAnnotations();
+}, { deep: true });
+
+
+watch(() => props.line.id, () => {
+  parseAnnotations();
+}, { immediate: true });
+
+const togglePlayback = () => {
+  if (!soundCue.value) return;
+
+  if (isPlaying.value) {
+    actionController.dispatch({
+      type: ACTION_TYPES.STOP_SOUND_CUE,
+      payload: { cueId: soundCue.value.id }
+    });
+  } else {
+    const updatedCue: SoundCue = {
+      ...soundCue.value,
+      volume: volume.value,
+      pan: (balance.value < -0.1 ? 'left' : balance.value > 0.1 ? 'right' : 'center') as any, 
+      startOffsetSeconds: startTime.value,
+      endOffsetSeconds: endTime.value,
+      fadeIn: fadeIn.value,
+      fadeOut: fadeOut.value
+    };
+    
+    actionController.dispatch({
+      type: ACTION_TYPES.PLAY_SOUND_CUE,
+      payload: { 
+        cue: updatedCue, 
+        lineId: props.line.id,
+        overridePan: balance.value 
+      }
+    });
+  }
+};
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+onMounted(() => {
+  timeUpdateInterval = window.setInterval(() => {
+    if (currentPlayer.value) {
+      isPlaying.value = currentPlayer.value.isPlaying;
+      currentTime.value = currentPlayer.value.currentTime;
+      duration.value = currentPlayer.value.duration;
+    } else {
+      isPlaying.value = false;
+      currentTime.value = 0;
+      duration.value = 0;
+    }
+  }, 100);
+});
+
+onBeforeUnmount(() => {
+  if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+});
+</script>
+
+<template>
+  <div class="sound-cue-panel">
+    <div class="panel-header">
+      <h3>Sound Cue Settings</h3>
+      <div v-if="soundCue" class="cue-file-info">
+        File: {{ soundCue.name }}
+      </div>
+      <div v-else class="no-cue-label">
+        (No audio file associated)
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="playback-status">
+        <span :class="['status-badge', isPlaying ? 'status-playing' : (soundCue ? 'status-loaded' : 'status-idle')]">
+          {{ isPlaying ? 'Playing' : (soundCue ? 'Ready' : 'No Audio') }}
+        </span>
+        <span class="time-display">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+      </div>
+      
+      <div class="main-controls">
+        <button class="btn btn-primary" @click="togglePlayback" :disabled="!soundCue">
+          {{ isPlaying ? 'Stop' : 'Play Preview' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="input-group">
+        <label>Volume: {{ volume }}%</label>
+        <input type="range" min="0" max="100" v-model.number="volume" />
+      </div>
+      
+      <div class="input-group">
+        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Center' }} ({{ balance.toFixed(1) }})</label>
+        <input type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
+      </div>
+    </div>
+
+    <!-- Stop Behavior Section -->
+    <div class="section">
+      <div class="input-group">
+        <label>Stop Behavior</label>
+        <div class="custom-dropdown">
+          <button class="dropdown-toggle" @click="isStopDropdownOpen = !isStopDropdownOpen">
+            {{ stopDisplayValue }}
+            <span class="dropdown-arrow">▼</span>
+          </button>
+          <div v-if="isStopDropdownOpen" class="dropdown-menu">
+            <button @click="setStopMode('none')">None</button>
+            <button @click="setStopMode('previous')">Stop Previous</button>
+            <button @click="setStopMode('all')">Stop All</button>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-header">Stop Specific Cues:</div>
+            <div v-for="cue in recentSoundCues" :key="cue.ref" class="checkbox-item">
+              <input 
+                type="checkbox" 
+                :id="`stop-ref-${cue.ref}`"
+                :value="cue.ref" 
+                :checked="selectedStopRefs.includes(cue.ref)"
+                @change="toggleStopRef(cue.ref)"
+              />
+              <label :for="`stop-ref-${cue.ref}`">
+                <span class="ref-id">[{{ cue.ref }}]</span> 
+                <span class="ref-text">{{ cue.soundDescription }}</span>
+              </label>
+            </div>
+             <div v-if="recentSoundCues.length === 0" class="no-recent-cues">
+              No recent sound cues found.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" :class="{ 'is-disabled': !soundCue }">
+      <h4>Waveform & Range</h4>
+      <AudioWaveform 
+        :player="currentPlayer"
+        v-model:startTime="startTime"
+        v-model:endTime="endTime"
+        v-model:fadeIn="fadeIn"
+        v-model:fadeOut="fadeOut"
+      />
+    </div>
+
+    <div class="section grid-controls">
+      <div class="input-group">
+        <label>Start (s)</label>
+        <input type="number" v-model.number="startTime" step="0.1" min="0" :disabled="!soundCue" />
+      </div>
+      <div class="input-group">
+        <label>End (s)</label>
+        <input type="number" v-model.number="endTime" step="0.1" min="0" :disabled="!soundCue" />
+      </div>
+      <div class="input-group">
+        <label>Fade In (ms)</label>
+        <input type="number" v-model.number="fadeIn" step="100" min="0" />
+      </div>
+      <div class="input-group">
+        <label>Fade Out (ms)</label>
+        <input type="number" v-model.number="fadeOut" step="100" min="0" />
+      </div>
+    </div>
+
+    <div v-if="!soundCue" class="no-cue-warning-footer">
+      Association Hint: Use "Load Sounds" in toolbar to match local files by SoundRef.
+    </div>
+  </div>
+</template>
+
+<style scoped>
+@import '../css/SoundCuePanel.css';
+</style>

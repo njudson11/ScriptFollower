@@ -1,5 +1,6 @@
 /* Sound Cue Controls Section - Default hidden (e.g. in Sidebar) */
-.sound-cue-controls {
+.sound-cue-controls,
+.sidebar-sound-controls {
   display: none;
 }
 
@@ -9,8 +10,22 @@
   align-items: center;
   gap: 12px;
   margin: 2px;
-  background: var(--color-background); /* Dark transparent background */
+  background: var(--color-background); 
   width: fit-content;
+}
+
+/* Only show in sidebar */
+.context-sidebar .sidebar-sound-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.context-sidebar  .line-content{
+  flex-direction: column;
+
 }
 
 .playback-btn {
@@ -27,8 +42,21 @@
   text-transform: uppercase;
 }
 
-.btn-play {
+.playback-btn-icon-only {
+  width: 24px;
+  padding: 0;
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
   background-color: var(--color-button-bg);
+}
+
+.btn-play {
   color: var(--color-status-success-text);
 }
 
@@ -38,7 +66,6 @@
 }
 
 .btn-stop {
-  background-color: var(--color-status-error-bg);
   color: var(--color-status-error-text);
 }
 
@@ -50,9 +77,44 @@
 .remaining-time {
   font-family: monospace;
   font-size: 13px;
-  color: var(--color-text-primary); /* Explicit white for visibility on dark bg */
+  color: var(--color-text-primary);
   font-weight: bold;
   min-width: 50px;
+}
+
+/* Sidebar Progress Bar */
+.sidebar-progress-container {
+  flex: 1;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-soft);
+}
+
+.sidebar-progress-fill {
+  height: 100%;
+  background: var(--color-status-info-text);
+  transition: width 0.1s linear;
+  opacity: 0.3;
+}
+
+.sidebar-progress-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 10px;
+  color: var(--color-text-primary);
+  font-weight: bold;
+  pointer-events: none;
 }
 
 /* Layout adjustment for sound cue lines in document viewer */

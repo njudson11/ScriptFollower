@@ -2,7 +2,7 @@
 
 ## Overview
 
-Annotations enable per-line, feature-specific configuration without modifying the script data. They use `{annotation=value}` syntax parsed from line text.
+The `AnnotationManager` is now responsible for parsing, updating, and serializing annotations. It correctly handles annotations that are part of a larger text block, preserving any user-written text outside of the `{...}` block.
 
 ## IAnnotation Interface
 
@@ -25,17 +25,43 @@ interface Annotation {
 
 ## Annotation Manager
 
+The `AnnotationManager` provides methods to safely interact with annotation strings.
+
 ```typescript
-class AnnotationManager {
-  registerAnnotation(featureId: string, annotation: Annotation): void
-  unregisterAnnotation(featureId: string, annotationName: string): void
-  
-  getAnnotationsForFeature(featureId: string): Annotation[]
-  
-  parseAnnotations(lineText: string): Map<string, any>
-  validateAnnotations(annotations: Map<string, any>, context: any): boolean
-  
-  applyAnnotations(lineId: string, annotations: Map<string, any>): Promise<void>
+export class AnnotationManager {
+  /**
+   * Registers annotation definitions for a specific feature.
+   */
+  registerFeatureAnnotations(featureId: string, annotations: Annotation[]): void
+
+  /**
+   * Parses an annotation string into a raw key-value map.
+   */
+  parseRaw(annotationStr: string | undefined): Map<string, string>
+
+  /**
+   * Serializes a raw map back into an annotation string.
+   */
+  serializeRaw(annotations: Map<string, string>): string
+
+  /**
+   * Updates an annotation string by merging new values into the braced key-value block.
+   * Preserves any text outside of the braces.
+   * If a value is null, the key is removed. If the resulting block is empty, the block is removed.
+   */
+  update(existingStr: string | undefined, updates: Record<string, string | number | boolean | null>): string
+
+  /**
+   * Merges updates into an existing annotation string.
+   * If a value is null, the key is removed.
+   * @deprecated Use `update` to preserve surrounding text. This method will be removed.
+   */
+  merge(existingStr: string | undefined, updates: Record<string, string | number | boolean | null>): string
+
+  /**
+   * Gets the parsed and validated value for a specific annotation on a line.
+   */
+  getValue(annotationStr: string | undefined, key: string): any
 }
 ```
 
@@ -51,26 +77,54 @@ getAnnotations(): Annotation[] {
       description: 'Sound volume (0-100)',
       type: 'number',
       defaultValue: 100,
-      constraints: { min: 0, max: 100 },
-      parseValue: (val) => parseInt(val),
+      parseValue: (val) => parseFloat(val),
       validateValue: (val) => val >= 0 && val <= 100
     },
     {
-      name: 'speed',
-      description: 'Playback speed (0.5-2.0)',
+        name: 'pan',
+        description: 'Stereo pan (-1 to 1, or left/center/right)',
+        type: 'string', // Can be string or number
+        defaultValue: 'center',
+        parseValue: (val) => {
+          const lowerVal = val.toLowerCase();
+          if (['left', 'center', 'right'].includes(lowerVal)) {
+            return lowerVal;
+          }
+          const num = parseFloat(val);
+          return isNaN(num) ? lowerVal : num;
+        },
+        validateValue: (val) => {
+          if (typeof val === 'string') {
+            return ['left', 'center', 'right'].includes(val);
+          }
+          if (typeof val === 'number') {
+            return val >= -1 && val <= 1;
+          }
+          return false;
+        }
+    },
+    {
+      name: 'start',
+      description: 'Start offset in seconds',
       type: 'number',
-      defaultValue: 1.0,
-      constraints: { min: 0.5, max: 2.0 },
+      defaultValue: 0,
       parseValue: (val) => parseFloat(val),
-      validateValue: (val) => val >= 0.5 && val <= 2.0
+      validateValue: (val) => val >= 0
+    },
+    {
+      name: 'end',
+      description: 'End offset in seconds',
+      type: 'number',
+      defaultValue: 0,
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0
     },
     {
       name: 'fade-in',
       description: 'Fade in duration (milliseconds)',
       type: 'number',
       defaultValue: 0,
-      constraints: { min: 0 },
-      parseValue: (val) => parseInt(val),
+      parseValue: (val) => parseFloat(val),
       validateValue: (val) => val >= 0
     },
     {
@@ -78,46 +132,8 @@ getAnnotations(): Annotation[] {
       description: 'Fade out duration (milliseconds)',
       type: 'number',
       defaultValue: 0,
-      constraints: { min: 0 },
-      parseValue: (val) => parseInt(val),
+      parseValue: (val) => parseFloat(val),
       validateValue: (val) => val >= 0
-    },
-    {
-      name: 'loop',
-      description: 'Loop playback',
-      type: 'boolean',
-      defaultValue: false,
-      parseValue: (val) => val.toLowerCase() === 'true',
-      validateValue: (val) => typeof val === 'boolean'
-    },
-    {
-      name: 'delay',
-      description: 'Delay before playing (milliseconds)',
-      type: 'number',
-      defaultValue: 0,
-      constraints: { min: 0 },
-      parseValue: (val) => parseInt(val),
-      validateValue: (val) => val >= 0
-    },
-    {
-      name: 'pan',
-      description: 'Stereo pan (left, center, right)',
-      type: 'enum',
-      defaultValue: 'center',
-      constraints: { enum: ['left', 'center', 'right'] },
-      parseValue: (val) => val.toLowerCase(),
-      validateValue: (val) => ['left', 'center', 'right'].includes(val)
-    },
-    {
-      name: 'stop',
-      description: 'Stop behavior (all, previous, or cue IDs)',
-      type: 'string',
-      parseValue: (val) => val.trim(),
-      validateValue: (val) => {
-        if (val === 'all' || val === 'previous') return true
-        // Comma-separated cue IDs: cue_1,cue_2,cue_3
-        return val.split(',').every(id => id.trim().match(/^cue_\d+$/))
-      }
     }
   ]
 }
@@ -125,333 +141,55 @@ getAnnotations(): Annotation[] {
 
 ## Syntax
 
-Annotations appear in curly braces with `=` assignments:
+Annotations can be part of a larger text block within the `annotation` property of a line.
 
 ```
-{annotation=value}
-{annotation1=value1, annotation2=value2}
+This is a user note. {volume=80, pan=0.5}
 ```
 
 ### Examples
 
-Sound cue with volume at 50%:
+Sound cue with a note and volume at 50%:
 ```
-JOHN
-{volume=50}
-Hello, how are you?
+My note about the sound. {volume=50}
 ```
 
-Multiple annotations:
+Multiple annotations, including a numeric pan:
 ```
-JOHN
-{volume=75, speed=1.2, fade-in=500}
-This is important dialogue.
+{volume=75, pan=-0.7, fade-in=500}
 ```
 
-Stop action with specific cues:
-```
-JOHN
-{stop=cue_1,cue_3}
-Quiet down!
-```
+## Parsing and Updating
 
-Stop all sounds:
-```
-SOUND_EFFECT
-{stop=all}
-Thunder crashes.
-```
-
-## Parsing
+The `AnnotationManager.update` method is smart enough to handle these cases:
 
 ```typescript
-function parseAnnotations(lineText: string): Map<string, any> {
-  const annotations = new Map<string, any>()
-  
-  // Match pattern: {key=value, key2=value2}
-  const match = lineText.match(/\{([^}]+)\}/)
-  if (!match) return annotations
-  
-  const pairs = match[1].split(',')
-  for (const pair of pairs) {
-    const [key, value] = pair.split('=').map(s => s.trim())
-    if (key && value) {
-      annotations.set(key, value)
-    }
-  }
-  
-  return annotations
-}
+const original = "My note {volume=90}";
 
-// Example
-parseAnnotations('{volume=50, speed=1.2}')
-// Map { 'volume' => '50', 'speed' => '1.2' }
-```
+// Update the volume
+const updated = annotationManager.update(original, { volume: 75 });
+// Result: "My note {volume=75}"
 
-## Feature Scoping
+// Add a new pan value
+const withPan = annotationManager.update(updated, { pan: -0.5 });
+// Result: "My note {volume=75, pan=-0.5}"
 
-**Critical**: Annotations only apply if the feature exists on the line.
+// Remove the volume by passing null
+const noVolume = annotationManager.update(withPan, { volume: null });
+// Result: "My note {pan=-0.5}"
 
-```typescript
-class SoundFeature {
-  applyAnnotations(lineId: string, annotations: Map<string, any>) {
-    // Only apply if this line has a sound cue
-    const cues = this.getCuesForLine(lineId)
-    if (cues.length === 0) {
-      // Silently ignore - sound feature isn't used on this line
-      return
-    }
-    
-    // Apply annotations to cues
-    for (const [key, value] of annotations) {
-      if (key === 'volume') {
-        cues.forEach(cue => cue.volume = this.parseVolume(value))
-      } else if (key === 'speed') {
-        cues.forEach(cue => cue.speed = this.parseSpeed(value))
-      }
-      // ...
-    }
-  }
-}
-
-class LightsFeature {
-  applyAnnotations(lineId: string, annotations: Map<string, any>) {
-    // Only apply if this line has lights
-    if (!this.hasLightsForLine(lineId)) {
-      return
-    }
-    
-    // Apply annotations to lights
-    for (const [key, value] of annotations) {
-      if (key === 'color') {
-        this.setLightColor(lineId, value)
-      } else if (key === 'intensity') {
-        this.setLightIntensity(lineId, parseFloat(value))
-      }
-    }
-  }
-}
+// Remove the last value, which also removes the braces
+const final = annotationManager.update(noVolume, { pan: null });
+// Result: "My note"
 ```
 
 ## Validation
 
-```typescript
-function validateAnnotations(
-  annotations: Map<string, any>,
-  annotationDefs: Annotation[]
-): string[] {
-  const errors: string[] = []
-  const defMap = new Map(annotationDefs.map(a => [a.name, a]))
-  
-  for (const [name, value] of annotations) {
-    const def = defMap.get(name)
-    if (!def) {
-      errors.push(`Unknown annotation: ${name}`)
-      continue
-    }
-    
-    const parsed = def.parseValue(value)
-    if (!def.validateValue(parsed)) {
-      errors.push(`Invalid value for ${name}: ${value}`)
-    }
-  }
-  
-  return errors
-}
-```
-
-## Stop Annotation
-
-Special annotation for stopping sounds:
+Validation is handled internally by the `AnnotationManager` when `getValue` is called. If a value is invalid, the annotation's `defaultValue` is returned.
 
 ```typescript
-{
-  name: 'stop',
-  description: 'Stop behavior for this line',
-  type: 'string'
-}
+// Annotation string: "{pan=2.5}" (2.5 is invalid, max is 1)
+const panValue = annotationManager.getValue("{pan=2.5}", "pan");
+
+// `panValue` will be 'center', the defaultValue for the 'pan' annotation.
 ```
-
-### Stop Modes
-
-**1. Stop All Sounds**
-```
-{stop=all}
-```
-Stops all currently playing sounds in document.
-
-**2. Stop Previous Line's Sound**
-```
-{stop=previous}
-```
-Stops the sound from the previous line only.
-
-**3. Stop Specific Cues**
-```
-{stop=cue_1,cue_3,cue_5}
-```
-Stops specific cue IDs (comma-separated, no spaces).
-
-## Usage Patterns
-
-### Sound with Specific Volume
-
-```
-JOHN
-{volume=60}
-This is delivered quietly.
-```
-
-The line has a sound cue (registered via Sound Feature panel), then the annotation modifies its volume to 60%.
-
-### Multiple Features on Same Line
-
-```
-STAGE_DIRECTION
-{sound-volume=50, lights-intensity=80}
-Thunder crashes. Lightning flashes.
-```
-
-Both Sound and Lights features apply their annotations to this line.
-
-### Lighting Effect
-
-```
-SCENE_HEADING
-{lights-color=#FF0000, lights-intensity=100}
-INT. OFFICE - RED ALERT
-```
-
-Lights change to red at full intensity when this scene heading appears.
-
-### Conditional Playback
-
-```
-JOHN
-{volume=30, speed=1.5}
-(whispered urgently)
-Meet me tonight.
-```
-
-Sound plays at 30% volume, 1.5x speed (higher pitch/faster).
-
-## Feature Annotation Declaration
-
-```typescript
-class LightsFeature implements FeaturePlugin {
-  getAnnotations(): Annotation[] {
-    return [
-      {
-        name: 'lights-color',
-        description: 'Light color (hex or named)',
-        type: 'color',
-        parseValue: (val) => val.trim(),
-        validateValue: (val) => /^#[0-9A-F]{6}$|^(red|green|blue|yellow)$/i.test(val)
-      },
-      {
-        name: 'lights-intensity',
-        description: 'Light intensity (0-100)',
-        type: 'number',
-        defaultValue: 100,
-        constraints: { min: 0, max: 100 },
-        parseValue: (val) => parseInt(val),
-        validateValue: (val) => val >= 0 && val <= 100
-      },
-      {
-        name: 'lights-fade',
-        description: 'Fade duration (milliseconds)',
-        type: 'number',
-        parseValue: (val) => parseInt(val),
-        validateValue: (val) => val >= 0
-      }
-    ]
-  }
-}
-```
-
-## Parsing Pipeline
-
-```typescript
-// 1. Extract annotation text from line
-const lineText = "JOHN\n{volume=50}\nHello."
-const annotationText = '{volume=50}'
-
-// 2. Parse into map
-const parsed = parseAnnotations(annotationText)
-// Map { 'volume' => '50' }
-
-// 3. Validate values
-const errors = validateAnnotations(parsed, annotationDefs)
-if (errors.length > 0) {
-  eventBus.emit({
-    type: EVENT_TYPES.ANNOTATION_ERROR,
-    payload: { lineId, annotationText, error: errors.join('; ') },
-    timestamp: new Date()
-  })
-  return
-}
-
-// 4. Apply to features
-for (const feature of features) {
-  await feature.applyAnnotations?.(lineId, parsed)
-}
-
-// 5. Emit success
-eventBus.emit({
-  type: EVENT_TYPES.ANNOTATION_PARSED,
-  payload: { lineId, annotations: Object.fromEntries(parsed) },
-  timestamp: new Date()
-})
-```
-
-## Error Handling
-
-```typescript
-class AnnotationProcessor {
-  async processLine(lineId: string, lineText: string) {
-    try {
-      const annotations = parseAnnotations(lineText)
-      const errors = validateAnnotations(annotations, this.allAnnotations)
-      
-      if (errors.length > 0) {
-        throw new Error(`Validation failed: ${errors.join('; ')}`)
-      }
-      
-      for (const feature of this.features) {
-        try {
-          await feature.applyAnnotations?.(lineId, annotations)
-        } catch (error) {
-          this.eventBus.emit({
-            type: EVENT_TYPES.ANNOTATION_ERROR,
-            payload: {
-              lineId,
-              featureId: feature.id,
-              error: error instanceof Error ? error.message : String(error)
-            },
-            timestamp: new Date()
-          })
-        }
-      }
-    } catch (error) {
-      this.eventBus.emit({
-        type: EVENT_TYPES.ANNOTATION_ERROR,
-        payload: {
-          lineId,
-          error: error instanceof Error ? error.message : String(error)
-        },
-        timestamp: new Date()
-      })
-    }
-  }
-}
-```
-
-## Benefits
-
-✅ **Feature-Scoped**: Only applies if feature is used on line
-✅ **Type-Safe**: Validation prevents invalid values
-✅ **Declarative**: Features declare what they support
-✅ **No Core Changes**: Adding annotation types requires no core updates
-✅ **Human-Readable**: `{volume=50}` is clear and editable
-✅ **Extensible**: New features = new annotation types
-✅ **Backwards Compatible**: Missing annotations use defaults

@@ -168,6 +168,7 @@ interface ScriptLineBase {
   readonly lineNumber: number
   readonly lineType: LineType
   readonly text: string
+  readonly annotation?: string; // Optional field for feature-specific annotations
   readonly metadata: Record<string, any>
 }
 ```
@@ -247,6 +248,23 @@ EventBus.emit(DOCUMENT_LOADED)
 UI components react to state changes
 ```
 
+### Sound Loading and Preloading
+```
+User uploads sound files
+    ↓
+App.vue: handleLoadSoundsAction()
+    ↓
+AppStore.updateLines() (associates sound metadata with lines)
+    ↓
+EventBus.emit(SOUNDS_LOADED)
+    ↓
+SoundFeature subscribes to SOUNDS_LOADED
+    ↓
+SoundFeature.managePreloading() is called with currentLineId
+    ↓
+AudioPlaybackManager preloads relevant sound files based on current line proximity
+```
+
 ### Line Selection
 ```
 User clicks on line in sidebar
@@ -259,10 +277,10 @@ EventBus.emit(LINE_SELECTED)
     ↓
 DocumentViewer updates UI
     ↓
-Features receive event, update their state
+Features receive event, update their state (e.g., SoundFeature.managePreloading)
 ```
 
-### Keybinding Trigger (New)
+### Keybinding Trigger
 ```
 User presses a key configured as a keybinding
     ↓
@@ -286,7 +304,7 @@ Other features subscribe and respond
 No direct feature-to-feature dependencies
 ```
 
-## Extension Points
+<h2>Extension Points</h2>
 
 ### 1. Add a New Feature
 1. Create class implementing `IFeaturePlugin`

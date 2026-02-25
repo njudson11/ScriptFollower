@@ -55,6 +55,7 @@ export const EVENT_TYPES = {
   DOCUMENT_LOADED: 'document:loaded',
   DOCUMENT_UNLOADED: 'document:unloaded',
   DOCUMENT_ERROR: 'document:error',
+  SOUNDS_LOADED: 'sounds:loaded',
 
   // Selection events
   LINE_SELECTED: 'selection:lineSelected',

@@ -1,13 +1,17 @@
-import { FeaturePlugin, LineType, SoundCue } from '@/types/core'
+import { FeaturePlugin, LineType, SoundCue, Annotation } from '@/types/core'
 import type { FeatureManager } from '@/core/FeatureManager'
 import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import type { AppStore } from '@/store/AppStore'
-import type { EventBus } from '@/core/EventBus' // Import EventBus type
+import type { EventBus } from '@/core/EventBus'
 import { ACTION_TYPES } from '@/types/actions'
 import { EVENT_TYPES } from '@/core/EventBus'
 import { AppConfig } from '@/config/AppConfig'
 import SoundCueLine from '@/components/SoundCueLine.vue'
+import SoundCuePanel from '@/components/SoundCuePanel.vue'
+import { markRaw } from 'vue'
+import type { AnnotationManager } from '@/core/AnnotationManager'
+import type { LineSelectionManager } from '@/core/LineSelectionManager'
 
 /**
  * Feature responsible for managing sound cues and playback.
@@ -22,7 +26,9 @@ export class SoundFeature implements FeaturePlugin {
   private actionController: ActionController
   private audioPlaybackManager: AudioPlaybackManager
   private appStore: AppStore
-  private eventBus: EventBus // Add eventBus property
+  private eventBus: EventBus
+  private annotationManager: AnnotationManager
+  private selectionManager: LineSelectionManager
   private unregisterActions: Array<() => void> = []
   private unregisterEvents: Array<() => void> = []
 
@@ -34,18 +40,112 @@ export class SoundFeature implements FeaturePlugin {
     actionController: ActionController,
     audioPlaybackManager: AudioPlaybackManager,
     appStore: AppStore,
-    eventBus: EventBus // Receive eventBus
+    eventBus: EventBus,
+    annotationManager: AnnotationManager,
+    selectionManager: LineSelectionManager
   ) {
     this.featureManager = featureManager
     this.actionController = actionController
     this.audioPlaybackManager = audioPlaybackManager
     this.appStore = appStore
     this.eventBus = eventBus
+    this.annotationManager = annotationManager
+    this.selectionManager = selectionManager
+  }
+
+  getAnnotations(): Annotation[] {
+    return [
+      {
+        name: 'volume',
+        description: 'Sound volume (0-100)',
+        type: 'number',
+        defaultValue: 100,
+        constraints: { min: 0, max: 100 },
+        parseValue: (val) => parseFloat(val), // Use parseFloat for volume too for consistency, though it's typically integer
+        validateValue: (val) => val >= 0 && val <= 100
+      },
+      {
+        name: 'pan',
+        description: 'Stereo pan (-1 to 1, or left/center/right)',
+        type: 'string', // Can be string or number
+        defaultValue: 'center',
+        parseValue: (val) => {
+          const lowerVal = val.toLowerCase();
+          if (['left', 'center', 'right'].includes(lowerVal)) {
+            return lowerVal;
+          }
+          const num = parseFloat(val);
+          return isNaN(num) ? lowerVal : num;
+        },
+        validateValue: (val) => {
+          if (typeof val === 'string') {
+            return ['left', 'center', 'right'].includes(val);
+          }
+          if (typeof val === 'number') {
+            return val >= -1 && val <= 1;
+          }
+          return false;
+        }
+      },
+      {
+        name: 'start',
+        description: 'Start offset in seconds',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: 0 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= 0
+      },
+      {
+        name: 'end',
+        description: 'End offset in seconds',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: 0 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= 0
+      },
+      {
+        name: 'fade-in',
+        description: 'Fade in duration (milliseconds)',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: 0 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= 0
+      },
+      {
+        name: 'fade-out',
+        description: 'Fade out duration (milliseconds)',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: 0 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= 0
+      },
+      {
+        name: 'stop',
+        description: 'Stop behavior: "previous", "all", or a comma-separated list of SoundRefs e.g., "[0001,0002]"',
+        type: 'string',
+        parseValue: (val) => val.trim(),
+        validateValue: (val) => {
+          if (val === 'all' || val === 'previous') return true;
+          // Match a comma-separated list of sound refs in brackets
+          return /^\[\s*\w+(\s*,\s*\w+)*\s*\]$/.test(val);
+        }
+      }
+    ]
   }
 
   async init(): Promise<void> {
+    // Register annotations with central manager
+    this.annotationManager.registerFeatureAnnotations(this.id, this.getAnnotations())
+
     // Register the custom renderer for SOUND_CUE lines in the document viewer
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
+    
+    // Register the settings panel for the right hand side when a SOUND_CUE is selected
+    this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
     // Register action handlers
     this.unregisterActions.push(
@@ -54,13 +154,21 @@ export class SoundFeature implements FeaturePlugin {
     )
 
     // Listen for line selection to manage pre-loading
-    // Use the eventBus provided in the constructor
     const cleanupSelection = this.eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
       if (event.payload.lineId) {
         this.managePreloading(event.payload.lineId)
       }
     })
     this.unregisterEvents.push(cleanupSelection)
+
+    // Listen for when sounds are loaded to trigger preloading
+    const cleanupSoundsLoaded = this.eventBus.subscribe(EVENT_TYPES.SOUNDS_LOADED, () => {
+      const currentLineId = this.selectionManager.getCurrentLine();
+      if (currentLineId) {
+        this.managePreloading(currentLineId);
+      }
+    });
+    this.unregisterEvents.push(cleanupSoundsLoaded);
 
     console.log('[Sound Feature] Initialized')
   }
@@ -120,10 +228,53 @@ export class SoundFeature implements FeaturePlugin {
     })
   }
 
+  private executeStopAction(lineId: string, stopValue: string): void {
+    if (stopValue === 'all') {
+      this.audioPlaybackManager.stopAll();
+    } else if (stopValue === 'previous') {
+      const lines = this.appStore.getLines();
+      const currentIndex = lines.findIndex(l => l.id === lineId);
+      if (currentIndex > 0) {
+        const prevLine = lines[currentIndex - 1];
+        const prevCue = prevLine.metadata.sound as SoundCue | undefined;
+        if (prevCue) {
+          this.audioPlaybackManager.stopCues([prevCue.id]);
+        }
+      }
+    } else if (stopValue.startsWith('[') && stopValue.endsWith(']')) {
+      const soundRefs = stopValue.slice(1, -1).split(',').map(s => s.trim());
+      if (soundRefs.length > 0) {
+        const lines = this.appStore.getLines();
+        const cueIdsToStop = lines
+          .filter(line => 
+            line.metadata.soundRef && 
+            soundRefs.includes(line.metadata.soundRef) &&
+            line.metadata.sound
+          )
+          .map(line => (line.metadata.sound as SoundCue).id);
+        
+        if (cueIdsToStop.length > 0) {
+          this.audioPlaybackManager.stopCues(cueIdsToStop);
+        }
+      }
+    }
+  }
+  
   private async handlePlaySound(action: any): Promise<void> {
-    const { cue } = action.payload;
+    const { cue, lineId, overridePan } = action.payload;
     
     try {
+      const line = this.appStore.getLineById(lineId);
+      if (!line) return;
+
+      // Handle stop annotation before playing
+      const stopValue = this.annotationManager.getValue(line.annotation, 'stop');
+      if (stopValue) {
+        this.executeStopAction(lineId, stopValue);
+      }
+
+      if (!cue) return; // If there's no cue on this line, we might just be stopping other sounds.
+
       const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url)
       this.managedPlayerIds.add(cue.id)
       
@@ -131,15 +282,46 @@ export class SoundFeature implements FeaturePlugin {
         await player.load()
       }
 
-      player.volume = (cue.volume || 100) / 100
-      player.balance = cue.pan === 'left' ? -1 : cue.pan === 'right' ? 1 : 0
+      let volume = cue.volume;
+      let pan = cue.pan;
+      let start = cue.startOffsetSeconds;
+      let end = cue.endOffsetSeconds;
+      let fadeIn = cue.fadeIn;
+      let fadeOut = cue.fadeOut;
 
-      await player.play(
-        cue.startOffsetSeconds,
-        cue.endOffsetSeconds,
-        cue.fadeIn,
-        cue.fadeOut
-      )
+      if (line.annotation) {
+        const v = this.annotationManager.getValue(line.annotation, 'volume');
+        if (v !== undefined) volume = v;
+        
+        const p = this.annotationManager.getValue(line.annotation, 'pan');
+        if (p !== undefined) pan = p;
+
+        const s = this.annotationManager.getValue(line.annotation, 'start');
+        if (s !== undefined) start = s;
+
+        const e = this.annotationManager.getValue(line.annotation, 'end');
+        if (e !== undefined) end = e;
+
+        const fi = this.annotationManager.getValue(line.annotation, 'fade-in');
+        if (fi !== undefined) fadeIn = fi;
+
+        const fo = this.annotationManager.getValue(line.annotation, 'fade-out');
+        if (fo !== undefined) fadeOut = fo;
+      }
+
+      player.volume = (volume || 100) / 100
+      
+      if (overridePan !== undefined) {
+        player.balance = overridePan;
+      } else {
+        if (typeof pan === 'number') {
+          player.balance = pan;
+        } else {
+          player.balance = pan === 'left' ? -1 : pan === 'right' ? 1 : 0;
+        }
+      }
+
+      await player.play(start, end, fadeIn, fadeOut)
     } catch (error) {
       console.error(`[Sound Feature] Failed to play cue ${cue.id}:`, error)
     }

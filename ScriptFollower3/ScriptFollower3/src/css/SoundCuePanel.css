@@ -1,0 +1,229 @@
+.sound-cue-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.panel-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.cue-file-info {
+  font-size: 11px;
+  color: var(--color-primary);
+  word-break: break-all;
+}
+
+.no-cue-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.playback-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-playing { background: var(--color-status-info-bg); color: var(--color-status-info-text); }
+.status-loaded { background: var(--color-status-success-bg); color: var(--color-status-success-text); }
+.status-idle { background: var(--color-status-idle-bg); color: var(--color-status-idle-text); }
+
+.btn {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  background: var(--color-button-bg);
+  color: var(--color-text-primary);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.grid-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-group label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.input-group input {
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background-soft);
+  color: var(--color-text-primary);
+}
+
+.input-group input:disabled {
+  opacity: 0.5;
+}
+
+.no-cue-warning-footer {
+  padding: 8px;
+  background: rgba(245, 127, 23, 0.1);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+.custom-dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 6px 12px;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-arrow {
+  color: var(--color-text-secondary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  z-index: 10;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-menu button, .checkbox-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: var(--color-hover);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+.dropdown-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-item input {
+  flex-shrink: 0;
+}
+
+.checkbox-item label {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ref-id {
+  font-family: monospace;
+  background-color: var(--color-background-soft);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.ref-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+.no-recent-cues {
+  padding: 8px 12px;
+  font-style: italic;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}

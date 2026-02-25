@@ -4,7 +4,7 @@ import type { AppStore } from '@/store/AppStore'
 import type { LineSelectionManager } from '@/core/LineSelectionManager'
 import type { EventBus } from '@/core/EventBus'
 import { EVENT_TYPES } from '@/core/EventBus'
-import type { ScriptLineBase } from '@/types/core'
+import { ScriptLineBase, LineType } from '@/types/core'
 import DocumentInfoPanel from './DocumentInfoPanel.vue'
 import LineDataPanel from './LineDataPanel.vue'
 import { FeatureManager } from '@/core/FeatureManager'
@@ -21,30 +21,42 @@ const currentLine = computed((): ScriptLineBase | undefined => {
   return appStore.getLineById(currentLineId.value)
 })
 
-const activeTab = ref<'documentInfo' | 'lineData' | 'audioTest'>('documentInfo');
+const isSoundCue = computed(() => currentLine.value?.lineType === LineType.SOUND_CUE)
+
+type Tab = 'documentInfo' | 'lineData' | 'audioTest' | 'soundCue';
+const activeTab = ref<Tab>('documentInfo');
 
 const audioTestComponent = computed(() => {
-  // Use a dummy line type for the test panel as defined in AudioTestFeature
   return featureManager.getLineRenderer('AUDIO_TEST' as any, 'right-panel');
 });
 
-watch([currentDocument, currentLine], () => {
-  if (currentDocument.value && !currentLine.value && activeTab.value === 'lineData') {
-    activeTab.value = 'documentInfo';
-  } else if (!currentDocument.value && currentLine.value && activeTab.value === 'documentInfo') {
-    activeTab.value = 'lineData';
-  }
-}, { immediate: true });
+const soundCueComponent = computed(() => {
+  if (!isSoundCue.value) return null;
+  return featureManager.getLineRenderer(LineType.SOUND_CUE, 'right-panel');
+});
 
+const getFirstVisibleTab = (): Tab => {
+  if (isSoundCue.value) return 'soundCue';
+  if (currentLine.value) return 'lineData';
+  if (currentDocument.value) return 'documentInfo';
+  return 'audioTest'; // Fallback
+};
 
 const updateCurrentLine = () => {
-  currentLineId.value = selectionManager.getCurrentLine()
-  if (currentLineId.value && activeTab.value === 'documentInfo') {
-    activeTab.value = 'lineData';
-  } else if (!currentLineId.value && activeTab.value === 'lineData') {
-    activeTab.value = 'documentInfo';
+  currentLineId.value = selectionManager.getCurrentLine();
+  
+  if (currentLineId.value) {
+    // If a line is selected, switch to the most relevant contextual tab
+    activeTab.value = getFirstVisibleTab();
+  } else {
+    // No line selected, default to document info if a document is loaded
+    activeTab.value = currentDocument.value ? 'documentInfo' : 'audioTest';
   }
-}
+};
+
+watch(() => selectionManager.getCurrentLine(), (newLineId) => {
+  updateCurrentLine();
+}, { immediate: true });
 
 const clearSelection = () => {
   selectionManager.selectLine(null)
@@ -55,6 +67,8 @@ onMounted(() => {
   onBeforeUnmount(() => {
     unsubscribe()
   })
+  // Initial check
+  updateCurrentLine();
 })
 </script>
 
@@ -62,12 +76,15 @@ onMounted(() => {
   <div class="right-panel" :class="{ 'is-collapsed': appStore.state.isRightPanelCollapsed }">
     <div class="tab-header" v-if="!appStore.state.isRightPanelCollapsed">
       <div class="tab-buttons-wrapper">
-        <button :class="{ active: activeTab === 'documentInfo' }" @click="activeTab = 'documentInfo'" :disabled="!currentDocument">
-          Document Info
+        <button v-if="isSoundCue" :class="{ active: activeTab === 'soundCue' }" @click="activeTab = 'soundCue'">
+          Sound Cue
         </button>
         <button :class="{ active: activeTab === 'lineData' }" @click="activeTab = 'lineData'" :disabled="!currentLine">
           Line Data
           <span v-if="currentLine" class="line-data-badge">{{ currentLine.lineNumber }}</span>
+        </button>
+        <button :class="{ active: activeTab === 'documentInfo' }" @click="activeTab = 'documentInfo'" :disabled="!currentDocument">
+          Document Info
         </button>
         <button :class="{ active: activeTab === 'audioTest' }" @click="activeTab = 'audioTest'">
           Audio Test
@@ -85,8 +102,9 @@ onMounted(() => {
     </div>
 
     <div class="panel-content" v-if="!appStore.state.isRightPanelCollapsed">
-        <DocumentInfoPanel v-if="activeTab === 'documentInfo' && currentDocument" :current-document="currentDocument" />
+        <component v-if="activeTab === 'soundCue' && soundCueComponent" :is="soundCueComponent" :line="currentLine" />
         <LineDataPanel v-if="activeTab === 'lineData' && currentLine" :current-line="currentLine" :on-clear-selection="clearSelection" />
+        <DocumentInfoPanel v-if="activeTab === 'documentInfo' && currentDocument" :current-document="currentDocument" />
         <component v-if="activeTab === 'audioTest' && audioTestComponent" :is="audioTestComponent" />
     </div>
   </div>

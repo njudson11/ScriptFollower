@@ -1,4 +1,4 @@
-# Sound Feature - Reference Implementation
+Can Can C# Sound Feature - Reference Implementation
 
 ## Overview
 
@@ -24,26 +24,21 @@ class SoundFeature implements FeaturePlugin {
 ## Data Structures
 
 ```typescript
-// Updated SoundCue interface to include playback offsets
+// Updated SoundCue interface to include playback offsets and reflect current code
 interface SoundCue {
-  readonly id: string                    // Unique cue ID
-  readonly lineId: string                // Which line plays this
-  readonly url: string                   // Audio file URL
-  readonly volume: number                // 0-100
-  readonly speed: number                 // 0.5-2.0
-  readonly fadeIn: number                // ms
-  readonly fadeOut: number               // ms
-  readonly loop: boolean
-  readonly delay: number                 // ms before play
-  readonly pan: 'left' | 'center' | 'right'
-  readonly createdAt: Date
-  readonly startOffsetSeconds?: number;   // Start playback from this offset in the audio file
-  readonly endOffsetSeconds?: number;     // End playback at this offset in the audio file
+  readonly id: string;
+  readonly url: string;
+  readonly name: string;
+  readonly volume: number; // 0-100
+  readonly pan: 'left' | 'right' | 'center' | number; // -1 to 1, or string presets
+  readonly startOffsetSeconds?: number;
+  readonly endOffsetSeconds?: number;
+  readonly fadeIn?: number; // ms
+  readonly fadeOut?: number; // ms
 }
 
 class SoundFeature implements FeaturePlugin {
   // ... (other feature properties like id, name, version, description)
-  private cuesByLineId: Map<string, SoundCue[]> = new Map() // Feature-specific data for managing cues
   private audioPlaybackManager: AudioPlaybackManager; // Injected dependency
   private appStore: AppStore; // Injected dependency for document access
   private selectionManager: LineSelectionManager; // Injected dependency for highlights and navigation
@@ -53,48 +48,50 @@ class SoundFeature implements FeaturePlugin {
 
 ## Initialization
 
+The `SoundFeature` now subscribes to both `LINE_SELECTED` and `SOUNDS_LOADED` events to trigger its `managePreloading` logic, ensuring cues are loaded both when navigating the script and when new sounds are added.
+
 ```typescript
-// Modified constructor to inject AudioPlaybackManager, AppStore, SelectionManager, EventBus
-constructor(eventBus: EventBus, appStore: AppStore, selectionManager: LineSelectionManager, audioPlaybackManager: AudioPlaybackManager) {
-    this.eventBus = eventBus;
-    this.appStore = appStore;
-    this.selectionManager = selectionManager;
-    this.audioPlaybackManager = audioPlaybackManager;
+constructor(
+    featureManager: FeatureManager,
+    actionController: ActionController,
+    audioPlaybackManager: AudioPlaybackManager,
+    appStore: AppStore,
+    eventBus: EventBus,
+    annotationManager: AnnotationManager,
+    selectionManager: LineSelectionManager // New: Injected to handle preloading
+) {
+    // ...assignments
 }
 
 async init(): Promise<void> {
-  // Subscribe to document events
-  this.eventBus.subscribe(EVENT_TYPES.DOCUMENT_LOADED, (event) => {
-    this.onDocumentLoaded(event)
+  // Register annotations
+  this.annotationManager.registerFeatureAnnotations(this.id, this.getAnnotations())
+
+  // Register custom UI components for SOUND_CUE lines
+  this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
+  this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCuePanel, 'right-panel')
+
+  // Listen for line selection to manage pre-loading
+  this.eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
+    if (event.payload.lineId) {
+      this.managePreloading(event.payload.lineId)
+    }
   })
 
-  this.eventBus.subscribe(EVENT_TYPES.DOCUMENT_UNLOADED, (event) => {
-    this.onDocumentUnloaded(event)
-  })
-  
-  // Preload all known cues for the current document (example logic)
-  const currentDocument = this.appStore.getCurrentDocument();
-  if (currentDocument) {
-      const allCueUrls = Array.from(this.cuesByLineId.values()).flat().map(cue => cue.url);
-      await this.audioPlaybackManager.preloadAll(allCueUrls);
-  }
+  // Listen for when sounds are loaded to trigger preloading
+  this.eventBus.subscribe(EVENT_TYPES.SOUNDS_LOADED, () => {
+    const currentLineId = this.selectionManager.getCurrentLine();
+    if (currentLineId) {
+      this.managePreloading(currentLineId);
+    }
+  });
 
   console.log(`Sound Feature initialized`)
 }
 
-private onDocumentLoaded(event: Event) {
-  const { documentId } = event.payload
-  console.log(`Sound Feature: Preparing for document ${documentId}`)
-  // Here, we would typically load/parse sound cue data for this document
-  // and then instruct the audioPlaybackManager to preload relevant files.
-  // For this context file, we'll assume cue data is already populated.
-}
-
-private onDocumentUnloaded(event: Event) {
-  // Stop all playing sounds managed by the AudioPlaybackManager
-  this.audioPlaybackManager.stopAll();
-  // Clear local sound cue data
-  this.cuesByLineId.clear();
+private managePreloading(currentLineId: string): void {
+  // ... logic to determine which sound cues are near the current line
+  // and instruct the AudioPlaybackManager to load or unload them.
 }
 ```
 
@@ -156,6 +153,33 @@ getKeybindings(): KeyBinding[] {
       action: 'previousCue',
       isActive: (context) => context.hasDocument,
       handler: (context) => this.jumpToPreviousCue(context.currentLineId)
+    },
+    {
+      id: 'sound-reset-pan',
+      featureId: 'sound',
+      keys: ['c'],
+      modifiers: { ctrl: true, shift: true },
+      action: 'resetPan',
+      isActive: (context) => context.currentLineId && context.currentLineType === LineType.SOUND_CUE,
+      handler: (context) => this.resetPan(context.currentLineId)
+    },
+    {
+      id: 'sound-pan-left',
+      featureId: 'sound',
+      keys: ['left'],
+      modifiers: { ctrl: true },
+      action: 'panLeft',
+      isActive: (context) => context.currentLineId && context.currentLineType === LineType.SOUND_CUE,
+      handler: (context) => this.panAdjust(context.currentLineId, -0.1)
+    },
+    {
+      id: 'sound-pan-right',
+      featureId: 'sound',
+      keys: ['right'],
+      modifiers: { ctrl: true },
+      action: 'panRight',
+      isActive: (context) => context.currentLineId && context.currentLineType === LineType.SOUND_CUE,
+      handler: (context) => this.panAdjust(context.currentLineId, 0.1)
     }
   ]
 }
@@ -163,52 +187,82 @@ getKeybindings(): KeyBinding[] {
 
 ## Annotations
 
+The annotations for `pan`, `fade-in`, and `fade-out` have been updated to correctly handle numeric and decimal values.
+
 ```typescript
 getAnnotations(): Annotation[] {
   return [
     {
       name: 'volume',
-      description: 'Sound volume percentage (0-100)',
+      description: 'Sound volume (0-100)',
       type: 'number',
       defaultValue: 100,
       constraints: { min: 0, max: 100 },
-      parseValue: (v) => parseInt(v),
-      validateValue: (v) => v >= 0 && v <= 100
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0 && val <= 100
     },
     {
-      name: 'speed',
-      description: 'Playback speed (0.5-2.0)',
+        name: 'pan',
+        description: 'Stereo pan (-1 to 1, or left/center/right)',
+        type: 'string', // Can be string or number
+        defaultValue: 'center',
+        parseValue: (val) => {
+          const lowerVal = val.toLowerCase();
+          if (['left', 'center', 'right'].includes(lowerVal)) {
+            return lowerVal;
+          }
+          const num = parseFloat(val);
+          return isNaN(num) ? lowerVal : num;
+        },
+        validateValue: (val) => {
+          if (typeof val === 'string') {
+            return ['left', 'center', 'right'].includes(val);
+          }
+          if (typeof val === 'number') {
+            return val >= -1 && val <= 1;
+          }
+          return false;
+        }
+    },
+    {
+      name: 'start',
+      description: 'Start offset in seconds',
       type: 'number',
-      defaultValue: 1.0,
-      constraints: { min: 0.5, max: 2.0 },
-      parseValue: (v) => parseFloat(v),
-      validateValue: (v) => v >= 0.5 && v <= 2.0
+      defaultValue: 0,
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0
+    },
+    {
+      name: 'end',
+      description: 'End offset in seconds',
+      type: 'number',
+      defaultValue: 0,
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0
     },
     {
       name: 'fade-in',
-      description: 'Fade in duration in milliseconds',
+      description: 'Fade in duration (milliseconds)',
       type: 'number',
       defaultValue: 0,
-      constraints: { min: 0 },
-      parseValue: (v) => parseInt(v),
-      validateValue: (v) => v >= 0
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0
     },
     {
       name: 'fade-out',
-      description: 'Fade out duration in milliseconds',
+      description: 'Fade out duration (milliseconds)',
       type: 'number',
       defaultValue: 0,
-      constraints: { min: 0 },
-      parseValue: (v) => parseInt(v),
-      validateValue: (v) => v >= 0
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0
     },
     {
       name: 'loop',
       description: 'Loop playback',
       type: 'boolean',
       defaultValue: false,
-      parseValue: (v) => v.toLowerCase() === 'true',
-      validateValue: (v) => typeof v === 'boolean'
+      parseValue: (val) => val.toLowerCase() === 'true',
+      validateValue: (val) => typeof val === 'boolean'
     },
     {
       name: 'delay',
@@ -216,47 +270,39 @@ getAnnotations(): Annotation[] {
       type: 'number',
       defaultValue: 0,
       constraints: { min: 0 },
-      parseValue: (v) => parseInt(v),
-      validateValue: (v) => v >= 0
+      parseValue: (val) => parseInt(val),
+      validateValue: (val) => val >= 0
     },
     {
-      name: 'pan',
-      description: 'Stereo panning',
-      type: 'enum',
-      defaultValue: 'center',
-      constraints: { enum: ['left', 'center', 'right'] },
-      parseValue: (v) => v.toLowerCase(),
-      validateValue: (v) => ['left', 'center', 'right'].includes(v)
-    },
-    {
-      name: 'start-offset',
-      description: 'Start playback from this offset (seconds) in the audio file',
+      name: 'speed',
+      description: 'Playback speed (0.5-2.0)',
       type: 'number',
-      constraints: { min: 0 },
-      parseValue: (v) => parseFloat(v),
-      validateValue: (v) => v >= 0
-    },
-    {
-      name: 'end-offset',
-      description: 'End playback at this offset (seconds) in the audio file',
-      type: 'number',
-      constraints: { min: 0 },
-      parseValue: (v) => parseFloat(v),
-      validateValue: (v) => v >= 0
+      defaultValue: 1.0,
+      constraints: { min: 0.5, max: 2.0 },
+      parseValue: (val) => parseFloat(val),
+      validateValue: (val) => val >= 0.5 && val <= 2.0
     },
     {
       name: 'stop',
-      description: 'Stop behavior: "all" (stop all), "previous" (stop last), or comma-separated cue IDs',
+      description: 'Stop behavior: "previous", "all", or a comma-separated list of SoundRefs e.g., "[0001,0002]"',
       type: 'string',
-      parseValue: (v) => v.trim(),
-      validateValue: (v) => {
-        if (v === 'all' || v === 'previous') return true
-        return v.split(',').every(id => id.trim().match(/^cue_\d+$/))
+      parseValue: (val) => val.trim(),
+      validateValue: (val) => {
+        if (val === 'all' || val === 'previous') return true;
+        // Match a comma-separated list of sound refs in brackets
+        return /^\[\s*\w+(\s*,\s*\w+)*\s*\]$/.test(val);
       }
     }
   ]
 }
 ```
+
+### Stop Annotation Details
+The `stop` annotation provides powerful control over audio playback, allowing one line to stop other sounds.
+
+- **`{stop=previous}`**: Stops the sound cue from the immediately preceding line, if it is currently playing.
+- **`{stop=all}`**: Stops all sounds that are currently playing in the application.
+- **`{stop=[0001,0004,0201]}`**: Stops specific sound cues by their SoundRef. The value should be a comma-separated list of SoundRefs enclosed in square brackets.
 
 ## Highlights
 

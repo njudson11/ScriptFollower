@@ -196,7 +196,7 @@ App.vue (Main Container)
   gap: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-left: 33 solid transparent;
   transition: all 0.2s;
 }
 

@@ -81,6 +81,23 @@ export class AppStore {
   }
 
   /**
+   * Update a single line in the current document
+   */
+  updateLine(lineId: string, updates: Partial<ScriptLineBase>): void {
+    if (!this.state.currentDocument) return
+
+    const newLines = this.state.currentDocument.lines.map(line => 
+      line.id === lineId ? { ...line, ...updates } : line
+    );
+
+    this.state.currentDocument = {
+      ...this.state.currentDocument,
+      lines: newLines,
+      updatedAt: new Date()
+    }
+  }
+
+  /**
    * Update lines in the current document
    */
   updateLines(updatedLines: ScriptLineBase[]): void {

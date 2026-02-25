@@ -31,6 +31,7 @@ export const EVENT_TYPES = {
   DOCUMENT_LOADED: 'document:loaded',
   DOCUMENT_UNLOADED: 'document:unloaded',
   DOCUMENT_ERROR: 'document:error',
+  SOUNDS_LOADED: 'sounds:loaded',
 
   // Selection events
   LINE_SELECTED: 'selection:lineSelected',
@@ -86,6 +87,19 @@ Emitted when document successfully loads.
 ```
 
 **Subscribers**: Features that need to initialize when document loads
+
+### SOUNDS_LOADED
+Emitted when sound files have been processed and associated with lines.
+
+```typescript
+{
+  type: EVENT_TYPES.SOUNDS_LOADED,
+  payload: {}, // Payload is empty, features should get data from AppStore
+  timestamp: new Date()
+}
+```
+
+**Subscribers**: `SoundFeature` to trigger preloading logic.
 
 ### DOCUMENT_UNLOADED
 Emitted when current document is unloaded.

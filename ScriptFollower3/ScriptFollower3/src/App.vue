@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, provide } from 'vue'
-import { EventBus } from '@/core/EventBus'
+import { ref, computed, onMounted, provide, onBeforeUnmount } from 'vue'
+import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { LineSelectionManager } from '@/core/LineSelectionManager'
 import { FeatureManager } from '@/core/FeatureManager'
 import { AppStore } from '@/store/AppStore'
@@ -18,9 +18,13 @@ import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import { AudioTestFeature } from '@/features/AudioTestFeature'
 import { SoundFeature } from '@/features/SoundFeature'
 import { LineType, ScriptLineBase, SoundCue } from './types/core'
+import { ACTION_TYPES } from './types/actions'
+
+import { AnnotationManager } from '@/core/AnnotationManager'
 
 // Initialize managers
 const eventBus = new EventBus()
+const annotationManager = new AnnotationManager()
 const appStore = new AppStore(eventBus)
 const actionController = new ActionController(eventBus)
 const audioPlaybackManager = new AudioPlaybackManager(eventBus)
@@ -28,6 +32,7 @@ const selectionManager = new LineSelectionManager(eventBus, appStore, actionCont
 const featureManager = new FeatureManager(eventBus, actionController)
 
 const isInitialized = ref(false)
+const unregisterActions: Array<() => void> = []
 
 onMounted(async () => {
   // Register features
@@ -46,27 +51,36 @@ onMounted(async () => {
   const audioTestFeature = new AudioTestFeature(featureManager)
   await featureManager.registerFeature(audioTestFeature)
 
-  const soundFeature = new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus)
+  const soundFeature = new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager)
   await featureManager.registerFeature(soundFeature)
+
+  // Register action handlers
+  unregisterActions.push(
+    actionController.registerHandler(ACTION_TYPES.LOAD_DOCUMENT, handleLoadDocumentAction),
+    actionController.registerHandler(ACTION_TYPES.LOAD_SOUNDS, handleLoadSoundsAction),
+    actionController.registerHandler(ACTION_TYPES.UPDATE_LINE, handleUpdateLineAction)
+  )
 
   isInitialized.value = true
 })
 
+onBeforeUnmount(() => {
+  unregisterActions.forEach(unregister => unregister())
+})
+
 // Provide managers to child components
 provide('eventBus', eventBus)
+provide('annotationManager', annotationManager)
 provide('selectionManager', selectionManager)
 provide('featureManager', featureManager)
 provide('appStore', appStore)
 provide('actionController', actionController)
 provide('audioPlaybackManager', audioPlaybackManager)
 
-const handleFileUpload = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-
-  if (!file) {
-    return
-  }
+// Action Handlers
+async function handleLoadDocumentAction(action: any) {
+  const { file } = action.payload
+  if (!file) return
 
   try {
     appStore.setLoading(true)
@@ -86,17 +100,12 @@ const handleFileUpload = async (event: Event) => {
     appStore.setError(error instanceof Error ? error.message : 'Failed to load document')
   } finally {
     appStore.setLoading(false)
-    input.value = ''
   }
 }
 
-const handleSoundsUpload = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const files = input.files
-
-  if (!files || files.length === 0) {
-    return
-  }
+async function handleLoadSoundsAction(action: any) {
+  const { files } = action.payload
+  if (!files || files.length === 0) return
 
   const document = appStore.getCurrentDocument()
   if (!document) {
@@ -107,27 +116,19 @@ const handleSoundsUpload = async (event: Event) => {
   try {
     appStore.setLoading(true)
     
-    // Valid audio extensions
     const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
-    
-    // Create a map of filename start patterns to File objects
     const fileMap = new Map<string, File>()
+    
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const lowerName = file.name.toLowerCase()
-      
       if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
-        // Extract the leading alphanumeric part (e.g., "0101" from "0101 - sound.mp3")
         const match = file.name.match(/^([a-zA-Z0-9]+)/)
-        if (match) {
-          fileMap.set(match[1], file)
-        }
+        if (match) fileMap.set(match[1], file)
       }
     }
 
     const updatedLines: ScriptLineBase[] = []
-    let matchCount = 0
-
     for (const line of document.lines) {
       if (line.lineType === LineType.SOUND_CUE) {
         const soundRef = line.metadata.soundRef
@@ -139,35 +140,51 @@ const handleSoundsUpload = async (event: Event) => {
             id: `cue_${line.id}`,
             name: file.name,
             url: objectUrl,
-            volume: 80, // Default volume
+            volume: 100,
             pan: 'center'
           }
 
           updatedLines.push({
             ...line,
-            metadata: {
-              ...line.metadata,
-              sound: soundCue
-            }
+            metadata: { ...line.metadata, sound: soundCue }
           })
-          matchCount++
         }
       }
     }
 
     if (updatedLines.length > 0) {
       appStore.updateLines(updatedLines)
-      console.log(`[App] Matched ${matchCount} sound files to cues.`)
-    } else {
-      console.warn('[App] No sound files matched current document cues.')
+      eventBus.emit({ type: EVENT_TYPES.SOUNDS_LOADED, timestamp: new Date() });
     }
-
   } catch (error) {
-    appStore.setError(error instanceof Error ? error.message : 'Failed to process sound files')
+    appStore.setError('Failed to process sound files')
   } finally {
     appStore.setLoading(false)
-    input.value = ''
   }
+}
+
+function handleUpdateLineAction(action: any) {
+  const { lineId, updates } = action.payload
+  appStore.updateLine(lineId, updates)
+}
+
+// Internal component event handlers (bridging to ActionController)
+const onFileUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    actionController.dispatch({ type: ACTION_TYPES.LOAD_DOCUMENT, payload: { file } })
+  }
+  input.value = ''
+}
+
+const onSoundsUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (files) {
+    actionController.dispatch({ type: ACTION_TYPES.LOAD_SOUNDS, payload: { files } })
+  }
+  input.value = ''
 }
 
 const hasDocument = computed(() => appStore.state.currentDocument !== null)
@@ -181,8 +198,8 @@ const gridTemplateColumns = computed(() => {
 <template>
   <div class="app-container" v-if="isInitialized">
     <Toolbar 
-      @file-upload="handleFileUpload" 
-      @sounds-upload="handleSoundsUpload"
+      @file-upload="onFileUpload" 
+      @sounds-upload="onSoundsUpload"
       :has-document="hasDocument" 
       :is-loading="appStore.state.isLoading" 
     />
@@ -194,7 +211,7 @@ const gridTemplateColumns = computed(() => {
 
     <div class="main-content" :style="{ gridTemplateColumns: gridTemplateColumns }">
       <Sidebar />
-      <DocumentViewer @file-upload="handleFileUpload" />
+      <DocumentViewer @file-upload="onFileUpload" />
       <RightPanel />
     </div>
   </div>
