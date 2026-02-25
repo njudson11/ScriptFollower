@@ -3,51 +3,120 @@ import { EventBus } from './EventBus';
 import { IAudioPlayer, AUDIO_EVENT_TYPES, IAudioOutputDevice } from '@/types/core';
 import { AudioPlayer } from './AudioPlayer';
 
+/**
+ * Enhanced AudioPlaybackManager supporting multi-device output via multiple AudioContexts.
+ */
 export class AudioPlaybackManager {
-  private audioContext: AudioContext;
+  // Map of deviceId -> { context, masterGain, channelGains: Map<channelId, GainNode> }
+  private deviceContexts: Map<string, { 
+    context: AudioContext, 
+    masterGain: GainNode,
+    channelGains: Map<string, GainNode>
+  }> = new Map();
+
   private audioPlayers: Map<string, IAudioPlayer> = new Map();
   private activePlayers: Map<string, IAudioPlayer> = new Map();
-  private channelGainNodes: Map<string, GainNode> = new Map();
   private eventBus: EventBus;
-  private currentOutputDeviceId = ref('default');
-  private masterGainNode: GainNode;
+  private globalOutputDeviceId = ref('default');
   
-  // Use refs for reactive state
+  // Reactive state for global settings
   private _globalVolume = ref(1.0);
   private _isMuted = ref(false);
 
+  // Store for channel-to-device mapping
+  private channelDeviceMap: Map<string, string> = new Map();
+
+  /**
+   * Check if the current browser environment supports independent output device routing.
+   * This requires the 'setSinkId' API on AudioContext.
+   */
+  public readonly isMultiDeviceSupported = typeof (window.AudioContext || (window as any).webkitAudioContext).prototype.setSinkId === 'function';
+
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
-    // @ts-ignore
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
-    this.masterGainNode = this.audioContext.createGain();
-    this.masterGainNode.connect(this.audioContext.destination);
+    // Initialize default context
+    this.getOrCreateDeviceContext('default');
 
-    // Initialize default channel
-    this.getChannelGainNode('default');
-
-    navigator.mediaDevices.addEventListener('devicechange', this.onMediaDeviceChange.bind(this));
+    if (navigator.mediaDevices) {
+      navigator.mediaDevices.addEventListener('devicechange', this.onMediaDeviceChange.bind(this));
+    }
   }
 
   private async onMediaDeviceChange() {
     this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_DEVICES_UPDATED, timestamp: new Date() });
   }
 
+  private getOrCreateDeviceContext(deviceId: string) {
+    let devCtx = this.deviceContexts.get(deviceId);
+    
+    if (!devCtx) {
+      // @ts-ignore
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const masterGain = context.createGain();
+      masterGain.connect(context.destination);
+      
+      const targetVol = this._isMuted.value ? 0 : this._globalVolume.value;
+      masterGain.gain.setValueAtTime(targetVol, context.currentTime);
+
+      // Attempt to route to specific hardware if supported
+      if (deviceId !== 'default' && typeof context.setSinkId === 'function') {
+          context.setSinkId(deviceId).catch(err => {
+              console.warn(`[AudioPlaybackManager] Failed to set hardware sink ${deviceId}. Routing to default.`, err);
+          });
+      }
+
+      devCtx = {
+        context,
+        masterGain,
+        channelGains: new Map()
+      };
+      this.deviceContexts.set(deviceId, devCtx);
+    }
+    
+    return devCtx;
+  }
+
+  private getDeviceContextForChannel(channelId: string) {
+      // If multi-device isn't supported, always use the default context/global device
+      if (!this.isMultiDeviceSupported) {
+          return this.getOrCreateDeviceContext('default');
+      }
+
+      const deviceId = this.channelDeviceMap.get(channelId) || this.globalOutputDeviceId.value;
+      return this.getOrCreateDeviceContext(deviceId);
+  }
+
   private getChannelGainNode(channelId: string): GainNode {
-    let gainNode = this.channelGainNodes.get(channelId);
+    const devCtx = this.getDeviceContextForChannel(channelId);
+    
+    let gainNode = devCtx.channelGains.get(channelId);
     if (!gainNode) {
-      gainNode = this.audioContext.createGain();
-      gainNode.connect(this.masterGainNode);
-      this.channelGainNodes.set(channelId, gainNode);
+      gainNode = devCtx.context.createGain();
+      gainNode.connect(devCtx.masterGain);
+      devCtx.channelGains.set(channelId, gainNode);
     }
     return gainNode;
   }
 
-  getPlayer(id: string, url: string, channelId: string = 'default'): IAudioPlayer {
+  setChannelDevice(channelId: string, deviceId: string): void {
+      if (!this.isMultiDeviceSupported) return;
+
+      const oldDeviceId = this.channelDeviceMap.get(channelId);
+      if (oldDeviceId === deviceId) return;
+
+      this.channelDeviceMap.set(channelId, deviceId);
+  }
+
+  getPlayer(id: string, url: string, channelId: string = 'A'): IAudioPlayer {
     let player = this.audioPlayers.get(id);
+    const targetDevCtx = this.getDeviceContextForChannel(channelId);
     
-    if (player && (player.url !== url || player.channelId !== channelId)) {
+    // Check if context migration is needed (e.g. device changed)
+    const currentContext = (player as any)?.audioContext;
+    const contextMismatch = currentContext && currentContext !== targetDevCtx.context;
+
+    if (player && (player.url !== url || player.channelId !== channelId || contextMismatch)) {
       player.destroy();
       this.audioPlayers.delete(id);
       this.activePlayers.delete(id);
@@ -56,7 +125,7 @@ export class AudioPlaybackManager {
 
     if (!player) {
       const channelGain = this.getChannelGainNode(channelId);
-      player = new AudioPlayer(id, url, this.audioContext, channelGain, channelId);
+      player = new AudioPlayer(id, url, targetDevCtx.context, channelGain, channelId);
       
       this.audioPlayers.set(id, player);
 
@@ -83,18 +152,11 @@ export class AudioPlaybackManager {
   }
 
   setChannelVolume(channelId: string, volume: number): void {
-    const gainNode = this.channelGainNodes.get(channelId);
+    const devCtx = this.getDeviceContextForChannel(channelId);
+    const gainNode = devCtx.channelGains.get(channelId);
     if (gainNode) {
-      gainNode.gain.setTargetAtTime(Math.max(0, Math.min(volume, 1)), this.audioContext.currentTime, 0.01);
+      gainNode.gain.setTargetAtTime(Math.max(0, Math.min(volume, 1)), devCtx.context.currentTime, 0.01);
     }
-  }
-
-  async preloadAll(urls: string[]): Promise<void[]> {
-    const promises = urls.map(url => {
-      const player = this.getPlayer(`preload_${url}`, url);
-      return player.load();
-    });
-    return Promise.all(promises);
   }
 
   stopAll(): void {
@@ -124,9 +186,12 @@ export class AudioPlaybackManager {
 
   setGlobalVolume(volume: number): void {
     this._globalVolume.value = Math.max(0, Math.min(volume, 1));
-    if (!this._isMuted.value) {
-      this.masterGainNode.gain.setTargetAtTime(this._globalVolume.value, this.audioContext.currentTime, 0.01);
-    }
+    const targetVol = this._isMuted.value ? 0 : this._globalVolume.value;
+    
+    this.deviceContexts.forEach(devCtx => {
+        devCtx.masterGain.gain.setTargetAtTime(targetVol, devCtx.context.currentTime, 0.01);
+    });
+
     this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_GLOBAL_VOLUME_CHANGED, payload: { volume: this._globalVolume.value }, timestamp: new Date() });
   }
 
@@ -134,12 +199,19 @@ export class AudioPlaybackManager {
 
   setGlobalMute(muted: boolean): void {
     this._isMuted.value = muted;
-    const targetVolume = muted ? 0 : this._globalVolume.value;
-    this.masterGainNode.gain.setTargetAtTime(targetVolume, this.audioContext.currentTime, 0.01);
+    const targetVol = muted ? 0 : this._globalVolume.value;
+
+    this.deviceContexts.forEach(devCtx => {
+        devCtx.masterGain.gain.setTargetAtTime(targetVol, devCtx.context.currentTime, 0.01);
+    });
+
     this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_GLOBAL_MUTE_CHANGED, payload: { muted: this._isMuted.value }, timestamp: new Date() });
   }
 
   async getAvailableOutputDevices(): Promise<IAudioOutputDevice[]> {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return [];
+    }
     const devices = await navigator.mediaDevices.enumerateDevices();
     return devices
       .filter(device => device.kind === 'audiooutput')
@@ -147,19 +219,19 @@ export class AudioPlaybackManager {
   }
 
   async setOutputDevice(deviceId: string): Promise<void> {
-    // @ts-ignore
-    if (typeof this.audioContext.setSinkId === 'function') {
-      // @ts-ignore
-      await this.audioContext.setSinkId(deviceId);
-      this.currentOutputDeviceId.value = deviceId;
-      this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_DEVICE_CHANGED, payload: { deviceId }, timestamp: new Date() });
-    } else {
-      throw new Error('setSinkId is not supported in this browser.');
+    this.globalOutputDeviceId.value = deviceId;
+    
+    // Update the default context
+    const devCtx = this.deviceContexts.get('default');
+    if (devCtx && typeof devCtx.context.setSinkId === 'function') {
+        await devCtx.context.setSinkId(deviceId);
     }
+
+    this.eventBus.emit({ type: AUDIO_EVENT_TYPES.AUDIO_DEVICE_CHANGED, payload: { deviceId }, timestamp: new Date() });
   }
 
   getCurrentOutputDeviceId(): string {
-    return this.currentOutputDeviceId.value;
+    return this.globalOutputDeviceId.value;
   }
 
   getCurrentlyPlayingPlayers(): IAudioPlayer[] {
@@ -177,13 +249,30 @@ export class AudioPlaybackManager {
     });
   }
 
+  async requestPermissions(): Promise<boolean> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      this.onMediaDeviceChange();
+      return true;
+    } catch (err) {
+      console.warn('Audio permissions denied:', err);
+      return false;
+    }
+  }
+
   destroy(): void {
     this.stopAll();
     this.audioPlayers.forEach(player => player.destroy());
     this.audioPlayers.clear();
-    this.channelGainNodes.forEach(node => node.disconnect());
-    this.channelGainNodes.clear();
-    this.audioContext.close();
-    navigator.mediaDevices.removeEventListener('devicechange', this.onMediaDeviceChange);
+    this.deviceContexts.forEach(devCtx => {
+        devCtx.channelGains.forEach(node => node.disconnect());
+        devCtx.masterGain.disconnect();
+        devCtx.context.close();
+    });
+    this.deviceContexts.clear();
+    if (navigator.mediaDevices) {
+      navigator.mediaDevices.removeEventListener('devicechange', this.onMediaDeviceChange);
+    }
   }
 }

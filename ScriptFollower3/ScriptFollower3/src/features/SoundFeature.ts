@@ -32,6 +32,11 @@ export class SoundFeature implements FeaturePlugin {
   private unregisterActions: Array<() => void> = []
   private unregisterEvents: Array<() => void> = []
 
+  // Pre-bind handlers to ensure they are unique in the ActionController's Set
+  private boundHandlePlaySound: any;
+  private boundHandleStopSound: any;
+  private boundHandleTogglePlaySound: any;
+
   // Keep track of which players we've created for pre-loading
   private managedPlayerIds: Set<string> = new Set()
 
@@ -51,6 +56,11 @@ export class SoundFeature implements FeaturePlugin {
     this.eventBus = eventBus
     this.annotationManager = annotationManager
     this.selectionManager = selectionManager
+
+    // Bind handlers once
+    this.boundHandlePlaySound = this.handlePlaySound.bind(this);
+    this.boundHandleStopSound = this.handleStopSound.bind(this);
+    this.boundHandleTogglePlaySound = this.handleTogglePlaySound.bind(this);
   }
 
   getAnnotations(): Annotation[] {
@@ -91,7 +101,6 @@ export class SoundFeature implements FeaturePlugin {
         name: 'chan',
         description: 'Virtual audio channel ID (e.g., "A", "B")',
         type: 'string',
-        defaultValue: 'default',
         parseValue: (val) => val.trim(),
         validateValue: (val) => val.length > 0
       },
@@ -166,10 +175,11 @@ export class SoundFeature implements FeaturePlugin {
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
+    // Using pre-bound handlers prevents duplicate registration
     this.unregisterActions.push(
-      this.actionController.registerHandler(ACTION_TYPES.PLAY_SOUND_CUE, this.handlePlaySound.bind(this)),
-      this.actionController.registerHandler(ACTION_TYPES.STOP_SOUND_CUE, this.handleStopSound.bind(this)),
-      this.actionController.registerHandler(ACTION_TYPES.TOGGLE_PLAY_SOUND_CUE, this.handleTogglePlaySound.bind(this))
+      this.actionController.registerHandler(ACTION_TYPES.PLAY_SOUND_CUE, this.boundHandlePlaySound),
+      this.actionController.registerHandler(ACTION_TYPES.STOP_SOUND_CUE, this.boundHandleStopSound),
+      this.actionController.registerHandler(ACTION_TYPES.TOGGLE_PLAY_SOUND_CUE, this.boundHandleTogglePlaySound)
     )
 
     const cleanupSelection = this.eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
@@ -187,7 +197,42 @@ export class SoundFeature implements FeaturePlugin {
     });
     this.unregisterEvents.push(cleanupSoundsLoaded);
 
+    const cleanupDocLoaded = this.eventBus.subscribe(EVENT_TYPES.DOCUMENT_LOADED, this.handleDocumentLoaded.bind(this));
+    this.unregisterEvents.push(cleanupDocLoaded);
+
     console.log('[Sound Feature] Initialized')
+  }
+
+  private async handleDocumentLoaded(): Promise<void> {
+    const lines = this.appStore.getLines();
+    const soundCueSubTypes = new Set<string>();
+    
+    lines.forEach(line => {
+      if (line.lineType === LineType.SOUND_CUE && line.lineSubType) {
+        soundCueSubTypes.add(line.lineSubType);
+      }
+    });
+
+    const currentChannels = [...this.appStore.state.virtualChannels];
+    currentChannels.forEach(ch => {
+        if (ch.id !== 'A') {
+            this.appStore.removeVirtualChannel(ch.id);
+        }
+    });
+
+    if (soundCueSubTypes.size === 0) {
+        this.appStore.updateVirtualChannel('A', { name: 'Channel A' });
+    } else {
+        soundCueSubTypes.forEach(subType => {
+            this.appStore.addVirtualChannel({
+                id: subType,
+                name: `Channel ${subType}`,
+                volume: 0.8,
+                isMuted: false,
+                outputDeviceId: 'default'
+            });
+        });
+    }
   }
 
   async destroy(): Promise<void> {
@@ -195,6 +240,15 @@ export class SoundFeature implements FeaturePlugin {
     this.unregisterEvents.forEach(unregister => unregister())
     this.managedPlayerIds.clear()
     this.audioPlaybackManager.stopAll()
+  }
+
+  private resolveChannelId(line: any): string {
+    const fromAnnotation = this.annotationManager.getValue(line.annotation, 'chan');
+    if (fromAnnotation) return fromAnnotation;
+
+    if (line.lineSubType) return line.lineSubType;
+
+    return this.appStore.state.virtualChannels[0]?.id || 'A';
   }
 
   private managePreloading(currentLineId: string): void {
@@ -208,19 +262,22 @@ export class SoundFeature implements FeaturePlugin {
     const startIdx = Math.max(0, currentIndex - behind)
     const endIdx = Math.min(lines.length - 1, currentIndex + ahead)
 
-    const cuesToLoad = new Map<string, SoundCue>()
+    const cuesToLoad = new Map<string, { cue: SoundCue, channelId: string }>()
     
     for (let i = startIdx; i <= endIdx; i++) {
       const line = lines[i]
       if (line.lineType === LineType.SOUND_CUE && line.metadata.sound) {
         const cue = line.metadata.sound as SoundCue
-        cuesToLoad.set(cue.id, cue)
+        const channelId = this.resolveChannelId(line);
+        cuesToLoad.set(cue.id, { cue, channelId })
       }
     }
 
+    const activePlayerIds = new Set(this.audioPlaybackManager.getCurrentlyPlayingPlayers().map(p => p.id));
+
     const idsToUnload: string[] = []
     this.managedPlayerIds.forEach(id => {
-      if (!cuesToLoad.has(id)) {
+      if (!cuesToLoad.has(id) && !activePlayerIds.has(id)) {
         idsToUnload.push(id)
       }
     })
@@ -230,8 +287,8 @@ export class SoundFeature implements FeaturePlugin {
       idsToUnload.forEach(id => this.managedPlayerIds.delete(id))
     }
 
-    cuesToLoad.forEach((cue, id) => {
-      const player = this.audioPlaybackManager.getPlayer(id, cue.url)
+    cuesToLoad.forEach((info, id) => {
+      const player = this.audioPlaybackManager.getPlayer(id, info.cue.url, info.channelId)
       this.managedPlayerIds.add(id)
       if (!player.isLoaded) {
         player.load().catch(err => console.error(`[Sound Feature] Failed to preload cue ${id}:`, err))
@@ -285,7 +342,7 @@ export class SoundFeature implements FeaturePlugin {
 
       if (!cue) return; 
 
-      const channelId = this.annotationManager.getValue(line.annotation, 'chan') || 'default';
+      const channelId = this.resolveChannelId(line);
       const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId)
       this.managedPlayerIds.add(cue.id)
       
@@ -346,7 +403,8 @@ export class SoundFeature implements FeaturePlugin {
     if (!line || line.lineType !== LineType.SOUND_CUE || !line.metadata.sound) return;
 
     const cue = line.metadata.sound as SoundCue;
-    const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url);
+    const channelId = this.resolveChannelId(line);
+    const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId);
 
     if (player.isPlaying) {
       player.stop();

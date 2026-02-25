@@ -11,7 +11,7 @@ import DocumentViewer from '@/components/DocumentViewer.vue'
 import RightPanel from '@/components/RightPanel.vue'
 import { DialogueRenderingFeature } from '@/features/DialogueRenderingFeature'
 import { ActionController } from '@/core/ActionController'
-import { KeybindingFeature } from '@/features/KeybindingFeature' // Corrected import syntax
+import { KeybindingFeature } from '@/features/KeybindingFeature'
 import { NavigationFeature } from '@/features/NavigationFeature'
 import { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature'
 import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
@@ -19,7 +19,6 @@ import { MasterAudioPanelFeature } from '@/features/MasterAudioPanelFeature'
 import { SoundFeature } from '@/features/SoundFeature'
 import { LineType, ScriptLineBase, SoundCue } from './types/core'
 import { ACTION_TYPES } from './types/actions'
-
 import { AnnotationManager } from '@/core/AnnotationManager'
 
 // Initialize managers
@@ -32,27 +31,27 @@ const selectionManager = new LineSelectionManager(eventBus, appStore, actionCont
 const featureManager = new FeatureManager(eventBus, actionController)
 
 const isInitialized = ref(false)
+const registeredFeatureIds: string[] = []
 const unregisterActions: Array<() => void> = []
 
 onMounted(async () => {
-  // Register features
-  const dialogueFeature = new DialogueRenderingFeature(featureManager)
-  await featureManager.registerFeature(dialogueFeature)
+  console.log('[App] Mounting and initializing features...')
+  
+  // Create features
+  const features = [
+    new DialogueRenderingFeature(featureManager),
+    new KeybindingFeature(featureManager, actionController, appStore, selectionManager),
+    new NavigationFeature(featureManager, actionController, appStore, selectionManager),
+    new SidebarProgressBarFeature(selectionManager, appStore),
+    new MasterAudioPanelFeature(featureManager),
+    new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager)
+  ]
 
-  const keybindingFeature = new KeybindingFeature(featureManager, actionController, appStore, selectionManager)
-  await featureManager.registerFeature(keybindingFeature)
-
-  const navigationFeature = new NavigationFeature(featureManager, actionController, appStore, selectionManager)
-  await featureManager.registerFeature(navigationFeature)
-
-  const sidebarProgressBarFeature = new SidebarProgressBarFeature(selectionManager, appStore)
-  await featureManager.registerFeature(sidebarProgressBarFeature)
-
-  const masterAudioPanelFeature = new MasterAudioPanelFeature(featureManager)
-  await featureManager.registerFeature(masterAudioPanelFeature)
-
-  const soundFeature = new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager)
-  await featureManager.registerFeature(soundFeature)
+  // Register all features and track IDs for cleanup
+  for (const feature of features) {
+    await featureManager.registerFeature(feature)
+    registeredFeatureIds.push(feature.id)
+  }
 
   // Register central action handlers
   unregisterActions.push(
@@ -64,8 +63,23 @@ onMounted(async () => {
   isInitialized.value = true
 })
 
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
+  console.log('[App] Unmounting and cleaning up...')
+  
+  // Unregister all action handlers
   unregisterActions.forEach(unreg => unreg())
+  
+  // Explicitly destroy all features to remove global listeners (like keydown)
+  for (const id of registeredFeatureIds) {
+    try {
+      await featureManager.unregisterFeature(id)
+    } catch (e) {
+      console.warn(`Failed to unregister feature ${id}:`, e)
+    }
+  }
+  
+  // Cleanup audio
+  audioPlaybackManager.destroy()
 })
 
 // Provide managers to child components
@@ -110,7 +124,6 @@ async function handleLoadSoundsAction(action: any) {
   try {
     appStore.setLoading(true)
     
-    // 1. Check for an ODT file first to load the document
     let odtFile: File | undefined;
     for (let i = 0; i < files.length; i++) {
       if (files[i].name.toLowerCase().endsWith('.odt')) {
@@ -127,7 +140,6 @@ async function handleLoadSoundsAction(action: any) {
       }
     }
 
-    // 2. Process sounds for the (potentially newly loaded) document
     let document = appStore.getCurrentDocument()
     if (!document) {
       appStore.setError('Please load a document or a folder containing an .odt file.')
@@ -137,33 +149,22 @@ async function handleLoadSoundsAction(action: any) {
     const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
     const fileMap = new Map<string, File>()
     
-    // console.log('[handleLoadSoundsAction] Received files:', files); // Debug log removed
-
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const lowerName = file.name.toLowerCase()
       if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
-        // Extract only the leading alphanumeric/underscore/hyphen part as the key
         const match = file.name.match(/^([a-zA-Z0-9_-]+)/)
         if (match && match[1]) {
           fileMap.set(match[1], file)
-          // console.log(`[handleLoadSoundsAction] Mapped audio file: "${file.name}" to key: "${match[1]}"`); // Debug log removed
-        } else {
-          // console.log(`[handleLoadSoundsAction] No key extracted from audio file: "${file.name}"`); // Debug log removed
         }
       }
     }
-    // console.log('[handleLoadSoundsAction] Final fileMap keys:', Array.from(fileMap.keys())); // Debug log removed
 
     const updatedLines: ScriptLineBase[] = []
     for (const line of document.lines) {
       if (line.lineType === LineType.SOUND_CUE) {
         let soundRef = line.metadata.soundRef;
-        // No normalization needed if ODTConfig extracts numerical prefix and fileMap uses it too
-
-        // console.log(`[handleLoadSoundsAction] Processing SOUND_CUE line (text: "${line.text}"). Extracted soundRef: "${soundRef}"`); // Debug log removed
         if (soundRef && fileMap.has(soundRef)) {
-          // console.log(`[handleLoadSoundsAction] Match found for soundRef: "${soundRef}"`); // Debug log removed
           const file = fileMap.get(soundRef)!
           const objectUrl = URL.createObjectURL(file)
           
@@ -179,16 +180,12 @@ async function handleLoadSoundsAction(action: any) {
             ...line,
             metadata: { ...line.metadata, sound: soundCue }
           })
-        } else {
-          // console.log(`[handleLoadSoundsAction] No matching audio file found in fileMap for soundRef: "${soundRef}"`); // Debug log removed
         }
       }
     }
 
     if (updatedLines.length > 0) {
       appStore.updateLines(updatedLines)
-      // Re-fetch document from store after updates to ensure we have latest for any other logic
-      document = appStore.getCurrentDocument()
       eventBus.emit({ type: EVENT_TYPES.SOUNDS_LOADED, timestamp: new Date() });
     }
   } catch (error) {
@@ -203,7 +200,6 @@ function handleUpdateLineAction(action: any) {
   appStore.updateLine(lineId, updates)
 }
 
-// Internal component event handlers (bridging to ActionController)
 const onFileUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -216,9 +212,7 @@ const onFileUpload = (event: Event) => {
 const onSoundsUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
   const files = input.files
-  // console.log('[onSoundsUpload] Raw files from input:', files); // Debug log removed
   if (files && files.length > 0) {
-    // Convert FileList to a plain Array of Files to ensure persistence
     const filesArray = Array.from(files);
     actionController.dispatch({ type: ACTION_TYPES.LOAD_SOUNDS, payload: { files: filesArray } })
   } else {

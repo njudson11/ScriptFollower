@@ -5,6 +5,7 @@ import type { ScriptLineBase, SoundCue, IAudioPlayer } from '@/types/core'
 import type { AppStore } from '@/store/AppStore'
 import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
+import type { AnnotationManager } from '@/core/AnnotationManager'
 import { ACTION_TYPES } from '@/types/actions'
 
 const props = defineProps({
@@ -25,6 +26,7 @@ const props = defineProps({
 const appStore = inject('appStore') as AppStore
 const actionController = inject('actionController') as ActionController
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager
+const annotationManager = inject('annotationManager') as AnnotationManager
 
 const copyAnnotation = (text: string) => {
   navigator.clipboard.writeText(text).catch(err => {
@@ -48,7 +50,6 @@ const lineClasses = computed(() => {
   if (props.contextClass) {
     classes.push(props.contextClass);
   }
-  // Add generic classes from AppStore (e.g., line-type-SOUND-CUE)
   classes.push(...appStore.getLineClasses(props.line));
   return classes;
 });
@@ -61,8 +62,23 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
 }
 
-const togglePlayback = () => {
+/**
+ * Resolves the channel ID, prioritizing annotations, then line subtypes,
+ * and finally defaulting to the first available virtual channel (usually 'A').
+ */
+const resolveChannelId = () => {
+    return annotationManager.getValue(props.line.annotation, 'chan') 
+           || props.line.lineSubType 
+           || (appStore.state.virtualChannels[0]?.id || 'A');
+};
+
+const togglePlayback = (event?: MouseEvent) => {
   if (!soundCue.value) return
+
+  // Blur the button to prevent spacebar double-triggers if focus is kept
+  if (event && event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.blur();
+  }
 
   if (isPlaying.value) {
     actionController.dispatch({
@@ -70,7 +86,6 @@ const togglePlayback = () => {
       payload: { cueId: soundCue.value.id }
     })
   } else {
-    // Optimistically set loading if not preloaded
     if (!isPreloaded.value) {
       isLoading.value = true;
     }
@@ -84,8 +99,8 @@ const togglePlayback = () => {
 const updateState = () => {
   if (!soundCue.value) return
   
-  // getPlayer is safe to call as it returns existing player if available
-  const player = audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url)
+  const channelId = resolveChannelId();
+  const player = audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url, channelId)
   
   if (player) {
     isPlaying.value = player.isPlaying
@@ -118,7 +133,6 @@ const updateState = () => {
 }
 
 onMounted(() => {
-  // Run update interval in both contexts to keep UI in sync
   timeUpdateInterval = window.setInterval(updateState, 100)
 })
 

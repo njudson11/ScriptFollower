@@ -4,7 +4,7 @@
 
 import { reactive } from 'vue'
 import { Document, ScriptLineBase, LineType, IVirtualChannel, IAudioOutputDevice } from '@/types/core'
-import { EventBus } from '@/core/EventBus'
+import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { AppConfig } from '@/config/AppConfig'
 
 export interface AppState {
@@ -35,7 +35,7 @@ export class AppStore {
     })(),
     isRightPanelCollapsed: false,
     virtualChannels: [
-      { id: 'default', name: 'Master Out', volume: 1.0, isMuted: false, outputDeviceId: 'default' }
+      { id: 'A', name: 'Channel A', volume: 0.8, isMuted: false, outputDeviceId: 'default' }
     ],
     availableOutputDevices: []
   })
@@ -49,6 +49,8 @@ export class AppStore {
   // --- Channel Management ---
 
   addVirtualChannel(channel: IVirtualChannel): void {
+    // Avoid duplicates
+    if (this.state.virtualChannels.some(c => c.id === channel.id)) return;
     this.state.virtualChannels.push(channel);
   }
 
@@ -91,6 +93,13 @@ export class AppStore {
     this.state.currentDocument = document
     this.state.isLoading = false
     this.state.error = null
+    
+    // Emit document loaded event
+    this.eventBus.emit({
+      type: EVENT_TYPES.DOCUMENT_LOADED,
+      payload: { documentId: document.id },
+      timestamp: new Date()
+    });
   }
 
   /**

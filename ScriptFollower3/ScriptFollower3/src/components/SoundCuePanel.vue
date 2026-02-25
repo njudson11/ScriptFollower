@@ -24,6 +24,7 @@ const startTime = ref(0);
 const endTime = ref(0);
 const fadeIn = ref(0);
 const fadeOut = ref(0);
+const selectedChannelId = ref('A');
 
 const isPlaying = ref(false);
 const currentTime = ref(0);
@@ -33,7 +34,7 @@ let timeUpdateInterval: number | null = null;
 const soundCue = computed<SoundCue | null>(() => props.line.metadata.sound || null);
 const currentPlayer = computed(() => {
   if (!soundCue.value) return null;
-  return audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url);
+  return audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url, selectedChannelId.value);
 });
 
 // --- Stop Behavior State ---
@@ -50,14 +51,14 @@ const recentSoundCues = computed(() => {
   return allLines
     .slice(0, currentIndex)
     .filter(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef)
-    .slice(-5) // Get the last 5
+    .slice(-5) 
     .map(l => ({
       ref: l.metadata.soundRef,
       text: l.text,
       lineNumber: l.lineNumber,
-      soundDescription: l.metadata.soundDescription || l.text // Include soundDescription
+      soundDescription: l.metadata.soundDescription || l.text 
     }))
-    .reverse(); // Show most recent first
+    .reverse();
 });
 
 const stopDisplayValue = computed(() => {
@@ -73,7 +74,8 @@ const stopDisplayValue = computed(() => {
 });
 // --- End Stop Behavior State ---
 
-// Real-time property application to the active player
+const availableChannels = computed(() => appStore.state.virtualChannels);
+
 watchEffect(() => {
   if (currentPlayer.value) {
     currentPlayer.value.volume = volume.value / 100;
@@ -81,7 +83,16 @@ watchEffect(() => {
   }
 });
 
-// Parse existing annotations from line using central manager
+/**
+ * Resolves the channel ID, prioritizing annotations, then line subtypes,
+ * and finally defaulting to the first available virtual channel (usually 'A').
+ */
+const resolveChannelId = () => {
+    return annotationManager.getValue(props.line.annotation, 'chan') 
+           || props.line.lineSubType 
+           || (appStore.state.virtualChannels[0]?.id || 'A');
+};
+
 const parseAnnotations = () => {
   const get = (key: string, fallback: any) => {
     const val = annotationManager.getValue(props.line.annotation, key);
@@ -100,8 +111,9 @@ const parseAnnotations = () => {
   endTime.value = get('end', 0);
   fadeIn.value = get('fade-in', 0);
   fadeOut.value = get('fade-out', 0);
+  
+  selectedChannelId.value = resolveChannelId();
 
-  // Parse stop annotation
   const stopValue = get('stop', null);
   if (stopValue === 'previous' || stopValue === 'all') {
     stopMode.value = stopValue;
@@ -123,6 +135,9 @@ const updateAnnotations = () => {
     stopValue = `[${selectedStopRefs.value.join(',')}]`;
   }
 
+  const defaultChan = props.line.lineSubType || (appStore.state.virtualChannels[0]?.id || 'A');
+  const chanToStore = selectedChannelId.value !== defaultChan ? selectedChannelId.value : null;
+
   const annotationString = annotationManager.update(props.line.annotation, {
     'volume': volume.value !== 100 ? volume.value : null,
     'pan': balance.value !== 0 ? balance.value.toFixed(1) : null,
@@ -130,6 +145,7 @@ const updateAnnotations = () => {
     'end': endTime.value > 0 ? endTime.value.toFixed(2) : null,
     'fade-in': fadeIn.value > 0 ? fadeIn.value : null,
     'fade-out': fadeOut.value > 0 ? fadeOut.value : null,
+    'chan': chanToStore,
     'stop': stopValue
   });
   
@@ -162,11 +178,9 @@ const toggleStopRef = (refId: string) => {
   }
 };
 
-
-watch([volume, balance, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs], () => {
+watch([volume, balance, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId], () => {
   updateAnnotations();
 }, { deep: true });
-
 
 watch(() => props.line.id, () => {
   parseAnnotations();
@@ -188,7 +202,8 @@ const togglePlayback = () => {
       startOffsetSeconds: startTime.value,
       endOffsetSeconds: endTime.value,
       fadeIn: fadeIn.value,
-      fadeOut: fadeOut.value
+      fadeOut: fadeOut.value,
+      channelId: selectedChannelId.value
     };
     
     actionController.dispatch({
@@ -251,6 +266,17 @@ onBeforeUnmount(() => {
         <button class="btn btn-primary" @click="togglePlayback" :disabled="!soundCue">
           {{ isPlaying ? 'Stop' : 'Play Preview' }}
         </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="input-group">
+        <label>Virtual Channel</label>
+        <select v-model="selectedChannelId" class="channel-select">
+          <option v-for="ch in availableChannels" :key="ch.id" :value="ch.id">
+            {{ ch.name }} {{ ch.id === line.lineSubType ? '(Default)' : '' }}
+          </option>
+        </select>
       </div>
     </div>
 
@@ -340,4 +366,15 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @import '../css/SoundCuePanel.css';
+
+.channel-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-soft);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
 </style>

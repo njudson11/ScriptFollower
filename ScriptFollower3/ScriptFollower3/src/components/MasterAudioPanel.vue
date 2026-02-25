@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, inject, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager';
 import type { IAudioPlayer, IVirtualChannel, IAudioOutputDevice } from '@/types/core';
 import type { AppStore } from '@/store/AppStore';
 import { EventBus } from '@/core/EventBus';
+import { AUDIO_EVENT_TYPES } from '@/types/core';
 import AudioWaveform from './AudioWaveform.vue';
 
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager;
 const appStore = inject('appStore') as AppStore;
 const eventBus = inject('eventBus') as EventBus;
+
+// Detect multi-device support from manager
+const isMultiDeviceSupported = audioPlaybackManager.isMultiDeviceSupported;
 
 // Ad-hoc Audio State
 const audioUrl = ref('/audio-proxy/examples/mp3/SoundHelix-Song-1.mp3');
@@ -19,7 +23,7 @@ const adhocStartTime = ref(0);
 const adhocEndTime = ref(0);
 const adhocFadeIn = ref(0);
 const adhocFadeOut = ref(0);
-const selectedChannelId = ref('default');
+const selectedChannelId = ref('A');
 
 const adhocPlayer = ref<IAudioPlayer | null>(null);
 const loadedFileName = ref<string>('');
@@ -49,28 +53,28 @@ const currentOutputDeviceId = computed({
 });
 
 const availableDevices = ref<IAudioOutputDevice[]>([]);
+const hasLabels = computed(() => {
+    return availableDevices.value.some(d => d.label && !d.label.startsWith('Output Device'));
+});
 
-// Channels State
+const refreshDevices = async () => {
+    availableDevices.value = await audioPlaybackManager.getAvailableOutputDevices();
+};
+
+const requestLabels = async () => {
+    const success = await audioPlaybackManager.requestPermissions();
+    if (success) {
+        await refreshDevices();
+    }
+};
+
+// Channels State - Use reactive binding to store
 const virtualChannels = computed(() => appStore.state.virtualChannels);
 
 // Currently Playing State
 const activePlayers = ref<IAudioPlayer[]>([]);
 let stateUpdateInterval: number | null = null;
-
-const statusClass = computed(() => {
-  if (isAdhocPlaying.value) return 'status-playing';
-  if (adhocLoadStatus.value === 'loading' || adhocLoadStatus.value === 'decoding') return 'status-idle';
-  if (isAdhocLoaded.value) return 'status-loaded';
-  return 'status-idle';
-});
-
-const statusText = computed(() => {
-  if (isAdhocPlaying.value) return 'Playing';
-  if (adhocLoadStatus.value === 'loading') return `Loading (${adhocLoadProgress.value}%)`;
-  if (adhocLoadStatus.value === 'decoding') return 'Decoding...';
-  if (isAdhocLoaded.value) return 'Loaded';
-  return 'Idle';
-});
+let unregisterDeviceUpdate: (() => void) | null = null;
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
@@ -152,10 +156,10 @@ const handleAdhocClear = () => {
 
 const addChannel = () => {
   const currentCount = virtualChannels.value.length;
-  const charCode = 65 + (currentCount - 1); 
+  const charCode = 65 + currentCount; 
   const channelLetter = String.fromCharCode(charCode);
   
-  const id = `ch_${channelLetter}`;
+  const id = channelLetter;
   appStore.addVirtualChannel({
     id,
     name: `Channel ${channelLetter}`,
@@ -166,12 +170,18 @@ const addChannel = () => {
 };
 
 const removeChannel = (id: string) => {
+  if (id === 'A' && virtualChannels.value.length === 1) return;
   appStore.removeVirtualChannel(id);
 };
 
 const updateChannelVolume = (id: string, volume: number) => {
   appStore.updateVirtualChannel(id, { volume });
   audioPlaybackManager.setChannelVolume(id, volume);
+};
+
+const updateChannelOutputDevice = (id: string, deviceId: string) => {
+  appStore.updateVirtualChannel(id, { outputDeviceId: deviceId });
+  audioPlaybackManager.setChannelDevice(id, deviceId);
 };
 
 const toggleChannelMute = (id: string) => {
@@ -184,8 +194,8 @@ const toggleChannelMute = (id: string) => {
 };
 
 const getChannelName = (channelId?: string) => {
-  if (!channelId || channelId === 'default') return 'Master';
-  return virtualChannels.value.find(c => c.id === channelId)?.name || 'Unknown';
+  if (!channelId) return 'Unknown';
+  return virtualChannels.value.find(c => c.id === channelId)?.name || channelId;
 };
 
 const getPlayerLabel = (player: IAudioPlayer) => {
@@ -208,8 +218,19 @@ const stopPlayer = (playerId: string) => {
 // --- Initial Load ---
 
 onMounted(async () => {
-  availableDevices.value = await audioPlaybackManager.getAvailableOutputDevices();
+  await refreshDevices();
   
+  unregisterDeviceUpdate = eventBus.subscribe(AUDIO_EVENT_TYPES.AUDIO_DEVICES_UPDATED, async () => {
+      await refreshDevices();
+  });
+
+  // Sync initial routing if supported
+  if (isMultiDeviceSupported) {
+    virtualChannels.value.forEach(ch => {
+        audioPlaybackManager.setChannelDevice(ch.id, ch.outputDeviceId);
+    });
+  }
+
   stateUpdateInterval = window.setInterval(() => {
     if (adhocPlayer.value) {
       adhocCurrentTime.value = adhocPlayer.value.currentTime;
@@ -220,18 +241,24 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (stateUpdateInterval) clearInterval(stateUpdateInterval);
+  if (unregisterDeviceUpdate) unregisterDeviceUpdate();
 });
 </script>
 
 <template>
   <div class="master-audio-panel">
     
-    <!-- Global Master Controls -->
+    <!-- Master Bus (Global Controls) -->
     <div class="section master-controls">
-      <h3>Master Output</h3>
+      <div class="section-header">
+        <h3>Master Bus</h3>
+        <button v-if="!hasLabels" class="btn btn-small btn-warn" @click="requestLabels" title="Allow microphone access to see device names">
+          Enable Device Names
+        </button>
+      </div>
       <div class="master-main">
         <div class="volume-slider-container">
-          <label>Master Volume: {{ Math.round(masterVolume * 100) }}%</label>
+          <label>Global Volume: {{ Math.round(masterVolume * 100) }}%</label>
           <div class="slider-row">
             <button class="btn btn-icon" @click="toggleMasterMute" :title="isMuted ? 'Unmute' : 'Mute'">
               {{ isMuted ? '🔇' : '🔊' }}
@@ -241,18 +268,27 @@ onBeforeUnmount(() => {
         </div>
         
         <div class="input-group">
-          <label>Output Device</label>
-          <select v-model="currentOutputDeviceId" class="device-select">
-            <option value="default">System Default</option>
-            <option v-for="device in availableDevices" :key="device.deviceId" :value="device.deviceId">
-              {{ device.label }}
-            </option>
-          </select>
+          <label>Hardware Output Device</label>
+          <div class="input-row">
+            <select v-model="currentOutputDeviceId" class="device-select">
+                <option value="default">System Default</option>
+                <option v-for="device in availableDevices" :key="device.deviceId" :value="device.deviceId">
+                {{ device.label }}
+                </option>
+            </select>
+            <button class="btn btn-icon" @click="refreshDevices" title="Refresh list">🔄</button>
+          </div>
+          
+          <!-- Informative message about browser limitations -->
+          <div v-if="!isMultiDeviceSupported" class="limitation-box">
+            <span class="info-icon">ℹ️</span>
+            <p>Your browser supports output to one device at a time. Multi-device routing will be available in the desktop app.</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Virtual Channels -->
+    <!-- Virtual Mixing Desk -->
     <div class="section virtual-channels">
       <div class="section-header">
         <h3>Mixing Desk</h3>
@@ -263,8 +299,24 @@ onBeforeUnmount(() => {
         <div v-for="channel in virtualChannels" :key="channel.id" class="channel-strip">
           <div class="channel-header">
             <span class="channel-name">{{ channel.name }}</span>
-            <button v-if="channel.id !== 'default'" class="btn-remove" @click="removeChannel(channel.id)">×</button>
+            <button v-if="channel.id !== 'A'" class="btn-remove" @click="removeChannel(channel.id)">×</button>
           </div>
+          
+          <!-- Only show device mapping if the browser actually supports it -->
+          <div v-if="isMultiDeviceSupported" class="channel-device-mapping">
+            <select 
+              :value="channel.outputDeviceId" 
+              @change="e => updateChannelOutputDevice(channel.id, (e.target as HTMLSelectElement).value)"
+              class="device-select-mini"
+              title="Target hardware device"
+            >
+              <option value="default">Default</option>
+              <option v-for="device in availableDevices" :key="device.deviceId" :value="device.deviceId">
+                {{ device.label }}
+              </option>
+            </select>
+          </div>
+
           <div class="fader-container">
             <input 
               type="range" 
@@ -326,17 +378,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="playback-info">
-        <span :class="['status-badge', statusClass]">{{ statusText }}</span>
-        <span>{{ formatTime(adhocCurrentTime) }} / {{ formatTime(adhocDuration) }}</span>
-      </div>
-
-      <div class="controls">
-        <button class="btn btn-primary" @click="handleAdhocPlay" :disabled="isAdhocPlaying || !isAdhocLoaded">Play</button>
-        <button class="btn" @click="handleAdhocStop" :disabled="!isAdhocPlaying">Stop</button>
-        <button class="btn" @click="handleAdhocClear">Clear</button>
-      </div>
-
       <AudioWaveform 
         :player="adhocPlayer"
         v-model:startTime="adhocStartTime"
@@ -351,4 +392,52 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @import '../css/MasterAudioPanel.css';
+
+.device-select-mini {
+    width: 100%;
+    padding: 2px;
+    font-size: 9px;
+    background: var(--color-background-soft);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.channel-device-mapping {
+    width: 100%;
+}
+
+.btn-warn {
+    background: var(--color-warning-background);
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+}
+
+.btn-warn:hover {
+    background: var(--color-warning);
+    color: white;
+}
+
+.limitation-box {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 122, 255, 0.05);
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    border-radius: 6px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.limitation-box p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+}
+
+.info-icon {
+    font-size: 16px;
+}
 </style>
