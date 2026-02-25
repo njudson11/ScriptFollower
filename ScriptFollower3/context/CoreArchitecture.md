@@ -22,7 +22,7 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 │  - EventBus: Cross-feature communication           │
 │  - ActionController: Centralized action dispatching│
 │  - LineSelectionManager: Selection & Focus         │
-│  - AudioPlaybackManager: Multi-channel mixing desk │
+│  - AudioPlaybackManager: Multi-context mixing desk │
 │  - AnnotationManager: Script-based configuration   │
 │  - FeatureManager: Plugin registration             │
 └────────────────────┬────────────────────────────────┘
@@ -47,8 +47,8 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 ## Core Principles
 
 ### 1. Separation of Concerns
-- **UI Layer**: Presentation only, imports dedicated CSS files.
-- **State Layer**: AppStore manages reactive state for all features.
+- **UI Layer**: Presentation only, imports dedicated component CSS files.
+- **State Layer**: AppStore manages reactive state for all features, including persistent virtual channel settings.
 - **Manager Layer**: Business logic for selections, events, audio routing, and annotations.
 - **Feature Layer**: Self-contained plugins implementing `IFeaturePlugin`.
 
@@ -56,10 +56,11 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 - **EventBus**: Loose coupling via pub/sub for state changes.
 - **ActionController**: Command bus for triggering application logic (e.g., `PLAY_SOUND_CUE`, `SELECT_LINE`).
 
-### 3. Multi-Channel Audio Engine
+### 3. Multi-Context Audio Engine
 - **Independent Mixing**: Virtual channels (`GainNode`s) allow for complex sub-mixes.
+- **Hardware Routing**: In supported environments, different virtual channels can be mapped to different physical outputs via a pool of device-mapped `AudioContext`s.
 - **Real-Time Monitoring**: Application-wide tracking of active players with progress and metadata.
-- **Script Integration**: Direct channel routing via `{chan=X}` annotations.
+- **Script Integration**: Automatic channel creation from sound subtypes and direct routing via `{chan=X}` annotations.
 
 ## Key Concepts
 
@@ -77,19 +78,14 @@ interface ScriptLineBase {
 ```
 
 ### Virtual Audio Channels
-```typescript
-interface IVirtualChannel {
-  readonly id: string;
-  readonly name: string;
-  readonly volume: number;
-  readonly isMuted: boolean;
-}
-```
+- **Primary Default**: **"Channel A"** serves as the base mixing target.
+- **Subtype-Based**: Virtual channels are automatically generated for unique script subtypes upon loading.
+- **Persistent**: All channel-to-hardware mappings are preserved across application views.
 
 ## Success Criteria
 
 ✅ Zero core changes required for new features
-✅ Type-safe multi-channel audio routing
+✅ Functional multi-device hardware routing (where supported)
+✅ Reliable state persistence across all mixing desk settings
 ✅ Standardized annotation parsing across features
-✅ Decoupled styles for better maintainability
-✅ Reliable asynchronous file handling (FileList to Array)
+✅ Strict feature lifecycle management (explicit destroy/HMR cleanup)

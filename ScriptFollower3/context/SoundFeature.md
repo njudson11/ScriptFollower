@@ -29,7 +29,7 @@ interface SoundCue {
   readonly endOffsetSeconds?: number;
   readonly fadeIn?: number; // ms
   readonly fadeOut?: number; // ms
-  readonly channelId?: string; // Target virtual audio channel
+  readonly channelId: string; // Target virtual audio channel (e.g., 'A', 'FX')
 }
 ```
 
@@ -42,15 +42,16 @@ Sound cues are automatically associated with audio files based on a numerical pr
 - **Automatic Association**: When a project folder is loaded, the feature matches these IDs to link playback controls to script lines.
 
 ### 2. Multi-Channel Routing
-Sounds can be mixed into independent virtual channels via annotations:
-- **Annotation**: `{chan=FX}` or `{chan=Music}`.
-- **Routing**: The `AudioPlaybackManager` creates independent mixing buses for each channel, allowing for individual volume and mute control via the **Master Audio Panel**.
+The system implements a flexible routing logic controlled by the script and mixing desk:
+- **Automatic Channel Creation**: Upon loading a script, the feature scans for unique `lineSubType` values (e.g., "A", "B", "FX") and automatically creates a corresponding virtual mixing channel for each.
+- **Default Routing**: Sound cues automatically route to the virtual channel that matches their script subtype. If no subtype is specified, it defaults to **"Channel A"**.
+- **Annotation Override**: Users can manually override the routing via the `{chan=X}` annotation, which is easily managed through the UI settings panel.
 
 ### 3. Comprehensive Annotations
 The feature supports fine-grained playback control via script annotations:
 - `volume`: `0-100`
 - `pan`: `-1` to `1`, or `left/center/right`
-- `chan`: Virtual channel ID (matches names in Master Audio Panel)
+- `chan`: Virtual channel ID (matches names in Mixing Desk)
 - `start`: Start offset in seconds
 - `end`: End offset in seconds
 - `fade-in`: Duration in milliseconds
@@ -60,8 +61,8 @@ The feature supports fine-grained playback control via script annotations:
 ## UI Components
 
 - **`SoundCueLine.vue`**: Custom renderer for script lines of type `SOUND_CUE`, providing inline Play/Stop buttons and progress indicators.
-- **`SoundCuePanel.vue`**: Detailed settings panel in the right sidebar for the selected sound cue.
-- **Master Audio Panel**: Integrated view for global mixing, channel management, and a live monitor of all active sounds.
+- **`SoundCuePanel.vue`**: Detailed settings panel in the right sidebar featuring a **Virtual Channel selector** for routing overrides.
+- **Master Audio Panel**: Integrated mixing desk for global and per-channel volume, mute, and hardware output device mapping.
 
 ## Keybindings
 
@@ -69,7 +70,7 @@ The feature supports fine-grained playback control via script annotations:
 - `Escape`: Stop all currently playing sounds globally.
 
 ## Pre-loading Strategy
-The feature implements intelligent proactive pre-loading:
-- Monitors the current script line.
-- Automatically instructs `AudioPlaybackManager` to load audio buffers for cues within a specific window (configurable, e.g., 10 lines ahead).
-- Unloads distant cues to optimize memory usage.
+The feature implements an intelligent, proactive pre-loading engine:
+- **Window Monitoring**: Automatically pre-loads audio buffers for cues within a specific window (e.g., 10 lines ahead of the current selection).
+- **Active Playback Protection**: The system explicitly **prevents unloading or destroying players that are currently playing**, even if they move outside the pre-loading window.
+- **Cleanup**: Idle players are disposed of to manage memory effectively as the user navigates the script.
