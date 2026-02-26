@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, type Component, ref } from 'vue' // Removed watch, nextTick, onBeforeUpdate, Ref
+import { computed, inject, type Component, ref, watch } from 'vue' 
 import type { AppStore } from '@/store/AppStore'
 import type { FeatureManager } from '@/core/FeatureManager'
 import { LineType, ScriptLineBase } from '@/types/core'
@@ -7,8 +7,8 @@ import DefaultLineComponent from './DefaultLineComponent.vue'
 import type { ActionController } from '@/core/ActionController'
 import { ACTION_TYPES } from '@/types/actions'
 import type { LineSelectionManager } from '@/core/LineSelectionManager'
-import { useStickyScroll } from '@/composables/useStickyScroll' // Import useStickyScroll
-import { AppConfig } from '@/config/AppConfig' // Import AppConfig
+import { useVirtualScroll } from '@/composables/useVirtualScroll'
+import { AppConfig } from '@/config/AppConfig'
 
 const appStore = inject('appStore') as AppStore
 const featureManager = inject('featureManager') as FeatureManager
@@ -23,19 +23,31 @@ const lines = computed(() => appStore.getLines());
 const hasDocument = computed(() => appStore.state.currentDocument !== null);
 
 const currentLineId = computed(() => {
-  const id = selectionManager.getCurrentLine();
-  return id;
+  return selectionManager.getCurrentLine();
 })
 
 const viewerRef = ref<HTMLElement | null>(null)
-const scrollOffsetPx = ref(AppConfig.viewers.documentViewer.scrollOffsetPx); // Get offset from AppConfig
+const scrollOffsetPx = ref(AppConfig.viewers.documentViewer.scrollOffsetPx);
 
-const { setLineRef } = useStickyScroll({
-  viewerRef,
-  lines,
-  currentLineId,
-  scrollOffsetPx
-});
+const { 
+  visibleItems, 
+  totalHeight, 
+  offsetY, 
+  setItemRef, 
+  scrollToItem 
+} = useVirtualScroll({
+  containerRef: viewerRef,
+  items: lines,
+  estimatedItemHeight: 60, // Estimated height for dialogue lines
+  buffer: 10
+})
+
+// Synchronize external selection with virtual scroll
+watch(currentLineId, (newId) => {
+  if (newId) {
+    scrollToItem(newId, scrollOffsetPx.value)
+  }
+})
 
 const getLineComponent = (lineType: LineType): Component => {
   return featureManager.getLineRenderer(lineType, 'default') || DefaultLineComponent
@@ -48,17 +60,19 @@ const handleLineClick = (lineId: string) => {
 
 <template>
   <div class="document-viewer" ref="viewerRef" tabindex="0">
-    <div v-if="hasDocument" class="document-content">
-      <component
-        v-for="line in lines"
-        :key="line.id"
-        :ref="(el) => setLineRef(line.id, el)"
-        :is="getLineComponent(line.lineType)"
-        :line="line"
-        :is-active="line.id === currentLineId"
-        @click="handleLineClick(line.id)"
-        context-class="context-document-viewer"
-      />
+    <div v-if="hasDocument" class="document-content" :style="{ height: totalHeight + 'px', position: 'relative' }">
+      <div :style="{ transform: `translateY(${offsetY}px)` }">
+        <component
+          v-for="line in visibleItems"
+          :key="line.id"
+          :ref="(el) => setItemRef(line.id, el)"
+          :is="getLineComponent(line.lineType)"
+          :line="line"
+          :is-active="line.id === currentLineId"
+          @click="handleLineClick(line.id)"
+          context-class="context-document-viewer"
+        />
+      </div>
     </div>
     <div v-else class="empty-state">
       <div class="empty-state-content">

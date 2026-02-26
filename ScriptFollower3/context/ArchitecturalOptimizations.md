@@ -1,13 +1,13 @@
 # Architectural & Performance Optimizations
 
-This document outlines high-impact recommendations for future iterations of ScriptFollower 3, focusing on scalability, type safety, and production-grade reliability.
+This document outlines high-impact recommendations for ScriptFollower 3, focusing on scalability, type safety, and production-grade reliability.
 
 ## 1. Performance Enhancements
 
-### Virtual Scrolling (Critical)
-*   **Context**: Currently, `DocumentViewer` and `Sidebar` render all script lines into the DOM. Large scripts (>500 lines) will cause browser slowdowns.
-*   **Optimization**: Implement a virtual scroller to only render elements currently in the viewport.
-*   **Impact**: drastically reduces DOM node count, improves scroll smoothness, and decreases initial load rendering time.
+### Virtual Scrolling ✅ (Completed)
+*   **Context**: Prevents browser slowdowns for large scripts (>500 lines).
+*   **Implementation**: `useVirtualScroll` composable manages dynamic line heights and only renders visible elements.
+*   **Impact**: drastically reduces DOM node count, improves scroll smoothness, and decreases memory usage.
 
 ### Web Worker Offloading
 *   **Context**: `ODTParser` and `DocumentPostProcessor` perform heavy XML parsing and regex operations on the main thread.
@@ -33,9 +33,9 @@ This document outlines high-impact recommendations for future iterations of Scri
     ```
 *   **Impact**: Eliminates runtime errors, improves IDE autocompletion, and makes component logic (like `DialogueLine.vue`) much safer.
 
-### Persistence Layer
-*   **Context**: App state (character colors, channel volumes) is lost on refresh.
-*   **Optimization**: Create a `PersistenceManager` using `IndexedDB` (via a library like `idb` or `Dexie.js`) to automatically save/load the `AppStore` state.
+### Persistence Layer ✅ (Completed)
+*   **Context**: Application state was lost on refresh.
+*   **Implementation**: `PersistenceManager` using `IndexedDB` automatically saves/loads `AppStore` state and the current document.
 *   **Impact**: Essential for production reliability; allows users to pick up exactly where they left off.
 
 ### Dynamic Sound Resolver
