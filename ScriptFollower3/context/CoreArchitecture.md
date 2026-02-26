@@ -2,7 +2,7 @@
 
 ## Overview
 
-ScriptFollower 3 uses a **modular plugin architecture** where features are completely decoupled from the core system. The architecture enables adding new features with minimal changes to existing code.
+ScriptFollower 3 uses a **modular plugin architecture** where features are completely decoupled from the core system. The architecture enables adding new features with minimal changes to existing code. It is implemented as a **Progressive Web App (PWA)** for offline reliability and native-like installation.
 
 ## Architectural Layers
 
@@ -15,6 +15,7 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 ┌────────────────────▼────────────────────────────────┐
 │          State Management (AppStore)                │
 │  Document, Selection, Virtual Channels, Feature Data│
+│  Character-specific UI colors                       │
 └────────────────────┬────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────┐
@@ -48,7 +49,7 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 
 ### 1. Separation of Concerns
 - **UI Layer**: Presentation only, imports dedicated component CSS files.
-- **State Layer**: AppStore manages reactive state for all features, including persistent virtual channel settings.
+- **State Layer**: AppStore manages reactive state for all features, including persistent virtual channel settings and character color mappings.
 - **Manager Layer**: Business logic for selections, events, audio routing, and annotations.
 - **Feature Layer**: Self-contained plugins implementing `IFeaturePlugin`.
 
@@ -61,6 +62,11 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 - **Hardware Routing**: In supported environments, different virtual channels can be mapped to different physical outputs via a pool of device-mapped `AudioContext`s.
 - **Real-Time Monitoring**: Application-wide tracking of active players with progress and metadata.
 - **Script Integration**: Automatic channel creation from sound subtypes and direct routing via `{chan=X}` annotations.
+
+### 4. Progressive Web App (PWA)
+- **Offline Capabilities**: Service worker caching for application shell and assets.
+- **Asset Persistence**: Strategic caching of audio assets for reliable performance in booth environments.
+- **Installable**: Native OS integration with high-resolution icons and dedicated windowing.
 
 ## Key Concepts
 
@@ -88,4 +94,4 @@ interface ScriptLineBase {
 ✅ Functional multi-device hardware routing (where supported)
 ✅ Reliable state persistence across all mixing desk settings
 ✅ Standardized annotation parsing across features
-✅ Strict feature lifecycle management (explicit destroy/HMR cleanup)
+✅ Full offline support and OS installation via PWA

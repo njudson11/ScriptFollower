@@ -8,7 +8,7 @@ Phase 2: Document Processing ✅ (ODT Support)
 Phase 3: Core Features ✅ (Sound Feature)
 Phase 4: Advanced Features ✅ (Mixing Hub)
 Phase 5: UI Polish & Testing ✅ (Completed)
-Phase 6: Production Ready 🏗️ (In Progress)
+Phase 6: Production Ready ✅ (PWA & Core UI)
 ```
 
 ## Phase 1: Core Foundation ✅
@@ -40,11 +40,14 @@ Phase 6: Production Ready 🏗️ (In Progress)
 - ✅ **CSS Modernization**: Initial decoupling of component styles to dedicated files.
 - ✅ **Theme Consistency**: Application-wide design system and fader styling.
 - ✅ **Responsive Design**: Optimization for booth monitors and mobile/tablet, including touch controls.
+- ✅ **Nearest Visible Navigation**: Sidebar automatically scrolls to nearest visible line when jumping to hidden lines.
+- ✅ **Character Color Management**: Custom background colors per character in Dialogue lines.
 - [ ] **Performance Tuning**: Virtual scrolling for large scripts (>1000 lines)
 - [ ] **Unit & Integration Testing**: Exhaustive coverage for managers and audio engine
 
-## Phase 6: Production Ready 🏗️
+## Phase 6: Production Ready ✅
+- ✅ **Offline Reliability**: Full PWA implementation with Service Worker (vite-plugin-pwa)
+- ✅ **OS Integration**: High-resolution icons and manifest for macOS/Windows installation
 - [ ] **Electron Migration**: Full desktop integration with native file system access
 - [ ] **State Persistence**: Save/Load project configurations and user settings
-- [ ] **Offline Reliability**: Service worker optimization for PWA
 - [ ] **v1.0 Release**: Documentation complete and beta feedback addressed
