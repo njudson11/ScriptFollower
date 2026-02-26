@@ -21,6 +21,7 @@ import { SearchFeature } from '@/features/SearchFeature'
 import { ProjectManager } from '@/core/ProjectManager'
 import { ACTION_TYPES } from './types/actions'
 import { AnnotationManager } from '@/core/AnnotationManager'
+import { PersistenceManager } from '@/core/PersistenceManager'
 import { AppConfig } from '@/config/AppConfig'
 import { useTouch } from '@/composables/useTouch'
 
@@ -32,6 +33,7 @@ const actionController = new ActionController(eventBus)
 const audioPlaybackManager = new AudioPlaybackManager(eventBus)
 const selectionManager = new LineSelectionManager(eventBus, appStore, actionController)
 const featureManager = new FeatureManager(eventBus, actionController)
+const persistenceManager = new PersistenceManager(appStore)
 
 // Initialize business logic manager
 const projectManager = new ProjectManager(appStore, actionController, selectionManager, eventBus)
@@ -52,6 +54,9 @@ watch(isTouchDevice, (isTouch) => {
 
 
 onMounted(async () => {
+  // Initialize persistence layer first to load saved state
+  await persistenceManager.init()
+
   // Create features
   const features = [
     new DialogueRenderingFeature(featureManager),
@@ -67,6 +72,13 @@ onMounted(async () => {
   for (const feature of features) {
     await featureManager.registerFeature(feature)
     registeredFeatureIds.push(feature.id)
+  }
+
+  // If a document was loaded from persistence, select the first line if nothing is selected
+  if (appStore.state.currentDocument && !selectionManager.getCurrentLine()) {
+    if (appStore.state.currentDocument.lines.length > 0) {
+      selectionManager.selectLine(appStore.state.currentDocument.lines[0].id)
+    }
   }
 
   isInitialized.value = true
@@ -96,6 +108,7 @@ provide('featureManager', featureManager)
 provide('appStore', appStore)
 provide('actionController', actionController)
 provide('audioPlaybackManager', audioPlaybackManager)
+provide('persistenceManager', persistenceManager)
 
 // Internal UI bridges to ActionController
 const onFileUpload = (event: Event) => {
