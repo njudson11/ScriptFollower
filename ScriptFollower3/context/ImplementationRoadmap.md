@@ -4,7 +4,7 @@
 
 ```
 Phase 1: Core Foundation ✅
-Phase 2: Document Processing ✅ (ODT Support)
+Phase 2: Document Processing ✅ (Decoupled Parsing & Post-Processing)
 Phase 3: Core Features ✅ (Sound Feature)
 Phase 4: Advanced Features ✅ (Mixing Hub)
 Phase 5: UI Polish & Testing ✅ (Completed)
@@ -19,9 +19,11 @@ Phase 6: Production Ready ✅ (PWA & Core UI)
 
 ## Phase 2: Document Processing ✅
 - ✅ ODT Parser implementation
-- ✅ Automated "Load Project Folder" workflow
-- ✅ Intelligent file matching based on numerical prefixes
-- ✅ Page number extraction and propagation
+- ✅ **Document Post-Processor**: Generic pipeline for all formats
+- ✅ **Metadata Extraction**: regex-based rules in AppConfig
+- ✅ **Character Propagation**: Forward-fill missing dialogue characters
+- ✅ **SubType Sync**: Link characterName to lineSubType automatically
+- ✅ Page number extraction and propagation (reverse flow)
 
 ## Phase 3: Core Features ✅
 - ✅ **Sound Feature**: Full integration with Web Audio API, including annotation-only triggering.

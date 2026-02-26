@@ -25,6 +25,7 @@ ScriptFollower 3 uses a **modular plugin architecture** where features are compl
 │  - LineSelectionManager: Selection & Focus         │
 │  - AudioPlaybackManager: Multi-context mixing desk │
 │  - AnnotationManager: Script-based configuration   │
+│  - DocumentPostProcessor: Generic script enrichment│
 │  - FeatureManager: Plugin registration             │
 └────────────────────┬────────────────────────────────┘
                      │
