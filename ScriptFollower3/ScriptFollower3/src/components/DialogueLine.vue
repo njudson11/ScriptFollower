@@ -41,10 +41,21 @@ const lineClasses = computed(() => {
 
   return classes;
 });
+
+const characterStyle = computed(() => {
+  // Only apply background color in document-viewer context
+  if (props.contextClass !== 'context-document-viewer') return {};
+  
+  const color = appStore.getCharacterColor(props.line.lineSubType);
+  if (color && color !== '#ffffff') {
+    return { backgroundColor: color };
+  }
+  return {};
+});
 </script>
 
 <template>
-  <div :class="lineClasses">
+  <div :class="lineClasses" :style="characterStyle">
     <div class="line-type-badge">
       {{ line.lineType }}
     </div>

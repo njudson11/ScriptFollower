@@ -1,13 +1,43 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { Document, StyleInfo } from '@/types/core'
+import { computed, ref, inject } from 'vue'
+import { type Document, type StyleInfo, LineType } from '@/types/core'
 import StyleTreeItem from './StyleTreeItem.vue' // Import StyleTreeItem
+import { AppConfig } from '@/config/AppConfig'
+import type { AppStore } from '@/store/AppStore'
 
 interface DocumentInfoPanelProps {
   currentDocument: Document | null
 }
 
 const props = defineProps<DocumentInfoPanelProps>()
+const appStore = inject('appStore') as AppStore
+
+const isStylesCollapsed = ref(AppConfig.ui.documentInfo.defaultStylesCollapsed)
+
+const toggleStyles = () => {
+  isStylesCollapsed.value = !isStylesCollapsed.value
+}
+
+// Computed property to extract unique dialogue sub-types (Characters)
+const dialogueSubTypes = computed(() => {
+  if (!props.currentDocument) return [];
+  const subTypes = new Set<string>();
+  props.currentDocument.lines.forEach(line => {
+    if (line.lineType === LineType.DIALOGUE && line.lineSubType) {
+      subTypes.add(line.lineSubType);
+    }
+  });
+  return Array.from(subTypes).sort();
+});
+
+const getCharacterColor = (character: string) => {
+  return appStore.state.characterColors[character] || '#ffffff';
+}
+
+const updateCharacterColor = (character: string, event: Event) => {
+  const color = (event.target as HTMLInputElement).value;
+  appStore.setCharacterColor(character, color);
+}
 
 // Computed property to build the style tree
 const styleTree = computed(() => {
@@ -38,6 +68,22 @@ const styleTree = computed(() => {
 
 <template>
   <div v-if="currentDocument" class="panel-content document-info-panel">
+    <div v-if="dialogueSubTypes.length > 0" class="info-section characters-section">
+      <label>Characters & Colors:</label>
+      <div class="character-list">
+        <div v-for="type in dialogueSubTypes" :key="type" class="character-item">
+          <input 
+            type="color" 
+            :value="getCharacterColor(type)" 
+            @input="updateCharacterColor(type, $event)"
+            class="color-picker"
+          />
+          <span class="character-name">{{ type }}</span>
+        </div>
+      </div>
+    </div>
+    <div v-if="dialogueSubTypes.length > 0" class="divider"></div>
+
     <div class="info-section">
       <label>Name:</label>
       <p>{{ currentDocument.name }}</p>
@@ -57,25 +103,14 @@ const styleTree = computed(() => {
       <label>Created:</label>
       <p>{{ currentDocument.createdAt.toLocaleDateString() }}</p>
     </div>
-
     <div class="divider"></div>
 
-    <div class="stats">
-      <h4>Statistics</h4>
-      <div class="stat-item">
-        <span>Average line length:</span>
-        <span>{{ Math.round(
-          currentDocument.lines.reduce((sum, line) => sum + line.text.length, 0) /
-          currentDocument.lines.length
-        ) }} chars</span>
-      </div>
-    </div>
-
-    <div v-if="currentDocument.styles && currentDocument.styles.length > 0" class="divider"></div>
-
     <div v-if="currentDocument.styles && currentDocument.styles.length > 0" class="styles-section">
-      <h4>Document Styles</h4>
-      <div class="style-list">
+      <div class="section-header" @click="toggleStyles">
+        <h4>Document Styles</h4>
+        <span class="collapse-icon" :class="{ 'collapsed': isStylesCollapsed }">▼</span>
+      </div>
+      <div v-show="!isStylesCollapsed" class="style-list">
         <StyleTreeItem v-for="style in styleTree" :key="style.name" :style-info="style" :level="0" />
       </div>
     </div>
@@ -84,4 +119,43 @@ const styleTree = computed(() => {
 
 <style scoped>
 @import '../css/DocumentInfoPanel.css';
+
+.character-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.character-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-picker {
+  border: none;
+  padding: 0;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  cursor: pointer;
+  background: none;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.character-name {
+  font-size: 0.9em;
+  color: var(--color-text-primary);
+}
 </style>

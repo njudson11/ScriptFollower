@@ -28,6 +28,12 @@ export interface LayoutConfig {
   collapsedPanelWidth: string
 }
 
+export interface UIConfig {
+  documentInfo: {
+    defaultStylesCollapsed: boolean
+  }
+}
+
 export const AppConfig: {
   lineTypes: Record<LineType, LineTypeConfig>
   viewers: {
@@ -36,6 +42,7 @@ export const AppConfig: {
   }
   audio: AudioConfig
   layout: LayoutConfig
+  ui: UIConfig
 } = {
   lineTypes: {
     [LineType.TITLE]: { label: 'Title', defaultFilterValue: false },
@@ -75,5 +82,10 @@ export const AppConfig: {
     sidebarWidth: '200px',
     rightPanelWidth: '350px',
     collapsedPanelWidth: '40px'
+  },
+  ui: {
+    documentInfo: {
+      defaultStylesCollapsed: true
+    }
   }
 }

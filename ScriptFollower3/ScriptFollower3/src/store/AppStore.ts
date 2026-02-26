@@ -19,6 +19,7 @@ export interface AppState {
   searchQuery: string | null
   searchMatches: string[]
   activeSearchIndex: number | null
+  characterColors: Record<string, string> // New: store colors for characters
 }
 
 export class AppStore {
@@ -51,13 +52,24 @@ export class AppStore {
     isTouchDevice: false,
     searchQuery: null,
     searchMatches: [],
-    activeSearchIndex: null
+    activeSearchIndex: null,
+    characterColors: {}
   })
 
   private eventBus: EventBus
 
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus
+  }
+
+  // --- Character Color Management ---
+  setCharacterColor(character: string, color: string): void {
+    this.state.characterColors[character] = color;
+  }
+
+  getCharacterColor(character: string | undefined): string | undefined {
+    if (!character) return undefined;
+    return this.state.characterColors[character];
   }
 
   // --- Search Methods ---

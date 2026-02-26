@@ -5,7 +5,12 @@
 }
 
 .info-section {
-  margin-bottom: 16px;
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.characters-section {
+  flex-direction: column;
 }
 
 .info-section label {
@@ -23,6 +28,44 @@
   font-size: 0.9em;
   color: var(--color-text-primary);
   word-break: break-word;
+}
+
+.character-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.character-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-picker {
+  border: none;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  background: none;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.character-name {
+  font-size: 0.9em;
+  color: var(--color-text-primary);
 }
 
 .divider {
@@ -53,12 +96,37 @@
 }
 
 .styles-section h4 {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 0.85em;
   color: var(--color-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  user-select: none;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-header:hover h4 {
+  color: var(--color-primary);
+}
+
+.collapse-icon {
+  font-size: 0.8em;
+  color: var(--color-text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
 }
 
 /* style-list is the container for StyleTreeItem, so it should be styled here */
