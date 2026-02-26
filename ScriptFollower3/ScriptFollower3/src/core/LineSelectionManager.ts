@@ -274,19 +274,30 @@ export class LineSelectionManager {
       return currentLineInSidebar.id;
     }
 
-    // 2. If not, find the next visible line after the current document line
+    // 2. If not, find the nearest visible line
     const currentLineIndexInDoc = allLines.findIndex(line => line.id === currentLineId);
     if (currentLineIndexInDoc === -1) return null; // Current document line not found
 
+    // Search forward
+    let forwardMatchId: string | null = null;
     for (let i = currentLineIndexInDoc + 1; i < allLines.length; i++) {
-      const nextLine = allLines[i];
-      // Check if this next line is visible in the sidebar
-      if (lineTypeVisibility[nextLine.lineType]) { // Check against the provided lineTypeVisibility
-        return nextLine.id;
+      if (lineTypeVisibility[allLines[i].lineType]) {
+        forwardMatchId = allLines[i].id;
+        break;
       }
     }
 
-    return null;
+    // Search backward
+    let backwardMatchId: string | null = null;
+    for (let i = currentLineIndexInDoc - 1; i >= 0; i--) {
+      if (lineTypeVisibility[allLines[i].lineType]) {
+        backwardMatchId = allLines[i].id;
+        break;
+      }
+    }
+
+    // Prefer forward match if both exist, otherwise return whichever exists
+    return forwardMatchId || backwardMatchId || null;
   }
 
   /**

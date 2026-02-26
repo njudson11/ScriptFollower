@@ -19,8 +19,9 @@ const featureManager = inject('featureManager') as FeatureManager
 const actionController = inject('actionController') as ActionController
 const sidebarProgressBarFeature = featureManager.getFeature('sidebar-progress-bar-feature') as SidebarProgressBarFeature
 
-// Active line tracking for the sidebar
-const activeSidebarLineId = ref<string | null>(null);
+// The active line ID for the sidebar is managed by the SidebarProgressBarFeature
+// which calculates the nearest visible line if the current selection is hidden.
+const activeSidebarLineId = sidebarProgressBarFeature.activeSidebarLineId;
 
 const visibleLines = computed(() => {
   const allLines = appStore.getLines();
@@ -38,23 +39,13 @@ const scrollOffsetPx = ref(AppConfig.viewers.sidebar.scrollOffsetPx);
 const { setLineRef } = useStickyScroll({
   viewerRef: sidebarContentRef,
   lines: visibleLines,
-  currentLineId: computed(() => activeSidebarLineId.value),
+  currentLineId: activeSidebarLineId,
   scrollOffsetPx
 });
 
 const handleLineClick = (lineId: string) => {
   actionController.dispatch({ type: ACTION_TYPES.SELECT_LINE, payload: { lineId } });
 }
-
-onMounted(() => {
-  const unsubscribe = eventBus.subscribe(EVENT_TYPES.LINE_SELECTED, (event) => {
-    activeSidebarLineId.value = event.payload.lineId;
-  });
-  
-  onBeforeUnmount(() => {
-    unsubscribe();
-  });
-});
 </script>
 
 <template>
