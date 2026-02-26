@@ -6,6 +6,7 @@ import { ACTION_TYPES } from '@/types/actions';
 import { parseODT } from '@/parsers/ODTParser';
 import { LineType, ScriptLineBase, SoundCue } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
+import { DocumentPostProcessor } from '@/parsers/DocumentPostProcessor';
 
 /**
  * ProjectManager encapsulates the high-level business logic for 
@@ -53,7 +54,11 @@ export class ProjectManager {
       this.appStore.setError(null);
 
       if (file.name.toLowerCase().endsWith('.odt')) {
-        const document = await parseODT(file);
+        let document = await parseODT(file);
+        
+        // Apply generic post-processing (metadata extraction, page numbering)
+        document = DocumentPostProcessor.process(document, AppConfig.parsing.metadataExtractionRules);
+        
         this.appStore.loadDocument(document);
 
         if (document.lines.length > 0) {
@@ -86,7 +91,9 @@ export class ProjectManager {
       }
 
       if (odtFile) {
-        const document = await parseODT(odtFile);
+        let document = await parseODT(odtFile);
+        // Apply generic post-processing
+        document = DocumentPostProcessor.process(document, AppConfig.parsing.metadataExtractionRules);
         this.appStore.loadDocument(document);
         if (document.lines.length > 0) {
           this.selectionManager.selectLine(document.lines[0].id);

@@ -1,4 +1,4 @@
-import { LineType } from '@/types/core'
+import { LineType, MetadataExtractionRule } from '@/types/core'
 
 export interface LineTypeConfig {
   label: string
@@ -34,6 +34,10 @@ export interface UIConfig {
   }
 }
 
+export interface ParsingConfig {
+  metadataExtractionRules: MetadataExtractionRule[]
+}
+
 export const AppConfig: {
   lineTypes: Record<LineType, LineTypeConfig>
   viewers: {
@@ -43,6 +47,7 @@ export const AppConfig: {
   audio: AudioConfig
   layout: LayoutConfig
   ui: UIConfig
+  parsing: ParsingConfig
 } = {
   lineTypes: {
     [LineType.TITLE]: { label: 'Title', defaultFilterValue: false },
@@ -87,5 +92,39 @@ export const AppConfig: {
     documentInfo: {
       defaultStylesCollapsed: true
     }
+  },
+  parsing: {
+    metadataExtractionRules: [
+      {
+        lineType: LineType.DIALOGUE,
+        pattern: '^(?:(.*?)\t)?(.*)$', // Assuming "CHARACTER_NAME\tDIALOGUE_TEXT"
+        mappings: {
+          characterName: '$1',
+          dialogue: '$2'
+        }
+      },
+      {
+        lineType: LineType.SOUND_CUE,
+        pattern: '^.*?\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
+        mappings: {
+          soundRef: '$1',
+          soundDescription: '$2' // Captures the description after the sound reference
+        }
+      },
+      {
+        lineType: LineType.LIGHT_CUE,
+        pattern: '^.*?\t\\s*(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
+        mappings: {
+          lightDescription: '$1' // Optionally capture the description after the light reference
+        }
+      },
+      {
+        lineType: LineType.PAGE_NUMBER,
+        pattern: '.*?Page\\s+(\\d+).*', // Matches "Page 123" and extracts the number
+        mappings: {
+          pageNumber: '$1'
+        }
+      }
+    ]
   }
 }

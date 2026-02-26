@@ -52,28 +52,6 @@ export async function parseODT(file: File, config: ODTParserConfig = defaultODTC
 
     const initialLines = extractLinesFromXML(xmlDoc, styleMap, config)
 
-    // --- Post-processing: Assign page numbers ---
-    const linesWithPageNumbers: ScriptLineBase[] = new Array(initialLines.length)
-    let currentPageNumber: number | null = null
-
-    // Iterate in reverse to propagate page numbers correctly
-    for (let i = initialLines.length - 1; i >= 0; i--) {
-      const line = initialLines[i] as ScriptLineBase // Cast to ScriptLineBase
-      let pageNumForLine = currentPageNumber; // Default to current propagated page number
-
-      if (line.lineType === LineType.PAGE_NUMBER) {
-        const extractedPage = parseInt(line.metadata.pageNumber);
-        if (!isNaN(extractedPage)) {
-          currentPageNumber = extractedPage;
-          pageNumForLine = currentPageNumber; // This page number line itself gets its own extracted value
-        }
-      }
-
-      // Create a new ScriptLineBase object with the pageNumber property set
-      linesWithPageNumbers[i] = { ...line, pageNumber: pageNumForLine };
-    }
-    // --- End Post-processing ---
-
     // Convert styleMap to array for document
     const styles = Array.from(styleMap.values()).map(style => ({
       name: style.name,
@@ -85,7 +63,7 @@ export async function parseODT(file: File, config: ODTParserConfig = defaultODTC
       id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: file.name.replace('.odt', ''),
       format: 'ODT',
-      lines: linesWithPageNumbers, // Use the post-processed lines
+      lines: initialLines,
       styles,
       version: 1,
       createdAt: new Date(file.lastModified),
@@ -194,26 +172,6 @@ function extractLinesFromXML(xmlDoc: XMLDocument, styleMap: Map<string, { name: 
         ...contentMetadata
       },
       pageNumber: null // Initialize pageNumber to null
-    }
-
-    // Apply metadata extraction rules from config
-    if (config.metadataExtractionRules) {
-      for (const rule of config.metadataExtractionRules) {
-        if (rule.lineType === line.lineType) {
-          const regex = new RegExp(rule.pattern)
-          const match = line.text.match(regex)
-          if (match) {
-            for (const key in rule.mappings) {
-              const captureGroupRef = rule.mappings[key]
-              const groupIndex = parseInt(captureGroupRef.substring(1))
-              if (groupIndex > 0 && groupIndex < match.length) {
-                // Ensure metadata is mutable for adding new properties
-                ;(line.metadata as Record<string, any>)[key] = (match[groupIndex] ? match[groupIndex] : "").trim()
-              }
-            }
-          }
-        }
-      }
     }
 
     lines.push(line)

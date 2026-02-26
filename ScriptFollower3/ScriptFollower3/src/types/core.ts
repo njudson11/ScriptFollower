@@ -137,6 +137,15 @@ export interface Annotation {
 }
 
 /**
+ * Rule for extracting metadata from line text using regex.
+ */
+export interface MetadataExtractionRule {
+  readonly lineType: LineType; // The line type this rule applies to
+  readonly pattern: string;    // The regex pattern to match against the line text
+  readonly mappings: Readonly<Record<string, string>>; // Mapping of metadata key to capture group (e.g., { characterName: '$1', dialogue: '$2' })
+}
+
+/**
  * Plugin feature definition
  */
 export interface FeaturePlugin {
