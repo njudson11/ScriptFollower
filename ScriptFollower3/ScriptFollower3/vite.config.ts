@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  base: '',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -17,5 +18,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/audio-proxy/, '')
       }
     }
+  },
+  build: {
+    sourcemap: true,
   }
 })

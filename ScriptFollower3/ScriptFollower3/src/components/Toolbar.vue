@@ -22,6 +22,8 @@ const appStore = inject('appStore') as AppStore
 const selectionManager = inject('selectionManager') as LineSelectionManager
 const actionController = inject('actionController') as ActionController // Inject ActionController
 
+const searchQuery = ref('');
+
 const currentDocument = computed(() => appStore.getCurrentDocument())
 const currentLineId = computed(() => selectionManager.getCurrentLine())
 const currentLine = computed(() => {
@@ -69,6 +71,21 @@ const handlePageNumberChange = () => {
     }
   }
 };
+
+const handleSearchInput = () => {
+  actionController.dispatch({
+    type: ACTION_TYPES.SEARCH_QUERY_CHANGED,
+    payload: { query: searchQuery.value }
+  });
+};
+
+const navigateNextMatch = () => {
+  actionController.dispatch({ type: ACTION_TYPES.NAVIGATE_NEXT_MATCH });
+};
+
+const navigatePreviousMatch = () => {
+  actionController.dispatch({ type: ACTION_TYPES.NAVIGATE_PREVIOUS_MATCH });
+};
 </script>
 
 <template>
@@ -78,9 +95,21 @@ const handlePageNumberChange = () => {
     </div>
 
     <div class="toolbar-center">
-      <span v-if="hasDocument && currentDocument" class="document-info">
-        {{ currentDocument.name }} (v{{ currentDocument.version }})
-      </span>
+      <span class="document-info">{{ currentDocument?.name ?? 'No Document Loaded' }} </span>
+      <div v-if="hasDocument" class="search-container">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search..."
+          v-model="searchQuery"
+          @input="handleSearchInput"
+        />
+        <button @click="navigatePreviousMatch" class="search-nav-btn">‹</button>
+        <button @click="navigateNextMatch" class="search-nav-btn">›</button>
+        <span class="search-match-count" v-if="appStore.state.searchQuery">
+          {{ appStore.state.activeSearchIndex !== null ? appStore.state.activeSearchIndex + 1 : 0 }} / {{ appStore.state.searchMatches.length }}
+        </span>
+      </div>
       <label v-if="currentLine" class="page-info-label">
         Page:
         <input
@@ -99,7 +128,7 @@ const handlePageNumberChange = () => {
           type="file"
           webkitdirectory
           directory
-          @change="e => { console.log('[Toolbar] Raw files from input (change event):', e.target.files); emit('soundsUpload', e) }"
+          @change="e => { const target = e.target as HTMLInputElement; console.log('[Toolbar] Raw files from input (change event):', target.files); emit('soundsUpload', e) }"
           style="display: none"
           :disabled="isLoading"
         />

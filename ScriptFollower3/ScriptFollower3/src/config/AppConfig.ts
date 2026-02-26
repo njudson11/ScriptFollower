@@ -1,6 +1,7 @@
 import { LineType } from '@/types/core'
 
 export interface LineTypeConfig {
+  label: string
   defaultFilterValue: boolean
 }
 
@@ -37,18 +38,19 @@ export const AppConfig: {
   layout: LayoutConfig
 } = {
   lineTypes: {
-    [LineType.TITLE]: { defaultFilterValue: false },
-    [LineType.SUBTITLE]: { defaultFilterValue: false },
-    [LineType.ACT_HEADING]: { defaultFilterValue: true },
-    [LineType.SCENE_HEADING]: { defaultFilterValue: true },
-    [LineType.CHARACTER_LIST]: { defaultFilterValue: false },
-    [LineType.DIALOGUE]: { defaultFilterValue: false },
-    [LineType.STAGE_DIRECTION]: { defaultFilterValue: false },
-    [LineType.TECH_CUE]: { defaultFilterValue: true },
-    [LineType.SOUND_CUE]: { defaultFilterValue: true },
-    [LineType.LIGHT_CUE]: { defaultFilterValue: true },
-    [LineType.BLANK]: { defaultFilterValue: false },
-    [LineType.PAGE_NUMBER]: { defaultFilterValue: false }
+    [LineType.TITLE]: { label: 'Title', defaultFilterValue: false },
+    [LineType.SUBTITLE]: { label: 'Subtitle', defaultFilterValue: false },
+    [LineType.ACT_HEADING]: { label: 'Act Heading', defaultFilterValue: true },
+    [LineType.SCENE_HEADING]: { label: 'Scene Heading', defaultFilterValue: true },
+    [LineType.CHARACTER_LIST]: { label: 'Character List', defaultFilterValue: false },
+    [LineType.DIALOGUE]: { label: 'Dialogue', defaultFilterValue: false },
+    [LineType.STAGE_DIRECTION]: { label: 'Stage Direction', defaultFilterValue: false },
+    [LineType.TECH_CUE]: { label: 'Tech Cue', defaultFilterValue: true },
+    [LineType.SOUND_CUE]: { label: 'Sound Cue', defaultFilterValue: true },
+    [LineType.LIGHT_CUE]: { label: 'Light Cue', defaultFilterValue: true },
+    [LineType.BLANK]: { label: 'Blank Line', defaultFilterValue: false },
+    [LineType.PAGE_NUMBER]: { label: 'Page Number', defaultFilterValue: false },
+    [LineType.BODY_TEXT]: { label: 'Body Text', defaultFilterValue: false }
   },
   viewers: {
     documentViewer: {

@@ -1,3 +1,5 @@
+import { ACTION_TYPES } from '@/types/actions';
+
 /**
  * Core type definitions for ScriptFollower 3
  * Immutable data structures and interfaces
@@ -16,6 +18,7 @@ export enum LineType {
   SOUND_CUE = 'SOUND_CUE',
   LIGHT_CUE = 'LIGHT_CUE',
   PAGE_NUMBER = 'PAGE_NUMBER',
+  BODY_TEXT = 'BODY_TEXT',
   BLANK = 'BLANK'
 }
 
@@ -110,7 +113,7 @@ export interface KeyBinding {
     readonly alt?: boolean;
     readonly meta?: boolean;
   };
-  readonly actionType: string; // The type of action to dispatch
+  readonly actionType: keyof typeof ACTION_TYPES; // The type of action to dispatch
   readonly actionPayload?: any; // Optional payload to dispatch with the action
   readonly isActive?: (context: any) => boolean; // Optional, to check if the keybinding is active in current context
 }

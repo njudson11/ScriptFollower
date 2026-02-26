@@ -3,7 +3,7 @@ import type { PropType } from 'vue'
 import { computed, inject } from 'vue'
 import type { ScriptLineBase } from '@/types/core'
 import type { AppStore } from '@/store/AppStore'
-import { LineType } from '@/types/core' // Import LineType
+import LineAnnotation from './LineAnnotation.vue'
 
 const props = defineProps({
   line: {
@@ -22,12 +22,6 @@ const props = defineProps({
 
 const appStore = inject('appStore') as AppStore
 
-const copyAnnotation = (text: string) => {
-  navigator.clipboard.writeText(text).catch(err => {
-    console.error('Failed to copy annotation: ', err);
-  });
-}
-
 const lineClasses = computed(() => {
   const classes: string[] = ['script-line'];
   if (props.isActive) {
@@ -35,6 +29,9 @@ const lineClasses = computed(() => {
   }
   if (props.contextClass) {
     classes.push(props.contextClass);
+  }
+  if (appStore.isLineSearchMatch(props.line.id)) {
+    classes.push('search-match');
   }
   // Add generic classes from AppStore (e.g., line-type-SOUND-CUE)
   classes.push(...appStore.getLineClasses(props.line));
@@ -50,17 +47,12 @@ const lineClasses = computed(() => {
     <div class="line-content">
       <p class="line-text">{{ line.text }}</p>
       <div class="line-meta">Line {{ line.lineNumber }}</div>
-      <div v-if="line.annotation" class="line-annotation">
-        <span class="annotation-label">Annotation:</span>
-        <span class="annotation-text">{{ line.annotation }}</span>
-        <button class="copy-btn" title="Copy Annotation" @click.stop="copyAnnotation(line.annotation)">
-          <span class="copy-icon">📋</span>
-        </button>
-      </div>
     </div>
+    <LineAnnotation v-if="line.annotation" :annotation="line.annotation" />
   </div>
 </template>
 
 <style scoped>
 @import '../css/DefaultLineComponent.css';
+@import '../css/Search.css';
 </style>

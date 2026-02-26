@@ -1,0 +1,57 @@
+.touch-controls-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: var(--color-background-soft);
+  padding: 10px;
+  border-top: 1px solid var(--color-border);
+  z-index: 1000;
+  height: 100px;
+  box-sizing: border-box;
+}
+
+.touch-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-button-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  width: 20%;
+  height: 60px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  color: var(--color-text-primary);
+}
+
+.touch-btn:active {
+  background-color: var(--color-primary);
+  transform: scale(0.95);
+}
+
+.touch-btn .icon {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.touch-btn .label {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.space-btn {
+  width: 40%;
+  height: 80px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border-color: var(--color-primary-dark);
+}
+
+.space-btn:active {
+  background-color: var(--color-primary-dark);
+}

@@ -1,7 +1,7 @@
 .sidebar-progress-bar-container {
-  height: 3px; /* Height of the progress bar */
-  background-color: var(--color-border); /* Background for the track */
-  margin: 0 10px; /* Aligns with padding of line-item */
+  height: .5rem; /* Height of the progress bar */
+  background-color: var(--color-highlight-text); /* Background for the track */
+  margin: 6px 0px; /* Aligns with padding of line-item */
   border-radius: 1.5px;
   overflow: hidden; /* Ensures the bar inside is clipped */
   position: relative;

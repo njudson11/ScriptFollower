@@ -1,33 +1,29 @@
-// src/types/actions.ts
-
-/**
- * Represents a generic action dispatched through the ActionController.
- * Actions are simple objects that describe something that happened,
- * or something that should happen within the application.
- */
-export interface Action {
-  /**
-   * A unique string identifier for the type of action.
-   * Recommended format: `DOMAIN_EVENT_NAME` (e.g., `DOCUMENT_LOADED`, `LINE_SELECTED`, `KEYBINDING_TRIGGERED`).
-   */
-  type: string;
-  /**
-   * Optional payload carrying any relevant data for the action.
-   */
-  payload?: any;
-}
-
-/**
- * Defines a set of standard action types used throughout the application.
- */
+/* src/types/actions.ts */
 export const ACTION_TYPES = {
-  NAVIGATE_NEXT_LINE: 'NAVIGATE_NEXT_LINE',
-  NAVIGATE_PREVIOUS_LINE: 'NAVIGATE_PREVIOUS_LINE',
-  SELECT_LINE: 'SELECT_LINE',
-  PLAY_SOUND_CUE: 'PLAY_SOUND_CUE',
-  STOP_SOUND_CUE: 'STOP_SOUND_CUE',
+  // Document Actions
   LOAD_DOCUMENT: 'LOAD_DOCUMENT',
   LOAD_SOUNDS: 'LOAD_SOUNDS',
-  UPDATE_LINE: 'UPDATE_LINE',
+  UPDATE_LINE: 'UPDATE_LINE', // Added UPDATE_LINE
+
+  // Navigation Actions
+  SELECT_LINE: 'SELECT_LINE',
+  NAVIGATE_UP: 'NAVIGATE_UP',
+  NAVIGATE_DOWN: 'NAVIGATE_DOWN',
+  NAVIGATE_NEXT_LINE: 'NAVIGATE_NEXT_LINE',
+  NAVIGATE_PREVIOUS_LINE: 'NAVIGATE_PREVIOUS_LINE',
+
+  // Sound Cue Actions
+  PLAY_SOUND_CUE: 'PLAY_SOUND_CUE',
+  STOP_SOUND_CUE: 'STOP_SOUND_CUE',
   TOGGLE_PLAY_SOUND_CUE: 'TOGGLE_PLAY_SOUND_CUE',
-};
+
+  // Search Actions
+  SEARCH_QUERY_CHANGED: 'SEARCH_QUERY_CHANGED',
+  NAVIGATE_NEXT_MATCH: 'NAVIGATE_NEXT_MATCH',
+  NAVIGATE_PREVIOUS_MATCH: 'NAVIGATE_PREVIOUS_MATCH',
+} as const;
+
+export interface Action {
+  type: keyof typeof ACTION_TYPES;
+  payload?: any;
+}

@@ -208,7 +208,7 @@ function extractLinesFromXML(xmlDoc: XMLDocument, styleMap: Map<string, { name: 
               const groupIndex = parseInt(captureGroupRef.substring(1))
               if (groupIndex > 0 && groupIndex < match.length) {
                 // Ensure metadata is mutable for adding new properties
-                ;(line.metadata as Record<string, any>)[key] = match[groupIndex].trim()
+                ;(line.metadata as Record<string, any>)[key] = (match[groupIndex] ? match[groupIndex] : "").trim()
               }
             }
           }

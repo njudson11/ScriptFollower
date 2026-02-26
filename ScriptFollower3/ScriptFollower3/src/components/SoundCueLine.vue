@@ -8,6 +8,7 @@ import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import type { AnnotationManager } from '@/core/AnnotationManager'
 import { ACTION_TYPES } from '@/types/actions'
 import { AppConfig } from '@/config/AppConfig'
+import LineAnnotation from './LineAnnotation.vue'
 
 const props = defineProps({
   line: {
@@ -29,13 +30,8 @@ const actionController = inject('actionController') as ActionController
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager
 const annotationManager = inject('annotationManager') as AnnotationManager
 
-const copyAnnotation = (text: string) => {
-  navigator.clipboard.writeText(text).catch(err => {
-    console.error('Failed to copy annotation: ', err);
-  });
-}
-
 const soundCue = computed<SoundCue | null>(() => props.line.metadata.sound || null)
+const hasTriggerableAnnotation = computed(() => !!props.line.annotation)
 const isPlaying = ref(false)
 const isPreloaded = ref(false)
 const isLoading = ref(false)
@@ -74,20 +70,18 @@ const resolveChannelId = () => {
 };
 
 const togglePlayback = (event?: MouseEvent) => {
-  if (!soundCue.value) return
-
   // Blur the button to prevent spacebar double-triggers if focus is kept
   if (event && event.currentTarget instanceof HTMLElement) {
     event.currentTarget.blur();
   }
 
-  if (isPlaying.value) {
+  if (soundCue.value && isPlaying.value) {
     actionController.dispatch({
       type: ACTION_TYPES.STOP_SOUND_CUE,
       payload: { cueId: soundCue.value.id }
     })
   } else {
-    if (!isPreloaded.value) {
+    if (soundCue.value && !isPreloaded.value) {
       isLoading.value = true;
     }
     actionController.dispatch({
@@ -98,7 +92,14 @@ const togglePlayback = (event?: MouseEvent) => {
 }
 
 const updateState = () => {
-  if (!soundCue.value) return
+  if (!soundCue.value) {
+    isPlaying.value = false
+    isPreloaded.value = false
+    isLoading.value = false
+    remainingTime.value = 0
+    playbackProgress.value = 0
+    return
+  }
   
   const channelId = resolveChannelId();
   const player = audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url, channelId)
@@ -151,21 +152,22 @@ onBeforeUnmount(() => {
       <p class="line-text">{{ line.text }}</p>
       
       <!-- Document Viewer Controls -->
-      <div v-if="soundCue && contextClass === 'context-document-viewer'" class="sound-cue-controls">
+      <div v-if="(soundCue || hasTriggerableAnnotation) && contextClass === 'context-document-viewer'" class="sound-cue-controls">
         <button 
           class="playback-btn" 
           :class="{ 
             'btn-stop': isPlaying, 
-            'btn-play': !isPlaying && !isLoading,
+            'btn-play': !isPlaying && !isLoading && soundCue,
             'btn-loading': isLoading,
-            'is-preloaded': isPreloaded && !isPlaying 
+            'is-preloaded': isPreloaded && !isPlaying,
+            'btn-trigger': !soundCue && hasTriggerableAnnotation
           }"
           @click.stop="togglePlayback"
           :disabled="isLoading"
         >
-          <span class="icon">{{ isPlaying ? '■' : (isLoading ? '⋯' : '▶') }}</span>
+          <span class="icon">{{ isPlaying ? '■' : (isLoading ? '⋯' : (soundCue ? '▶' : '⚡')) }}</span>
           <span class="label">
-            {{ isPlaying ? 'Stop' : (isLoading ? 'Loading...' : (isPreloaded ? 'Play' : 'Load & Play')) }}
+            {{ isPlaying ? 'Stop' : (isLoading ? 'Loading...' : (soundCue ? (isPreloaded ? 'Play' : 'Load & Play') : 'Trigger')) }}
           </span>
         </button>
         
@@ -175,38 +177,36 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Sidebar Controls -->
-      <div v-if="soundCue && contextClass === 'context-sidebar'" class="sidebar-sound-controls">
+      <div v-if="(soundCue || hasTriggerableAnnotation) && contextClass === 'context-sidebar'" class="sidebar-sound-controls">
         <button 
           class="playback-btn-icon-only" 
           :class="{ 
             'btn-stop': isPlaying, 
-            'btn-play': !isPlaying && !isLoading,
-            'btn-loading': isLoading 
+            'btn-play': !isPlaying && !isLoading && soundCue,
+            'btn-loading': isLoading,
+            'btn-trigger': !soundCue && hasTriggerableAnnotation
           }"
           @click.stop="togglePlayback"
           :disabled="isLoading"
-          :title="isPlaying ? 'Stop' : (isLoading ? 'Loading...' : 'Play')"
+          :title="isPlaying ? 'Stop' : (isLoading ? 'Loading...' : (soundCue ? 'Play' : 'Trigger'))"
         >
-          <span class="icon">{{ isPlaying ? '■' : (isLoading ? '⋯' : '▶') }}</span>
+          <span class="icon">{{ isPlaying ? '■' : (isLoading ? '⋯' : (soundCue ? '▶' : '⚡')) }}</span>
         </button>
         
-        <div class="sidebar-progress-container">
+        <div v-if="soundCue" class="sidebar-progress-container">
           <div class="sidebar-progress-fill" :style="{ width: playbackProgress + '%' }"></div>
           <div class="sidebar-progress-text">
             {{ isPlaying ? formatTime(remainingTime) : (isLoading ? 'Loading...' : (isPreloaded ? 'Ready' : 'Not Loaded')) }}
           </div>
         </div>
+        <div v-else-if="hasTriggerableAnnotation" class="sidebar-annotation-trigger-label">
+           Trigger Only
+        </div>
       </div>
 
       <div class="line-meta">Line {{ line.lineNumber }}</div>
-      <div v-if="line.annotation" class="line-annotation">
-        <span class="annotation-label">Annotation:</span>
-        <span class="annotation-text">{{ line.annotation }}</span>
-        <button class="copy-btn" title="Copy Annotation" @click.stop="copyAnnotation(line.annotation)">
-          <span class="copy-icon">📋</span>
-        </button>
-      </div>
     </div>
+    <LineAnnotation v-if="line.annotation" :annotation="line.annotation" />
   </div>
 </template>
 

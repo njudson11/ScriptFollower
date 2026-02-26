@@ -51,3 +51,39 @@
 .line-type-page-number {
   background-color: var(--line-type-page-number-bg); /* Dark purple for stage directions */
 }
+
+/* Specific Line Type Styles */
+.line-type-title {
+  font-size: 2em;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 1em;
+  color: var(--color-title); /* Dark blue */
+}
+
+.line-type-title.line-subtype-subtitle {
+  font-size: 1.3em;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 1em;
+  margin-top: 0.5em;
+  color: var(--color-subtitle); /* Indigo */
+}
+
+.line-type-scene-heading, .line-type-act-heading {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: var(--color-heading); /* Brown */
+  border-bottom: 1px solid var(--color-heading-border); /* Light brown border */
+  padding-bottom: 5px;
+}
+
+.line-type-stage-direction .line-content {
+  font-style: italic;
+  text-align: left; /* Changed from center to left */
+  max-width: 70%; /* Ensures centering with auto margins */
+  margin: 0 auto; /* Center the block */
+  color: var(--color-stage-direction); /* Dark purple for stage directions */
+}

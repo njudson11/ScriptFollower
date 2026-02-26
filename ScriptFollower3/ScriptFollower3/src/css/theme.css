@@ -45,9 +45,12 @@
   --color-warning: #f57f17;
   --color-success: #2e7d32;
   --color-info: #1565c0;
+  --color-highlight-bg: #bae9f8;
+  --color-highlight-text: #edea17;
+  --color-highlight-border: #f92525;
   
   /* Annotations */
-  --color-annotation-text: #c0392b;
+  --color-annotation-text: #841307;
   --color-annotation-bg: #fbe5e3;
   --color-annotation-border: #e74c3c;
   

@@ -161,7 +161,7 @@ export class SoundFeature implements FeaturePlugin {
         isActive: (context) => {
           if (!context.hasDocument || !context.currentLineId) return false;
           const line = this.appStore.getLineById(context.currentLineId);
-          return line?.lineType === LineType.SOUND_CUE && !!line?.metadata.sound;
+          return line?.lineType === LineType.SOUND_CUE && (!!line.metadata.sound || !!line.annotation);
         },
       },
     ];
@@ -336,6 +336,8 @@ export class SoundFeature implements FeaturePlugin {
         this.executeStopAction(lineId, stopValue);
       }
 
+      // If there's no cue, we've still executed the stop action (if any)
+      // and we might have other annotation-based logic in the future.
       if (!cue) return; 
 
       const channelId = this.resolveChannelId(line);
@@ -396,20 +398,28 @@ export class SoundFeature implements FeaturePlugin {
     if (!lineId) return;
 
     const line = this.appStore.getLineById(lineId);
-    if (!line || line.lineType !== LineType.SOUND_CUE || !line.metadata.sound) return;
+    if (!line || line.lineType !== LineType.SOUND_CUE) return;
 
-    const cue = line.metadata.sound as SoundCue;
-    const channelId = this.resolveChannelId(line);
-    const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId);
+    // Check if we have either a sound cue OR an annotation that might need triggering
+    if (!line.metadata.sound && !line.annotation) return;
 
-    if (player.isPlaying) {
-      player.stop();
-    } else {
-      this.actionController.dispatch({
-        type: ACTION_TYPES.PLAY_SOUND_CUE,
-        payload: { cue: cue, lineId: lineId }
-      });
+    const cue = line.metadata.sound as SoundCue | undefined;
+    
+    if (cue) {
+      const channelId = this.resolveChannelId(line);
+      const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId);
+
+      if (player.isPlaying) {
+        player.stop();
+        return;
+      }
     }
+
+    // Dispatch play for annotations or sound
+    this.actionController.dispatch({
+      type: ACTION_TYPES.PLAY_SOUND_CUE,
+      payload: { cue: cue, lineId: lineId }
+    });
   }
 
   private handleStopSound(action: any): void {

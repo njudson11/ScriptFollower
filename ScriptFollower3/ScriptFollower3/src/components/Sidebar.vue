@@ -38,7 +38,7 @@ const scrollOffsetPx = ref(AppConfig.viewers.sidebar.scrollOffsetPx);
 const { setLineRef } = useStickyScroll({
   viewerRef: sidebarContentRef,
   lines: visibleLines,
-  currentLineId: activeSidebarLineId,
+  currentLineId: computed(() => activeSidebarLineId.value),
   scrollOffsetPx
 });
 

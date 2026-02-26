@@ -10,6 +10,7 @@
   gap: 1px;
   padding: 4px 8px;
   border-radius: 4px;
+  flex-direction: column;
 }
 
 .script-line:hover {
@@ -47,7 +48,7 @@
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
 
 .line-text {
@@ -65,64 +66,11 @@
   margin-top: 8px;
 }
 
-.line-annotation {
-  font-size: 0.8em;
-  font-style: italic;
-  color: var(--color-annotation-text);
-  margin-top: 8px;
-  padding: 4px 8px;
-  padding-right: 32px; /* Make room for the copy button */
-  border-left: 3px solid var(--color-annotation-border);
-  background-color: var(--color-annotation-bg);
-  white-space: pre-wrap;
-  word-break: break-word;
-  position: relative;
-  border-radius: 0 4px 4px 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.annotation-label {
-  font-weight: 600;
-  flex-shrink: 0;
-  display: none;;
-}
-
-.annotation-text {
-  flex: 1;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 0;
-  right: 4px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.line-annotation:hover .copy-btn {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.copy-btn:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
-  transform: scale(1.1);
-}
-
-.copy-btn:active {
-  transform: scale(0.9);
-}
-
-.copy-icon {
-  font-size: 14px;
-}
-
 .context-sidebar .line-annotation{
   display: none; /* Hide annotations in context sidebar */
 
+}
+
+.context-sidebar.line-type-scene-heading {
+  margin-top: 5px;
 }

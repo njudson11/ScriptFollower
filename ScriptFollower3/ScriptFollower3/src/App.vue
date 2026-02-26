@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, provide, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, provide, onBeforeUnmount, watch } from 'vue'
 import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { LineSelectionManager } from '@/core/LineSelectionManager'
 import { FeatureManager } from '@/core/FeatureManager'
@@ -8,6 +8,7 @@ import Toolbar from '@/components/Toolbar.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import DocumentViewer from '@/components/DocumentViewer.vue'
 import RightPanel from '@/components/RightPanel.vue'
+import TouchControls from '@/components/TouchControls.vue'
 import { DialogueRenderingFeature } from '@/features/DialogueRenderingFeature'
 import { ActionController } from '@/core/ActionController'
 import { KeybindingFeature } from '@/features/KeybindingFeature'
@@ -16,10 +17,12 @@ import { SidebarProgressBarFeature } from '@/features/SidebarProgressBarFeature'
 import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import { MasterAudioPanelFeature } from '@/features/MasterAudioPanelFeature'
 import { SoundFeature } from '@/features/SoundFeature'
+import { SearchFeature } from '@/features/SearchFeature'
 import { ProjectManager } from '@/core/ProjectManager'
 import { ACTION_TYPES } from './types/actions'
 import { AnnotationManager } from '@/core/AnnotationManager'
 import { AppConfig } from '@/config/AppConfig'
+import { useTouch } from '@/composables/useTouch'
 
 // Initialize core managers
 const eventBus = new EventBus()
@@ -36,6 +39,18 @@ const projectManager = new ProjectManager(appStore, actionController, selectionM
 const isInitialized = ref(false)
 const registeredFeatureIds: string[] = []
 
+// Touch device detection
+const appContainerRef = ref<HTMLElement | null>(null)
+const { isTouchDevice } = useTouch()
+watch(isTouchDevice, (isTouch) => {
+  appStore.setIsTouchDevice(isTouch);
+  if (appContainerRef.value) {
+    appContainerRef.value.classList.toggle('touch-device', isTouch);
+    appContainerRef.value.classList.toggle('no-touch-device', !isTouch);
+  }
+}, { immediate: true });
+
+
 onMounted(async () => {
   // Create features
   const features = [
@@ -44,7 +59,8 @@ onMounted(async () => {
     new NavigationFeature(featureManager, actionController, appStore, selectionManager),
     new SidebarProgressBarFeature(selectionManager, appStore),
     new MasterAudioPanelFeature(featureManager),
-    new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager)
+    new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager),
+    new SearchFeature(actionController, appStore)
   ]
 
   // Register all features and track IDs for cleanup
@@ -111,7 +127,12 @@ const gridTemplateColumns = computed(() => {
 </script>
 
 <template>
-  <div class="app-container" v-if="isInitialized">
+  <div 
+    class="app-container" 
+    :class="{ 'has-touch-controls': isTouchDevice }"
+    ref="appContainerRef" 
+    v-if="isInitialized"
+  >
     <Toolbar 
       @file-upload="onFileUpload" 
       @sounds-upload="onSoundsUpload"
@@ -129,6 +150,7 @@ const gridTemplateColumns = computed(() => {
       <DocumentViewer @file-upload="onFileUpload" />
       <RightPanel />
     </div>
+    <TouchControls v-if="isTouchDevice" />
   </div>
   <div v-else class="loading-screen">
     Initializing features...

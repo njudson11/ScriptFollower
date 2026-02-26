@@ -15,6 +15,10 @@ export interface AppState {
   isRightPanelCollapsed: boolean
   virtualChannels: IVirtualChannel[]
   availableOutputDevices: IAudioOutputDevice[]
+  isTouchDevice: boolean
+  searchQuery: string | null
+  searchMatches: string[]
+  activeSearchIndex: number | null
 }
 
 export class AppStore {
@@ -43,13 +47,40 @@ export class AppStore {
         outputDeviceId: 'default' 
       }
     ],
-    availableOutputDevices: []
+    availableOutputDevices: [],
+    isTouchDevice: false,
+    searchQuery: null,
+    searchMatches: [],
+    activeSearchIndex: null
   })
 
   private eventBus: EventBus
 
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus
+  }
+
+  // --- Search Methods ---
+  setSearchQuery(query: string | null): void {
+    this.state.searchQuery = query;
+  }
+
+  setSearchResults(matches: string[], activeIndex: number | null): void {
+    this.state.searchMatches = matches;
+    this.state.activeSearchIndex = activeIndex;
+  }
+
+  setActiveSearchIndex(index: number | null): void {
+    this.state.activeSearchIndex = index;
+  }
+
+  isLineSearchMatch(lineId: string): boolean {
+    return this.state.searchQuery ? this.state.searchMatches.includes(lineId) : false;
+  }
+
+  // --- Touch Device ---
+  setIsTouchDevice(isTouch: boolean): void {
+    this.state.isTouchDevice = isTouch;
   }
 
   // --- Channel Management ---
@@ -102,7 +133,7 @@ export class AppStore {
   }
 
   setError(error: string | null): void {
-    this.error = error
+    this.state.error = error
   }
 
   updateLine(lineId: string, updates: Partial<ScriptLineBase>): void {

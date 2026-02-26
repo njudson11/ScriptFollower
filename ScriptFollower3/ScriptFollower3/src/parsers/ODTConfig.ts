@@ -56,6 +56,10 @@ export interface ODTParserConfig {
 export const defaultODTConfig: ODTParserConfig = {
   styleMappings: [
     {
+      lineType: LineType.BODY_TEXT,
+      stylePatterns: ['Standard']
+    },
+    {
       lineType: LineType.TITLE,
       stylePatterns: ['Heading', 'Title']
     },
@@ -95,7 +99,8 @@ export const defaultODTConfig: ODTParserConfig = {
       stylePatterns: ['Sound A', 'Sound B', 'Sound'],
       subtypeRules: [
         { subtype: 'A', pattern: '^SOUND A\t.*' },
-        { subtype: 'B', pattern: '^SOUND B\t.*' }
+        { subtype: 'B', pattern: '^SOUND B\t.*' },
+        { subtype: 'A', pattern: '^SOUND\t.*' }
       ]
     },
     {
@@ -111,7 +116,7 @@ export const defaultODTConfig: ODTParserConfig = {
   metadataExtractionRules: [
     {
       lineType: LineType.DIALOGUE,
-      pattern: '^(.*?)\t(.*)$', // Assuming "CHARACTER_NAME\tDIALOGUE_TEXT"
+      pattern: '^(?:(.*?)\t)?(.*)$', // Assuming "CHARACTER_NAME\tDIALOGUE_TEXT"
       mappings: {
         characterName: '$1',
         dialogue: '$2'

@@ -3,13 +3,17 @@ import { EventBus } from './EventBus';
 import { IAudioPlayer, AUDIO_EVENT_TYPES, IAudioOutputDevice } from '@/types/core';
 import { AudioPlayer } from './AudioPlayer';
 
+interface ExtendedAudioContext extends AudioContext {
+  setSinkId?(deviceId: string): Promise<void>;
+}
+
 /**
  * Enhanced AudioPlaybackManager supporting multi-device output via multiple AudioContexts.
  */
 export class AudioPlaybackManager {
   // Map of deviceId -> { context, masterGain, channelGains: Map<channelId, GainNode> }
   private deviceContexts: Map<string, { 
-    context: AudioContext, 
+    context: ExtendedAudioContext, 
     masterGain: GainNode,
     channelGains: Map<string, GainNode>
   }> = new Map();
@@ -52,7 +56,7 @@ export class AudioPlaybackManager {
     
     if (!devCtx) {
       // @ts-ignore
-      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const context = new (window.AudioContext || window.webkitAudioContext)() as ExtendedAudioContext;
       const masterGain = context.createGain();
       masterGain.connect(context.destination);
       

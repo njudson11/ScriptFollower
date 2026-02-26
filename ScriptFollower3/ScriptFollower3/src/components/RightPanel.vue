@@ -80,15 +80,14 @@ onMounted(() => {
         <button v-if="isSoundCue" :class="{ active: activeTab === 'soundCue' }" @click="activeTab = 'soundCue'">
           Sound Cue
         </button>
+        <button :class="{ active: activeTab === 'masterAudio' }" @click="activeTab = 'masterAudio'">
+          Master Audio
+        </button>
         <button :class="{ active: activeTab === 'lineData' }" @click="activeTab = 'lineData'" :disabled="!currentLine">
           Line Data
-          <span v-if="currentLine" class="line-data-badge">{{ currentLine.lineNumber }}</span>
         </button>
         <button :class="{ active: activeTab === 'documentInfo' }" @click="activeTab = 'documentInfo'" :disabled="!currentDocument">
           Doc Info
-        </button>
-        <button :class="{ active: activeTab === 'masterAudio' }" @click="activeTab = 'masterAudio'">
-          Master Audio
         </button>
       </div>
       <button @click="appStore.toggleRightPanel()" class="collapse-button">

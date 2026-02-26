@@ -1,12 +1,13 @@
 {
   "name": "script-follower-3",
   "private": true,
-  "version": "3.8.0",
+  "version": "3.8.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postbuild": "node utility/copy-to-volume.js"
   },
   "dependencies": {
     "jszip": "^3.10.1",

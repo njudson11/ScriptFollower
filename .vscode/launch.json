@@ -46,6 +46,17 @@
       "webRoot": "${workspaceFolder}/ScriptFollower3/ScriptFollower3/src",
       "sourceMaps": true,
       "preLaunchTask": "npm: run dev"
+    },
+    {
+      "name": "Build (SF3)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/ScriptFollower3/ScriptFollower3/node_modules/.bin/vite",
+      "args": [
+        "build"
+      ],
+      "cwd": "${workspaceFolder}/ScriptFollower3/ScriptFollower3",
+      "console": "integratedTerminal"
     }
   ]
 }

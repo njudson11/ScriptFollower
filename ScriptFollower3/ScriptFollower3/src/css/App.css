@@ -1,8 +1,13 @@
 .app-container {
+  --touch-controls-height: 100px;
   display: flex;
   flex-direction: column;
   height: 100vh;
   background: var(--color-background);
+}
+
+.app-container.has-touch-controls .main-content {
+  padding-bottom: var(--touch-controls-height);
 }
 
 .main-content {

@@ -3,6 +3,7 @@ import type { PropType } from 'vue'
 import { computed, inject } from 'vue'
 import type { ScriptLineBase } from '@/types/core'
 import type { AppStore } from '@/store/AppStore'
+import LineAnnotation from './LineAnnotation.vue'
 
 const props = defineProps({
   line: {
@@ -21,12 +22,6 @@ const props = defineProps({
 
 const appStore = inject('appStore') as AppStore
 
-const copyAnnotation = (text: string) => {
-  navigator.clipboard.writeText(text).catch(err => {
-    console.error('Failed to copy annotation: ', err);
-  });
-}
-
 const characterName = computed(() => props.line.metadata.characterName || '')
 const dialogue = computed(() => props.line.metadata.dialogue || props.line.text)
 
@@ -37,6 +32,9 @@ const lineClasses = computed(() => {
   }
   if (props.contextClass) {
     classes.push(props.contextClass);
+  }
+  if (appStore.isLineSearchMatch(props.line.id)) {
+    classes.push('search-match');
   }
   // Add specific classes based on LineType for styling using appStore
   classes.push(...appStore.getLineClasses(props.line));
@@ -53,19 +51,14 @@ const lineClasses = computed(() => {
     <div class="line-content">
       <p v-if="characterName" class="character-name">{{ characterName }}</p>
       <p class="dialogue-text" :class="{'dialogue-text-no-char': !characterName}">{{ dialogue }}</p>
-      <div v-if="line.annotation" class="line-annotation" :class="{'line-annotation-no-char': !characterName}">
-        <span class="annotation-label">Annotation:</span>
-        <span class="annotation-text">{{ line.annotation }}</span>
-        <button class="copy-btn" title="Copy Annotation" @click.stop="copyAnnotation(line.annotation)">
-          <span class="copy-icon">📋</span>
-        </button>
-      </div>
       <div class="line-meta">Line {{ line.lineNumber }}</div>
     </div>
+    <LineAnnotation v-if="line.annotation" :annotation="line.annotation" />
   </div>
 </template>
 
 <style scoped>
 @import '../css/DialogueLine.css';
 @import '../css/DefaultLineComponent.css';
+@import '../css/Search.css';
 </style>

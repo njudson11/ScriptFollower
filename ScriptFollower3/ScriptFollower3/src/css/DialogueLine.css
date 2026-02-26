@@ -1,3 +1,7 @@
+.line-type-dialogue .line-content {
+  flex-direction: row;
+}
+
 .script-line {
   margin-bottom: 8px;
   padding: 4px 8px;
@@ -46,19 +50,7 @@
   white-space: pre-wrap; /* Preserve whitespace and wrap text */
 }
 
-.line-annotation {
-  font-size: 0.8em;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
-  font-style: italic;
-  width: 100%; /* Ensure annotation takes full width below dialogue */
-  text-indent: -20px; /* For hanging indent of annotation itself */
-  padding-left: 20px; /* Align annotation with dialogue indent */
-}
 
-.line-annotation-no-char {
-  margin-left: 30px; /* Indent when no character name */
-}
 
 .script-line.dialogue-line.context-sidebar {
   font-size: 8px;

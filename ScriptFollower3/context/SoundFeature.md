@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Sound Feature is a core plugin for ScriptFollower 3 that handles synchronized audio playback. It leverages the advanced `AudioPlaybackManager` to provide low-latency, multi-channel audio directly controlled by script cues and annotations.
+The Sound Feature is a core plugin for ScriptFollower 3 that handles synchronized audio playback. It leverages the advanced `AudioPlaybackManager` to provide low-latency, multi-channel audio directly controlled by script cues and annotations. It also now supports triggering annotation-only actions (e.g., stopping other sounds) even when no specific audio file is attached to a cue.
 
 ## Feature Declaration
 
@@ -57,17 +57,22 @@ The feature supports fine-grained playback control via script annotations:
 - `fade-in`: Duration in milliseconds
 - `fade-out`: Duration in milliseconds
 - `stop`: Stop behavior (`all`, `previous`, or a list of SoundRefs like `[0001,0004]`)
+- **Trigger-only Annotations**: Lines with `SOUND_CUE` type can have annotations that trigger actions (e.g., `{stop:all}`) even without an associated sound file. These will display a 'Trigger' button in the UI.
 
 ## UI Components
 
-- **`SoundCueLine.vue`**: Custom renderer for script lines of type `SOUND_CUE`, providing inline Play/Stop buttons and progress indicators.
+- **`SoundCueLine.vue`**: Custom renderer for script lines of type `SOUND_CUE`, providing inline Play/Stop buttons and progress indicators. Now also displays a 'Trigger' button for annotation-only cues.
+- **`LineAnnotation.vue`**: A new shared component extracted from line components to render and manage annotations, including copy-to-clipboard functionality.
 - **`SoundCuePanel.vue`**: Detailed settings panel in the right sidebar featuring a **Virtual Channel selector** for routing overrides.
 - **Master Audio Panel**: Integrated mixing desk for global and per-channel volume, mute, and hardware output device mapping.
+- **`TouchControls.vue`**: New component providing on-screen buttons for navigation (Up/Down) and triggering the current line (Space) for touch-enabled devices.
 
 ## Keybindings
 
-- `Space`: Toggle Play/Stop for the currently selected sound cue.
+- `Space`: Toggle Play/Stop for the currently selected sound cue, or trigger the annotation for annotation-only cues.
 - `Escape`: Stop all currently playing sounds globally.
+- `ArrowDown`: Navigate to the next line.
+- `ArrowUp`: Navigate to the previous line.
 
 ## Pre-loading Strategy
 The feature implements an intelligent, proactive pre-loading engine:
