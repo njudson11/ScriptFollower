@@ -29,13 +29,15 @@ export interface WorkerResponse {
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
-  processEntities: true
+  processEntities: true,
+  trimValues: false // Critical: preserve whitespace in script text
 })
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
-  preserveOrder: true
+  preserveOrder: true,
+  indentBy: '  '
 })
 
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
@@ -123,7 +125,8 @@ async function parseODT(data: File | ArrayBuffer, fileName: string, config: any)
   const orderedParser = new XMLParser({ 
     ignoreAttributes: false, 
     preserveOrder: true,
-    attributeNamePrefix: '@_'
+    attributeNamePrefix: '@_',
+    trimValues: false // Critical: preserve whitespace in script text
   })
   const orderedJson = orderedParser.parse(xmlContent)
   const orderedBody = findOrderedElement(orderedJson, 'office:text')
@@ -300,15 +303,26 @@ function findOrderedElement(arr: any[], name: string): any[] | null {
   return null
 }
 
-function extractTextFromOrdered(content: any[]): string {
+function extractTextFromOrdered(content: any): string {
+  if (typeof content === 'string') return content
   if (!Array.isArray(content)) return ""
+  
   return content.map(el => {
     const key = Object.keys(el)[0]
-    if (key === '#text') return el[key]
+    const val = el[key]
+    
+    if (key === '#text') return val
     if (key === 'text:line-break') return '\n'
     if (key === 'text:tab') return '\t'
+    if (key === 'text:s') {
+      const attrs = el[':@'] || {}
+      const count = parseInt(attrs['@_text:c'] || '1')
+      return ' '.repeat(isNaN(count) ? 1 : count)
+    }
     if (key === 'office:annotation') return ''
-    return extractTextFromOrdered(el[key])
+    
+    // Recursively handle child elements like text:span
+    return extractTextFromOrdered(val)
   }).join('')
 }
 

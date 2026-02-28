@@ -108,6 +108,14 @@
   border-radius: 4px;
   background: var(--color-background-soft);
   color: var(--color-text-primary);
+  
+}
+
+.stopBehavior input {
+  width:unset;
+}
+
+.cropping .input-group input {
   width:100%;
 }
 
@@ -236,4 +244,22 @@ input[type="range"] {
   font-style: italic;
   color: var(--color-text-tertiary);
   font-size: 12px;
+}
+
+
+.channel-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background-soft);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.no-cue-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

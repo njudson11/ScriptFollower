@@ -105,7 +105,7 @@ export const AppConfig: {
       },
       {
         lineType: LineType.SOUND_CUE,
-        pattern: '^.*?\\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
+        pattern: '^.*?\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
         mappings: {
           soundRef: '$1',
           soundDescription: '$2' // Captures the description after the sound reference
@@ -113,7 +113,7 @@ export const AppConfig: {
       },
       {
         lineType: LineType.LIGHT_CUE,
-        pattern: '^.*?\t\\s*(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
+        pattern: '^.*?\t\\s*(.*$)', // Matches "LIGHT\tDescription"
         mappings: {
           lightDescription: '$1' // Optionally capture the description after the light reference
         }

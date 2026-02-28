@@ -47,7 +47,7 @@ const selectedStopRefs = ref<string[]>([]);
 
 const recentSoundCues = computed(() => {
   const allLines = appStore.getLines();
-  const currentIndex = allLines.findIndex(l => l.id === props.line.id);
+  const currentIndex = appStore.getLineIndex(props.line.id);
   if (currentIndex === -1) return [];
 
   return allLines
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Stop Behavior Section -->
-    <div class="section-row">
+    <div class="section-column">
       <div class="input-group">
         <label>Stop Behavior</label>
         <div class="custom-dropdown">
@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
             {{ stopDisplayValue }}
             <ChevronDown :size="14" class="dropdown-arrow" />
           </button>
-          <div v-if="isStopDropdownOpen" class="dropdown-menu">
+          <div v-if="isStopDropdownOpen" class="dropdown-menu stopBehavior">
             <button @click="setStopMode('none')">None</button>
             <button @click="setStopMode('previous')">Stop Previous</button>
             <button @click="setStopMode('all')">Stop All</button>
@@ -338,17 +338,17 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div class="section-column grid-controls">
+    <div class="section-column grid-controls cropping">
       <div class="input-group">
         <label>Start (s)</label>
         <input type="number" v-model.number="startTime" step="0.1" min="0" :disabled="!soundCue" />
       </div>
       <div class="input-group">
-        <label>Fade In (ms)</label>
+        <label>Fade In</label>
         <input type="number" v-model.number="fadeIn" step="100" min="0" />
       </div>
       <div class="input-group">
-        <label>Fade Out (ms)</label>
+        <label>Fade Out</label>
         <input type="number" v-model.number="fadeOut" step="100" min="0" />
       </div>
       <div class="input-group">
@@ -366,20 +366,4 @@ onBeforeUnmount(() => {
 <style scoped>
 @import '../css/SoundCuePanel.css';
 
-.channel-select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background-color: var(--color-background-soft);
-  color: var(--color-text-primary);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.no-cue-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 </style>
