@@ -5,10 +5,7 @@
 
 import { Document, MetadataExtractionRule } from '@/types/core'
 import { WorkerRequest, WorkerResponse } from '@/workers/DocumentWorker'
-
-// Note: Vite handles worker imports with the ?worker suffix or new Worker(new URL...)
-// We'll use the latter for better standard compliance.
-const workerUrl = new URL('../workers/DocumentWorker.ts', import.meta.url)
+import DocumentWorker from '@/workers/DocumentWorker?worker'
 
 export class DocumentWorkerManager {
   /**
@@ -21,7 +18,8 @@ export class DocumentWorkerManager {
     extractionRules: MetadataExtractionRule[]
   ): Promise<Document> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(workerUrl, { type: 'module' })
+      // Use Vite's worker constructor
+      const worker = new DocumentWorker()
 
       worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const response = e.data
@@ -40,7 +38,8 @@ export class DocumentWorkerManager {
       }
 
       worker.onerror = (e) => {
-        reject(new Error(`Worker initialization error: ${e.message}`))
+        console.error('[DocumentWorkerManager] Worker error event:', e);
+        reject(new Error(`Worker execution error: ${e.message || 'Check console for details'}`))
         worker.terminate()
       }
 

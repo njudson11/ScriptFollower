@@ -72,6 +72,8 @@
 }
 .toolbar-right {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
 }
 .file-input-label {
   display: inline-block;
@@ -81,15 +83,23 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
-  transition: background-color 0.3s;
-  margin:0.5rem;
+  transition: background-color 0.3s, opacity 0.3s;
+  margin: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: inherit;
 }
 .file-input-label:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 .file-input-label:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+.btn-danger {
+  background-color: #d32f2f; /* Standard Material Red */
+}
+.btn-danger:hover {
+  background-color: #b71c1c;
 }
 .search-container {
   display: flex;

@@ -140,6 +140,26 @@ export class AppStore {
     });
   }
 
+  clearProject(): void {
+    this.state.currentDocument = null;
+    this.state.error = null;
+    this.state.characterColors = {};
+    this.state.searchQuery = null;
+    this.state.searchMatches = [];
+    this.state.activeSearchIndex = null;
+    
+    // Also reset virtual channels to default
+    this.state.virtualChannels = [
+      { 
+        id: AppConfig.audio.baseChannelId, 
+        name: `Channel ${AppConfig.audio.baseChannelId}`, 
+        volume: AppConfig.audio.defaultChannelVolume, 
+        isMuted: false, 
+        outputDeviceId: 'default' 
+      }
+    ];
+  }
+
   setLoading(isLoading: boolean): void {
     this.state.isLoading = isLoading
   }

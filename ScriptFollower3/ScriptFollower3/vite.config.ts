@@ -68,6 +68,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  worker: {
+    format: 'es',
+    plugins: () => [
+      // If we need any specific plugins inside the worker
+    ]
+  },
   server: {
     proxy: {
       '/audio-proxy': {

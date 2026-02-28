@@ -7,6 +7,7 @@ import { LineType, ScriptLineBase, SoundCue } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
 import { defaultODTConfig } from '@/parsers/ODTConfig';
 import { DocumentWorkerManager } from './DocumentWorkerManager';
+import type { AudioPlaybackManager } from './AudioPlaybackManager';
 
 /**
  * ProjectManager encapsulates the high-level business logic for 
@@ -17,18 +18,21 @@ export class ProjectManager {
   private actionController: ActionController;
   private selectionManager: LineSelectionManager;
   private eventBus: EventBus;
+  private audioPlaybackManager?: AudioPlaybackManager; // Optional as it might be added later via DI
   private unregisterFunctions: (() => void)[] = [];
 
   constructor(
     appStore: AppStore, 
     actionController: ActionController, 
     selectionManager: LineSelectionManager,
-    eventBus: EventBus
+    eventBus: EventBus,
+    audioPlaybackManager?: AudioPlaybackManager
   ) {
     this.appStore = appStore;
     this.actionController = actionController;
     this.selectionManager = selectionManager;
     this.eventBus = eventBus;
+    this.audioPlaybackManager = audioPlaybackManager;
 
     this.init();
   }
@@ -37,12 +41,40 @@ export class ProjectManager {
     this.unregisterFunctions.push(
       this.actionController.registerHandler(ACTION_TYPES.LOAD_DOCUMENT, this.handleLoadDocument.bind(this)),
       this.actionController.registerHandler(ACTION_TYPES.LOAD_SOUNDS, this.handleLoadSounds.bind(this)),
+      this.actionController.registerHandler(ACTION_TYPES.CLEAR_PROJECT, this.handleClearProject.bind(this)),
       this.actionController.registerHandler(ACTION_TYPES.UPDATE_LINE, this.handleUpdateLine.bind(this))
     );
   }
 
   public destroy() {
     this.unregisterFunctions.forEach(unreg => unreg());
+  }
+
+  private handleClearProject() {
+    console.log('[ProjectManager] Clearing project...');
+    
+    // 1. Stop all audio if manager is available
+    if (this.audioPlaybackManager) {
+      this.audioPlaybackManager.stopAll();
+    }
+
+    // 2. Revoke any object URLs from sound cues to prevent memory leaks
+    const document = this.appStore.getCurrentDocument();
+    if (document) {
+      document.lines.forEach(line => {
+        if (line.metadata?.sound?.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(line.metadata.sound.url);
+        }
+      });
+    }
+
+    // 3. Clear store state
+    this.appStore.clearProject();
+    
+    // 4. Reset selection
+    this.selectionManager.selectLine(null);
+    
+    console.log('[ProjectManager] Project cleared');
   }
 
   private async handleLoadDocument(action: any) {
@@ -140,7 +172,7 @@ export class ProjectManager {
               url: objectUrl,
               volume: AppConfig.audio.defaultVolume * 100,
               pan: AppConfig.audio.defaultPan,
-              channelId: line.lineSubType || AppConfig.audio.baseChannelId
+              channelId: this.appStore.resolveChannelId(line, { getValue: () => undefined }) // Use unified logic
             };
 
             updatedLines.push({

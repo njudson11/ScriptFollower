@@ -5,7 +5,7 @@ import type { LineSelectionManager } from '@/core/LineSelectionManager'
 import { ActionController } from '@/core/ActionController' // Import ActionController
 import { ACTION_TYPES } from '@/types/actions' // Import ACTION_TYPES
 import packageJson from '../../package.json'
-import { ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, FolderOpen, FileText, Trash2 } from 'lucide-vue-next'
 
 interface Props {
   hasDocument: boolean
@@ -87,6 +87,12 @@ const navigateNextMatch = () => {
 const navigatePreviousMatch = () => {
   actionController.dispatch({ type: ACTION_TYPES.NAVIGATE_PREVIOUS_MATCH });
 };
+
+const resetProject = () => {
+  if (window.confirm('Are you sure you want to reset the project? This will clear the script and all matched sounds.')) {
+    actionController.dispatch({ type: ACTION_TYPES.CLEAR_PROJECT });
+  }
+};
 </script>
 
 <template>
@@ -128,6 +134,14 @@ const navigatePreviousMatch = () => {
     </div>
 
     <div class="toolbar-right">
+      <button 
+        v-if="hasDocument" 
+        class="file-input-label btn-danger" 
+        @click="resetProject" 
+        title="Reset Project"
+      >
+        <span class="btn-content"><Trash2 :size="16" /> Reset</span>
+      </button>
       <label class="file-input-label">
         <input
           type="file"

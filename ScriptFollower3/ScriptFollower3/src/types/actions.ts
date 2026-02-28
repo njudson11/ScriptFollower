@@ -3,6 +3,7 @@ export const ACTION_TYPES = {
   // Document Actions
   LOAD_DOCUMENT: 'LOAD_DOCUMENT',
   LOAD_SOUNDS: 'LOAD_SOUNDS',
+  CLEAR_PROJECT: 'CLEAR_PROJECT',
   UPDATE_LINE: 'UPDATE_LINE', // Added UPDATE_LINE
 
   // Navigation Actions

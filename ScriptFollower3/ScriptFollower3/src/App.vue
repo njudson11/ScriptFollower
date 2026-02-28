@@ -36,7 +36,7 @@ const featureManager = new FeatureManager(eventBus, actionController)
 const persistenceManager = new PersistenceManager(appStore)
 
 // Initialize business logic manager
-const projectManager = new ProjectManager(appStore, actionController, selectionManager, eventBus)
+const projectManager = new ProjectManager(appStore, actionController, selectionManager, eventBus, audioPlaybackManager)
 
 const isInitialized = ref(false)
 const registeredFeatureIds: string[] = []
