@@ -201,6 +201,23 @@ export class AppStore {
     return this.state.currentDocument?.lines.find(l => l.id === lineId)
   }
 
+  getLineIndex(lineId: string): number {
+    return this.state.currentDocument?.lines.findIndex(l => l.id === lineId) ?? -1
+  }
+
+  /**
+   * Unifies channel ID resolution for a line.
+   * Priority: Annotation -> lineSubType -> first virtual channel -> baseChannelId
+   */
+  resolveChannelId(line: ScriptLineBase, annotationManager: any): string {
+    const fromAnnotation = annotationManager.getValue(line.annotation, 'chan');
+    if (fromAnnotation) return fromAnnotation;
+
+    if (line.lineSubType) return line.lineSubType;
+
+    return this.state.virtualChannels[0]?.id || AppConfig.audio.baseChannelId;
+  }
+
   getLineClasses(line: ScriptLineBase): string[] {
     const classes: string[] = [];
     classes.push(`line-type-${line.lineType.toLowerCase().replace(/_/g, '-')}`);

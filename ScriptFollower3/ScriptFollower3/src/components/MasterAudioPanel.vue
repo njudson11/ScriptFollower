@@ -7,6 +7,7 @@ import { EventBus } from '@/core/EventBus';
 import { AUDIO_EVENT_TYPES } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
 import AudioWaveform from './AudioWaveform.vue';
+import { VolumeX, Volume2, RefreshCw, Info, X, Square, Plus } from 'lucide-vue-next';
 
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager;
 const appStore = inject('appStore') as AppStore;
@@ -262,7 +263,7 @@ onBeforeUnmount(() => {
           <label>Global Volume: {{ Math.round(masterVolume * 100) }}%</label>
           <div class="slider-row">
             <button class="btn btn-icon" @click="toggleMasterMute" :title="isMuted ? 'Unmute' : 'Mute'">
-              {{ isMuted ? '🔇' : '🔊' }}
+              <component :is="isMuted ? VolumeX : Volume2" :size="20" />
             </button>
             <input type="range" min="0" max="1" step="0.01" v-model="masterVolume" />
           </div>
@@ -277,12 +278,14 @@ onBeforeUnmount(() => {
                 {{ device.label }}
                 </option>
             </select>
-            <button class="btn btn-icon" @click="refreshDevices" title="Refresh list">🔄</button>
+            <button class="btn btn-icon" @click="refreshDevices" title="Refresh list">
+              <RefreshCw :size="16" />
+            </button>
           </div>
           
           <!-- Informative message about browser limitations -->
           <div v-if="!isMultiDeviceSupported" class="limitation-box">
-            <span class="info-icon">ℹ️</span>
+            <span class="info-icon"><Info :size="16" /></span>
             <p>Your browser supports output to one device at a time. Multi-device routing will be available in the desktop app.</p>
           </div>
         </div>
@@ -293,14 +296,18 @@ onBeforeUnmount(() => {
     <div class="section virtual-channels">
       <div class="section-header">
         <h3>Mixing Desk</h3>
-        <button class="btn btn-small btn-primary" @click="addChannel">+ Add Channel</button>
+        <button class="btn btn-small btn-primary" @click="addChannel">
+          <Plus :size="14" style="margin-right: 4px;" /> Add Channel
+        </button>
       </div>
       
       <div class="channels-grid">
         <div v-for="channel in virtualChannels" :key="channel.id" class="channel-strip">
           <div class="channel-header">
             <span class="channel-name">{{ channel.name }}</span>
-            <button v-if="channel.id !== AppConfig.audio.baseChannelId" class="btn-remove" @click="removeChannel(channel.id)">×</button>
+            <button v-if="channel.id !== AppConfig.audio.baseChannelId" class="btn-remove" @click="removeChannel(channel.id)">
+              <X :size="14" />
+            </button>
           </div>
           
           <div v-if="isMultiDeviceSupported" class="channel-device-mapping">
@@ -354,7 +361,9 @@ onBeforeUnmount(() => {
               <div class="progress-fill" :style="{ width: getPlayerProgress(player) + '%' }"></div>
             </div>
             <span class="time-display">{{ formatTime(player.currentTime) }}</span>
-            <button class="btn-stop-mini" @click="stopPlayer(player.id)" title="Stop">■</button>
+            <button class="btn-stop-mini" @click="stopPlayer(player.id)" title="Stop">
+              <Square :size="10" fill="currentColor" />
+            </button>
           </div>
         </div>
       </div>
@@ -439,5 +448,7 @@ onBeforeUnmount(() => {
 
 .info-icon {
     font-size: 16px;
+    display: flex;
+    align-items: center;
 }
 </style>

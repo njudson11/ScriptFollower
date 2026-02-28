@@ -73,7 +73,7 @@ export const defaultODTConfig: ODTParserConfig = {
       lineType: LineType.DIALOGUE,
       stylePatterns: ['Dialogue'],
       subtypeRules: [
-        { subtype: '$1', pattern: '^(.*?)\t.*' }  // Capture character name
+        { subtype: '$1', pattern: '^([^:\\t]+):?\\t.*' }  // Capture character name, excluding trailing colon
       ]
     },
     {

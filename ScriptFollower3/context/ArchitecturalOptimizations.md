@@ -4,15 +4,14 @@ This document outlines high-impact recommendations for ScriptFollower 3, focusin
 
 ## 1. Performance Enhancements
 
-### Virtual Scrolling ✅ (Completed)
-*   **Context**: Prevents browser slowdowns for large scripts (>500 lines).
-*   **Implementation**: `useVirtualScroll` composable manages dynamic line heights and only renders visible elements.
-*   **Impact**: drastically reduces DOM node count, improves scroll smoothness, and decreases memory usage.
+### Virtual Scrolling (Deferred)
+*   **Status**: Attempted via absolute positioning but reverted due to conflicts with complex CSS layouts (margins, flexbox, overlapping features).
+*   **Recommendation**: Re-evaluate if script performance becomes a bottleneck. Any future implementation should use a "spacer-padding" or "relative windowing" approach to preserve natural document flow.
+*   **Impact**: Important for 5000+ line scripts; currently standard rendering handles production scripts efficiently.
 
-### Web Worker Offloading
-*   **Context**: `ODTParser` and `DocumentPostProcessor` perform heavy XML parsing and regex operations on the main thread.
-*   **Optimization**: Move the entire parsing pipeline (including ZIP extraction) into a dedicated Web Worker.
-*   **Impact**: Keeps the UI responsive during document loading; prevents "Application not responding" warnings on large files.
+### Web Worker Offloading ✅ (Completed)
+*   **Implementation**: Entire parsing and enhancement pipeline moved to `DocumentWorker.ts` using `fast-xml-parser`.
+*   **Impact**: Keeps the UI 100% responsive during document loading; background processing for all formats.
 
 ### Audio Resource Management
 *   **Context**: `URL.createObjectURL` is used for sound files but never revoked.
@@ -26,15 +25,9 @@ This document outlines high-impact recommendations for ScriptFollower 3, focusin
 ### Strict Metadata Schemas
 *   **Context**: `ScriptLineBase.metadata` is currently an open `Record<string, any>`, leading to frequent use of the `any` cast.
 *   **Optimization**: Implement a discriminated union for metadata based on `LineType`.
-    ```typescript
-    interface DialogueMetadata { characterName: string; dialogue: string; }
-    interface SoundCueMetadata { soundRef: string; soundDescription: string; sound?: SoundCue; }
-    type LineMetadata = DialogueMetadata | SoundCueMetadata | ...;
-    ```
 *   **Impact**: Eliminates runtime errors, improves IDE autocompletion, and makes component logic (like `DialogueLine.vue`) much safer.
 
 ### Persistence Layer ✅ (Completed)
-*   **Context**: Application state was lost on refresh.
 *   **Implementation**: `PersistenceManager` using `IndexedDB` automatically saves/loads `AppStore` state and the current document.
 *   **Impact**: Essential for production reliability; allows users to pick up exactly where they left off.
 
@@ -52,9 +45,8 @@ This document outlines high-impact recommendations for ScriptFollower 3, focusin
 *   **Optimization**: Wrap actions in a Command pattern that includes an `undo()` method.
 *   **Impact**: Allows users to safely experiment with character colors, channel routing, and line updates without fear of permanent mistakes.
 
-### SVG Icon Standardization
-*   **Context**: The application uses a mix of Unicode Emoji and CSS-drawn icons.
-*   **Optimization**: Migrate to a standard SVG-based library (e.g., Lucide or Heroicons).
+### SVG Icon Standardization ✅ (Completed)
+*   **Implementation**: Project migrated to `lucide-vue-next` library for all UI icons.
 *   **Impact**: Provides a professional, consistent aesthetic that matches the high-resolution standards of the PWA and macOS/Windows system UI.
 
 ### Configuration Versioning

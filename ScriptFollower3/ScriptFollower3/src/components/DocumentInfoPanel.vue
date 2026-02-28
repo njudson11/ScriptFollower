@@ -4,6 +4,7 @@ import { type Document, type StyleInfo, LineType } from '@/types/core'
 import StyleTreeItem from './StyleTreeItem.vue' // Import StyleTreeItem
 import { AppConfig } from '@/config/AppConfig'
 import type { AppStore } from '@/store/AppStore'
+import { ChevronDown } from 'lucide-vue-next'
 
 interface DocumentInfoPanelProps {
   currentDocument: Document | null
@@ -108,7 +109,7 @@ const styleTree = computed(() => {
     <div v-if="currentDocument.styles && currentDocument.styles.length > 0" class="styles-section">
       <div class="section-header" @click="toggleStyles">
         <h4>Document Styles</h4>
-        <span class="collapse-icon" :class="{ 'collapsed': isStylesCollapsed }">▼</span>
+        <ChevronDown :size="16" class="collapse-icon" :class="{ 'collapsed': isStylesCollapsed }" />
       </div>
       <div v-show="!isStylesCollapsed" class="style-list">
         <StyleTreeItem v-for="style in styleTree" :key="style.name" :style-info="style" :level="0" />

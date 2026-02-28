@@ -5,10 +5,10 @@
   background-color: var(--color-surface); /* Changed to white */
   padding: 1em;
   font-size: 10pt;
+  min-height: 0; /* Critical for grid children scrollability */
 }
 
 .document-content {
-  
   margin: 0 auto;
 }
 

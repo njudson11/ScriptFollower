@@ -5,6 +5,7 @@ import type { LineSelectionManager } from '@/core/LineSelectionManager'
 import { ActionController } from '@/core/ActionController' // Import ActionController
 import { ACTION_TYPES } from '@/types/actions' // Import ACTION_TYPES
 import packageJson from '../../package.json'
+import { ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-vue-next'
 
 interface Props {
   hasDocument: boolean
@@ -104,8 +105,12 @@ const navigatePreviousMatch = () => {
           v-model="searchQuery"
           @input="handleSearchInput"
         />
-        <button @click="navigatePreviousMatch" class="search-nav-btn">‹</button>
-        <button @click="navigateNextMatch" class="search-nav-btn">›</button>
+        <button @click="navigatePreviousMatch" class="search-nav-btn" title="Previous match">
+          <ChevronLeft :size="16" />
+        </button>
+        <button @click="navigateNextMatch" class="search-nav-btn" title="Next match">
+          <ChevronRight :size="16" />
+        </button>
         <span class="search-match-count" v-if="appStore.state.searchQuery">
           {{ appStore.state.activeSearchIndex !== null ? appStore.state.activeSearchIndex + 1 : 0 }} / {{ appStore.state.searchMatches.length }}
         </span>
@@ -132,7 +137,7 @@ const navigatePreviousMatch = () => {
           style="display: none"
           :disabled="isLoading"
         />
-        <span>Load Project Folder</span>
+        <span class="btn-content"><FolderOpen :size="16" /> Load Project Folder</span>
       </label>
       <label class="file-input-label">
         <input
@@ -142,7 +147,7 @@ const navigatePreviousMatch = () => {
           style="display: none"
           :disabled="isLoading"
         />
-        <span>{{ isLoading ? 'Loading...' : 'Load Document' }}</span>
+        <span class="btn-content"><FileText :size="16" /> {{ isLoading ? 'Loading...' : 'Load Document' }}</span>
       </label>
     </div>
   </div>
@@ -150,4 +155,10 @@ const navigatePreviousMatch = () => {
 
 <style scoped>
 @import '../css/Toolbar.css';
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 </style>

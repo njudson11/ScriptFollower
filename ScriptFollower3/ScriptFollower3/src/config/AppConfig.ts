@@ -97,7 +97,7 @@ export const AppConfig: {
     metadataExtractionRules: [
       {
         lineType: LineType.DIALOGUE,
-        pattern: '^(?:(.*?)\t)?(.*)$', // Assuming "CHARACTER_NAME\tDIALOGUE_TEXT"
+        pattern: '^(?:([^:\t]+):?\t)?(.*)$', // Matches "CHARACTER_NAME:\tDIALOGUE_TEXT", excluding the colon from name
         mappings: {
           characterName: '$1',
           dialogue: '$2'
@@ -105,7 +105,7 @@ export const AppConfig: {
       },
       {
         lineType: LineType.SOUND_CUE,
-        pattern: '^.*?\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
+        pattern: '^.*?\\t(.*?)\\s+(.*$)', // Matches "SOUND B\t0101 – Filename.wav – Example sound cue." and extracts "0101"
         mappings: {
           soundRef: '$1',
           soundDescription: '$2' // Captures the description after the sound reference

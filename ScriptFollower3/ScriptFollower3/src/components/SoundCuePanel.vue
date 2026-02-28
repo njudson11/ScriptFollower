@@ -8,6 +8,7 @@ import type { AnnotationManager } from '@/core/AnnotationManager';
 import { ACTION_TYPES } from '@/types/actions';
 import AudioWaveform from './AudioWaveform.vue';
 import { LineType } from '@/types/core';
+import { ChevronDown, Play, Square, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps<{
   line: ScriptLineBase
@@ -24,7 +25,8 @@ const startTime = ref(0);
 const endTime = ref(0);
 const fadeIn = ref(0);
 const fadeOut = ref(0);
-const selectedChannelId = ref('A');
+// Initialize with correctly resolved channel ID to prevent race conditions/mismatches on mount
+const selectedChannelId = ref(appStore.resolveChannelId(props.line, annotationManager));
 
 const isPlaying = ref(false);
 const currentTime = ref(0);
@@ -88,9 +90,7 @@ watchEffect(() => {
  * and finally defaulting to the first available virtual channel (usually 'A').
  */
 const resolveChannelId = () => {
-    return annotationManager.getValue(props.line.annotation, 'chan') 
-           || props.line.lineSubType 
-           || (appStore.state.virtualChannels[0]?.id || 'A');
+    return appStore.resolveChannelId(props.line, annotationManager);
 };
 
 const parseAnnotations = () => {
@@ -252,6 +252,7 @@ onBeforeUnmount(() => {
         {{ soundCue.name }}
       </span>
       <span v-else class="no-cue-label">
+        <AlertCircle :size="14" />
         (No audio file associated)
       </span>
     </div>
@@ -260,6 +261,7 @@ onBeforeUnmount(() => {
       
       <div class="main-controls">
         <button class="btn btn-primary" @click="togglePlayback" :disabled="!soundCue">
+          <component :is="isPlaying ? Square : Play" :size="16" fill="currentColor" style="margin-right: 6px;" />
           {{ isPlaying ? 'Stop' : 'Play Preview' }}
         </button>
       </div>
@@ -275,7 +277,7 @@ onBeforeUnmount(() => {
         <div class="custom-dropdown">
           <button class="dropdown-toggle" @click="isStopDropdownOpen = !isStopDropdownOpen">
             {{ stopDisplayValue }}
-            <span class="dropdown-arrow">▼</span>
+            <ChevronDown :size="14" class="dropdown-arrow" />
           </button>
           <div v-if="isStopDropdownOpen" class="dropdown-menu">
             <button @click="setStopMode('none')">None</button>
@@ -373,5 +375,11 @@ onBeforeUnmount(() => {
   color: var(--color-text-primary);
   font-size: 13px;
   cursor: pointer;
+}
+
+.no-cue-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>

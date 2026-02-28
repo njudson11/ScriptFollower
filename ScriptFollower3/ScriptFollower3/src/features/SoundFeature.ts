@@ -232,24 +232,15 @@ export class SoundFeature implements FeaturePlugin {
   }
 
   async destroy(): Promise<void> {
-    this.unregisterActions.forEach(unregister => unregister())
-    this.unregisterEvents.forEach(unregister => unregister())
+    this.unregisterActions.forEach(unreg => unreg())
+    this.unregisterEvents.forEach(unreg => unreg())
     this.managedPlayerIds.clear()
     this.audioPlaybackManager.stopAll()
   }
 
-  private resolveChannelId(line: any): string {
-    const fromAnnotation = this.annotationManager.getValue(line.annotation, 'chan');
-    if (fromAnnotation) return fromAnnotation;
-
-    if (line.lineSubType) return line.lineSubType;
-
-    return this.appStore.state.virtualChannels[0]?.id || AppConfig.audio.baseChannelId;
-  }
-
-  private managePreloading(currentLineId: string): void {
+  private managePreloading(activeLineId: string): void {
     const lines = this.appStore.getLines()
-    const currentIndex = lines.findIndex(l => l.id === currentLineId)
+    const currentIndex = this.appStore.getLineIndex(activeLineId)
     if (currentIndex === -1) return
 
     const ahead = AppConfig.audio.preloadCuesAhead
@@ -258,35 +249,41 @@ export class SoundFeature implements FeaturePlugin {
     const startIdx = Math.max(0, currentIndex - behind)
     const endIdx = Math.min(lines.length - 1, currentIndex + ahead)
 
-    const cuesToLoad = new Map<string, { cue: SoundCue, channelId: string }>()
+    console.log(`[Sound Feature] Preloading focused on line ${currentIndex} (${activeLineId}). Window: ${startIdx}-${endIdx}`);
+
+    const cuesInWindow = new Map<string, { cue: SoundCue, channelId: string }>()
     
     for (let i = startIdx; i <= endIdx; i++) {
       const line = lines[i]
       if (line.lineType === LineType.SOUND_CUE && line.metadata.sound) {
         const cue = line.metadata.sound as SoundCue
-        const channelId = this.resolveChannelId(line);
-        cuesToLoad.set(cue.id, { cue, channelId })
+        const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
+        cuesInWindow.set(cue.id, { cue, channelId })
       }
     }
 
     const activePlayerIds = new Set(this.audioPlaybackManager.getCurrentlyPlayingPlayers().map(p => p.id));
 
+    // Identify players to unload: those that are managed but NO LONGER in the window AND NOT currently playing.
     const idsToUnload: string[] = []
     this.managedPlayerIds.forEach(id => {
-      if (!cuesToLoad.has(id) && !activePlayerIds.has(id)) {
+      if (!cuesInWindow.has(id) && !activePlayerIds.has(id)) {
         idsToUnload.push(id)
       }
     })
 
     if (idsToUnload.length > 0) {
+      console.log(`[Sound Feature] Unloading ${idsToUnload.length} cues:`, idsToUnload);
       this.audioPlaybackManager.destroyPlayers(idsToUnload)
       idsToUnload.forEach(id => this.managedPlayerIds.delete(id))
     }
 
-    cuesToLoad.forEach((info, id) => {
+    // Load or ensure loaded all cues in the current window
+    cuesInWindow.forEach((info, id) => {
       const player = this.audioPlaybackManager.getPlayer(id, info.cue.url, info.channelId)
       this.managedPlayerIds.add(id)
-      if (!player.isLoaded) {
+      if (!player.isLoaded && player.loadStatus !== 'loading' && player.loadStatus !== 'decoding') {
+        console.log(`[Sound Feature] Loading cue ${id} into channel ${info.channelId}`);
         player.load().catch(err => console.error(`[Sound Feature] Failed to preload cue ${id}:`, err))
       }
     })
@@ -297,7 +294,7 @@ export class SoundFeature implements FeaturePlugin {
       this.audioPlaybackManager.stopAll();
     } else if (stopValue === 'previous') {
       const lines = this.appStore.getLines();
-      const currentIndex = lines.findIndex(l => l.id === lineId);
+      const currentIndex = this.appStore.getLineIndex(lineId);
       if (currentIndex > 0) {
         const prevLine = lines[currentIndex - 1];
         const prevCue = prevLine.metadata.sound as SoundCue | undefined;
@@ -340,7 +337,7 @@ export class SoundFeature implements FeaturePlugin {
       // and we might have other annotation-based logic in the future.
       if (!cue) return; 
 
-      const channelId = this.resolveChannelId(line);
+      const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
       const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId)
       this.managedPlayerIds.add(cue.id)
       
@@ -406,7 +403,7 @@ export class SoundFeature implements FeaturePlugin {
     const cue = line.metadata.sound as SoundCue | undefined;
     
     if (cue) {
-      const channelId = this.resolveChannelId(line);
+      const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
       const player = this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId);
 
       if (player.isPlaying) {

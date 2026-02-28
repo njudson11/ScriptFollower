@@ -8,6 +8,7 @@ import { ScriptLineBase, LineType } from '@/types/core'
 import DocumentInfoPanel from './DocumentInfoPanel.vue'
 import LineDataPanel from './LineDataPanel.vue'
 import { FeatureManager } from '@/core/FeatureManager'
+import { ChevronsRight, ChevronsLeft } from 'lucide-vue-next'
 
 const appStore = inject('appStore') as AppStore
 const selectionManager = inject('selectionManager') as LineSelectionManager
@@ -90,14 +91,14 @@ onMounted(() => {
           Doc Info
         </button>
       </div>
-      <button @click="appStore.toggleRightPanel()" class="collapse-button">
-        <span>&#x20;<<</span>
+      <button @click="appStore.toggleRightPanel()" class="collapse-button" title="Collapse Panel">
+        <ChevronsRight :size="20" />
       </button>
     </div>
     
     <div class="collapsed-header" v-if="appStore.state.isRightPanelCollapsed">
-        <button @click="appStore.toggleRightPanel()" class="collapse-button">
-            <span>>></span>
+        <button @click="appStore.toggleRightPanel()" class="collapse-button" title="Expand Panel">
+            <ChevronsLeft :size="20" />
         </button>
     </div>
 

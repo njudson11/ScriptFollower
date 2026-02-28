@@ -64,9 +64,7 @@ const formatTime = (seconds: number) => {
  * and finally defaulting to the base virtual channel from config.
  */
 const resolveChannelId = () => {
-    return annotationManager.getValue(props.line.annotation, 'chan') 
-           || props.line.lineSubType 
-           || AppConfig.audio.baseChannelId;
+    return appStore.resolveChannelId(props.line, annotationManager);
 };
 
 const togglePlayback = (event?: MouseEvent) => {

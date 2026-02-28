@@ -3,10 +3,10 @@ import { ActionController } from './ActionController';
 import { LineSelectionManager } from './LineSelectionManager';
 import { EventBus, EVENT_TYPES } from './EventBus';
 import { ACTION_TYPES } from '@/types/actions';
-import { parseODT } from '@/parsers/ODTParser';
 import { LineType, ScriptLineBase, SoundCue } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
-import { DocumentPostProcessor } from '@/parsers/DocumentPostProcessor';
+import { defaultODTConfig } from '@/parsers/ODTConfig';
+import { DocumentWorkerManager } from './DocumentWorkerManager';
 
 /**
  * ProjectManager encapsulates the high-level business logic for 
@@ -54,10 +54,13 @@ export class ProjectManager {
       this.appStore.setError(null);
 
       if (file.name.toLowerCase().endsWith('.odt')) {
-        let document = await parseODT(file);
-        
-        // Apply generic post-processing (metadata extraction, page numbering)
-        document = DocumentPostProcessor.process(document, AppConfig.parsing.metadataExtractionRules);
+        // Offload parsing and post-processing to Worker
+        const document = await DocumentWorkerManager.parseDocument(
+          file, 
+          'ODT', 
+          defaultODTConfig, 
+          AppConfig.parsing.metadataExtractionRules
+        );
         
         this.appStore.loadDocument(document);
 
@@ -91,9 +94,12 @@ export class ProjectManager {
       }
 
       if (odtFile) {
-        let document = await parseODT(odtFile);
-        // Apply generic post-processing
-        document = DocumentPostProcessor.process(document, AppConfig.parsing.metadataExtractionRules);
+        const document = await DocumentWorkerManager.parseDocument(
+          odtFile, 
+          'ODT', 
+          defaultODTConfig, 
+          AppConfig.parsing.metadataExtractionRules
+        );
         this.appStore.loadDocument(document);
         if (document.lines.length > 0) {
           this.selectionManager.selectLine(document.lines[0].id);

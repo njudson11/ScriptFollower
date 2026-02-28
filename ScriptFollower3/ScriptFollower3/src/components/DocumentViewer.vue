@@ -7,7 +7,7 @@ import DefaultLineComponent from './DefaultLineComponent.vue'
 import type { ActionController } from '@/core/ActionController'
 import { ACTION_TYPES } from '@/types/actions'
 import type { LineSelectionManager } from '@/core/LineSelectionManager'
-import { useVirtualScroll } from '@/composables/useVirtualScroll'
+import { useStickyScroll } from '@/composables/useStickyScroll'
 import { AppConfig } from '@/config/AppConfig'
 
 const appStore = inject('appStore') as AppStore
@@ -29,24 +29,10 @@ const currentLineId = computed(() => {
 const viewerRef = ref<HTMLElement | null>(null)
 const scrollOffsetPx = ref(AppConfig.viewers.documentViewer.scrollOffsetPx);
 
-const { 
-  visibleItems, 
-  totalHeight, 
-  offsetY, 
-  setItemRef, 
-  scrollToItem 
-} = useVirtualScroll({
-  containerRef: viewerRef,
-  items: lines,
-  estimatedItemHeight: 60, // Estimated height for dialogue lines
-  buffer: 10
-})
-
-// Synchronize external selection with virtual scroll
-watch(currentLineId, (newId) => {
-  if (newId) {
-    scrollToItem(newId, scrollOffsetPx.value)
-  }
+const { setLineRef } = useStickyScroll({
+  viewerRef,
+  currentLineId,
+  scrollOffsetPx
 })
 
 const getLineComponent = (lineType: LineType): Component => {
@@ -60,19 +46,17 @@ const handleLineClick = (lineId: string) => {
 
 <template>
   <div class="document-viewer" ref="viewerRef" tabindex="0">
-    <div v-if="hasDocument" class="document-content" :style="{ height: totalHeight + 'px', position: 'relative' }">
-      <div :style="{ transform: `translateY(${offsetY}px)` }">
-        <component
-          v-for="line in visibleItems"
-          :key="line.id"
-          :ref="(el) => setItemRef(line.id, el)"
-          :is="getLineComponent(line.lineType)"
-          :line="line"
-          :is-active="line.id === currentLineId"
-          @click="handleLineClick(line.id)"
-          context-class="context-document-viewer"
-        />
-      </div>
+    <div v-if="hasDocument" class="document-content">
+      <component
+        v-for="line in lines"
+        :key="line.id"
+        :ref="(el) => setLineRef(line.id, el)"
+        :is="getLineComponent(line.lineType)"
+        :line="line"
+        :is-active="line.id === currentLineId"
+        @click="handleLineClick(line.id)"
+        context-class="context-document-viewer"
+      />
     </div>
     <div v-else class="empty-state">
       <div class="empty-state-content">
