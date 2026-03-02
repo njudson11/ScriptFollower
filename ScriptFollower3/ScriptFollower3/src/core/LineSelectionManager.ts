@@ -167,8 +167,12 @@ export class LineSelectionManager {
     }
 
     const currentHighlights = this.highlights.get(lineId) || [];
+    // Uniqueness: Remove existing highlights of the same type before adding the new one.
+    // This prevents stacking highlights of the same type (e.g. multiple voice matches).
+    const filteredHighlights = currentHighlights.filter(h => h.type !== type);
+    
     // Replace the array to ensure Vue reactivity tracks the change
-    this.highlights.set(lineId, [...currentHighlights, highlight]);
+    this.highlights.set(lineId, [...filteredHighlights, highlight]);
 
     this.eventBus.emit({
       type: EVENT_TYPES.HIGHLIGHT_ADDED,

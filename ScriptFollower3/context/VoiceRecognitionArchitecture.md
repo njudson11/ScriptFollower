@@ -42,106 +42,87 @@ The main feature class that implements `IFeaturePlugin` and orchestrates the flo
 
 ```typescript
 class VoiceRecognitionFeature implements IFeaturePlugin {
-  // Configured engine (e.g., WebSpeechEngine, WhisperEngine)
+  // Configured engine (e.g., WebSpeechEngine)
   private engine: IVoiceRecognitionEngine;
   
-  // Logic
+  // Matching logic
+  private textMatcher: TextMatcher;
+  
+  // State management
+  private currentTranscript: string = '';
+  private highlightTimeouts: Map<string, any> = new Map();
+  
   private handleResult(result: VoiceRecognitionResult): void;
-  private updateSelection(matchIndex: number): void;
+  private clearAllVoiceHighlights(): void;
+  private removeVoiceHighlight(lineId: string): void;
 }
 ```
 
 ## Workflow
 
-1.  **Initialization**: The `FeatureManager` initializes the `VoiceRecognitionFeature`. The feature selects the engine based on `AppConfig` or user preference.
-2.  **Activation**: The user starts voice recognition via a toolbar toggle or keybinding (dispatched through `ActionController`).
-3.  **Listening**: The active `IVoiceRecognitionEngine` captures audio and emits `VoiceRecognitionResult` events.
+1.  **Initialization**: The `FeatureManager` initializes the `VoiceRecognitionFeature`. The engine is injected (currently `WebSpeechEngine`).
+2.  **Activation**: The user starts voice recognition via a toolbar toggle, keybinding (`Ctrl+V`), or action.
+3.  **Listening**: The active `IVoiceRecognitionEngine` captures audio and emits `VoiceRecognitionResult` events (both interim and final).
 4.  **Transcript Processing**:
-    - **Interim Results**: Optional visual feedback in the UI (e.g., "Hearing: ...").
-    - **Final Results**: Passed to the `TextMatcher`.
-5.  **Matching**: The `TextMatcher` compares the transcript against the lines in the current search window.
-6.  **Action**: If a match is found:
+    - The `currentTranscript` is updated in the `AppStore` for live visual feedback in the UI.
+    - The transcript is passed to the `TextMatcher` alongside the currently selected line index to scope the search.
+5.  **Matching**:
+    - **High Confidence**: If the match score meets the `threshold`, a `voice:matched` highlight is added.
+    - **Partial Match**: If a match is found but is below the threshold or the result is interim, a `voice:partial` highlight is added.
+6.  **Action**: If a high-confidence match is found and `setFocusOnMatch` is enabled:
     - `ActionController` dispatches `SELECT_LINE`.
-    - `LineSelectionManager` adds a `voice:matched` highlight.
     - The UI auto-scrolls to the matched line.
+    - The `currentTranscript` is reset if the result was `isFinal` to prepare for the next line.
 
 ## Interchangeable Engines
 
-The application can support multiple engine implementations:
-
 | Engine | Pros | Cons |
 | :--- | :--- | :--- |
-| **Web Speech API** | Native, free, low latency. | Browser-dependent, requires internet for some OS. |
-| **OpenAI Whisper** | High accuracy, multi-lingual. | Requires server/API or heavy local WASM. |
-| **Vosks / Local** | Private, offline-ready. | Higher CPU usage, larger assets. |
+| **Web Speech API** | Native, free, low latency. | Browser-dependent (Best in Chrome). |
+| **OpenAI Whisper** | High accuracy, multi-lingual. | Requires API key or heavy local WASM. |
 
 ## Feature Highlights
 
-The feature registers custom highlight types with the `HighlightTypeRegistry` to provide visual feedback:
+The feature registers custom highlight types to provide visual feedback:
 
-- `voice:matched`: High confidence match (Green border).
-- `voice:partial`: Interim match or low confidence (Yellow border).
-- `voice:listening`: Visual indicator of the line currently being "watched" for matches.
+- `voice:matched`: High confidence match (Light Green background, Green border).
+- `voice:partial`: Interim result or lower confidence match (Light Yellow background, Yellow border).
+- `voice:listening`: Reserved for future "active window" visualization.
+
+## Matching Strategy
+
+The system uses a **Proximity-Weighted Phonetic Matcher**:
+- **Soundex**: Converts words to phonetic codes to handle misspellings or varying accents.
+- **Sliding Window**: Slides the transcript over the script lines (and vice-versa) to find the best overlapping sequence.
+- **Weighting**: Gives higher weight to lines immediately following the current selection (`postWindow`) and lower weight to previous lines (`preWindow`) to encourage forward progress.
+
+## Highlight Cleanup
+
+To prevent UI clutter, voice highlights are temporary:
+- **Linger**: Highlights persist for a configurable duration (`matchLingerMs`, default 1s).
+- **Uniqueness**: The `LineSelectionManager` ensures only one highlight of a specific type exists per line.
+- **Cleanup**: Stopping the voice engine or switching matches automatically clears previous highlights and their associated timeouts.
 
 ## Configuration (`AppConfig.ts`)
 
-The feature is controlled via the `voice` section in the configuration:
-
 ```typescript
 voice: {
-  engineId: 'web-speech', // 'web-speech' | 'whisper-api' | 'vosk-local'
-  autoRestart: true,
-  continuous: true,
-  interimResults: true,
+  setFocusOnMatch: false,
   language: 'en-GB',
-  
-  // Default focus behaviour (stored in AppConfig, mirrored in AppStore)
-  setFocusOnMatch: false, // Default: false. If true, selects the line (scrolling/focus).
-  
-  textMatcher: { ... } // TextMatcherOptions
+  matchLingerMs: 1000,
+  textMatcher: {
+    preWindow: 5,
+    postWindow: 15,
+    threshold: 0.3,
+    weights: {
+      maxPreWeight: 1.5,
+      maxPostWeight: 2.0
+    }
+  }
 }
 ```
 
 ## Runtime State (`AppStore`)
 
-The `setFocusOnMatch` setting is mirrored in the `AppStore` and can be toggled by the user at runtime. Features should always check `appStore.state.voiceSettings.setFocusOnMatch` rather than the static `AppConfig`.
-
-## Workflow (Updated Match Behavior)
-
-1.  **Match Detected**: The `TextMatcher` identifies a line index with a score above the threshold.
-2.  **Visual Feedback**: A `voice:matched` highlight is **always** added to the matched line.
-3.  **Conditional Focus**:
-    - **If `setFocusOnMatch` (from store) is `true`**: 
-        - The feature dispatches the `SELECT_LINE` action.
-        - The `LineSelectionManager` updates the `currentLineId`.
-        - The UI performs a `stickyScroll` to bring the line into view.
-    - **If `setFocusOnMatch` (from store) is `false`**:
-        - The feature **only** adds the highlight via `selectionManager.addHighlight()`.
-        - The user's current selection and scroll position remain unchanged.
-        - The highlight typically uses an expiry timer to fade away.
-
-## Stream Handling Strategy
-
-To support both rolling streams (interim results) and discrete sentences, the `VoiceRecognitionFeature` employs the following strategies:
-
-### 1. The Rolling Buffer
-For engines providing continuous interim results (like Web Speech API), the feature maintains a "moving window" of recognized words. 
-- **Append**: New words are appended to a local `currentTranscript` buffer.
-- **Match**: The `TextMatcher` slides over this buffer to find matches.
-- **Prune**: Once a line is successfully matched and focused, the buffer is pruned of the matched text and any preceding "filler" words to keep the matching window focused on the next potential line.
-
-### 2. Segmented Matching
-For engines providing discrete blocks of text (like Whisper API):
-- The feature waits for a complete segment.
-- The `TextMatcher` performs a high-confidence phonetic check.
-- Because there is no "rolling" context, the `preWindow` and `postWindow` in `TextMatcherOptions` are critical for maintaining position.
-
-## Success Criteria
-
-✅ **Streaming Ready**: The `TextMatcher` sliding window handles continuous input without requiring explicit sentence boundaries.
-✅ **Non-Intrusive**: Supports a "monitoring only" mode where matches are highlighted without jumping the view.
-✅ **Hot-swappable**: Engines can be changed by updating a single config or factory.
-✅ **Decoupled**: The `TextMatcher` and `LineSelectionManager` have no knowledge of the specific voice engine.
-✅ **PWA Friendly**: Supports engines that work offline (Web Speech on Chrome/Android, or local WASM).
-✅ **Feedback**: Provides immediate visual feedback when speech is detected.
-✅ **Correctness**: Correctly handles "filler" words and background noise via the `TextMatcher`'s phonetic logic.
+- `lastVoiceTranscript`: Stores the latest string from the engine for display in the `Toolbar`.
+- `voiceSettings.setFocusOnMatch`: User-toggleable setting to enable/disable auto-scrolling.

@@ -41,24 +41,25 @@ The primary matching engine.
 
 #### Matching Process
 
-1.  **Search Window**: Defines a search range around `options.activeIndex`. If no index is provided, it searches the entire collection.
+1.  **Search Window**: Defines a search range around `options.activeIndex`.
 2.  **Iterate Window**: Loops through each line within the defined window.
-3.  **Spoken Text Sliding Window**: Performs comparisons against the `spokenText`:
-    - **Exact Match**: Compares the line to the entire `spokenText`.
-    - **Subsequence Matching**: If `spokenText` is longer than the line, it creates a sliding window over words in `spokenText` of the same length as the line. This catches the line even if surrounded by other words (e.g., "The line is **once upon a time**").
-    - **Partial Matching**: If `spokenText` is shorter, it compares against the start of the line.
-4.  **Phonetic Scoring**: Uses `phoneticSimilarity` to compare normalised Soundex codes.
-5.  **Weighting**: Applies position-based decay to the raw score.
-6.  **Threshold Check**: Returns the highest scoring match if it exceeds `options.threshold`.
+3.  **Calculate Best Phonetic Score**: Performs comparisons against the `spokenText`:
+    - **Normalisation**: Lowercase, remove punctuation, smart quotes, and collapse whitespace.
+    - **Sliding Window (Transcript > Line)**: If the spoken transcript is longer, it slides a window over the transcript to find the line. This catches the line even if surrounded by other words.
+    - **Sliding Window (Line > Transcript)**: If the line is longer, it slides a window over the line to find the transcript. This is crucial for matching dialogue that follows a character name (e.g., "NAME: Dialogue").
+4.  **Phonetic Similarity**: Uses `phoneticSimilarity` to compare normalised Soundex codes.
+5.  **Length Penalty**: Applies a non-linear penalty based on the ratio of words matched. This ensures that matching 1 word of a 10-word line is penalised compared to matching 8 words.
+6.  **Weighting**: Applies position-based decay to the raw score.
+7.  **Threshold Check**: Returns the highest scoring match if it exceeds `options.threshold`.
 
 ## Phonetic Scoring
 
 ### `phoneticSimilarity(a: string, b: string): number`
 
-1.  **Normalise**: Lowercase, remove punctuation and smart quotes.
-2.  **Soundex**: Convert each word to its 4-character phonetic code.
-3.  **Unique Sets**: Compare sets of unique Soundex codes from both phrases.
-4.  **Ratio**: `score = (common codes) / (unique codes in longer phrase)`.
+The similarity score is a combination of two algorithms:
+
+1.  **Jaccard Similarity (40%)**: Calculates the overlap of unique Soundex codes (Bag of Words). This handles "what" words were spoken regardless of order.
+2.  **Longest Common Subsequence (LCS) (60%)**: Calculates the length of the longest common subsequence of Soundex codes. This rewards words spoken in the **correct order**, even if other words are interspersed.
 
 ### Soundex Algorithm Mapping
 - `B, F, P, V` -> `1`
@@ -82,27 +83,8 @@ The system uses linear decay to favor forward progress while still allowing for 
 
 ## Success Criteria
 
-✅ **Decoupled**: Operates on `IMatchableLine` interface, not core data models.
+✅ **Decoupled**: Operates on `IMatchableLine` interface.
 ✅ **Robust**: Handles "filler" words and minor misrecognitions via phonetic similarity.
+✅ **Ordered**: Rewards correct word sequence via LCS.
 ✅ **Progressive**: Favors forward movement via the linear weight decay system.
-✅ **Flexible**: Configurable search windows and thresholds.
-
-### Integration with `LineSelectionManager`
-
-The `TextMatcher` is typically used in conjunction with `LineSelectionManager` to highlight matched lines and advance the selection:
-
-```typescript
-const match = textMatcher.findClosestLine(lines, transcript, {
-  activeIndex: selectionManager.getCurrentIndex(),
-  preWindow: 5,
-  postWindow: 15,
-  threshold: 0.4,
-  weights: { maxPreWeight: 1.5, maxPostWeight: 2.0 }
-});
-
-if (match.index !== -1) {
-  const lineId = lines[match.index].id;
-  selectionManager.selectLine(lineId);
-  selectionManager.addHighlight(lineId, 'voice:matched');
-}
-```
+✅ **Scalable**: Handles both short segments and longer transcriptions.

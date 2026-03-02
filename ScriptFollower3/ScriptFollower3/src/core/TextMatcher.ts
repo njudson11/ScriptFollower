@@ -93,55 +93,85 @@ export class TextMatcher {
       }
     }
 
-    return maxScore;
+    // 3. Length Penalty
+    // Matches where the lengths are significantly different should be penalised.
+    // A 1-word transcript matching a 10-word line is much less reliable than 8-words matching a 10-word line.
+    const lengthRatio = Math.min(lineWords.length, spokenWords.length) / Math.max(lineWords.length, spokenWords.length);
+    // Apply a non-linear penalty (square root) so short matches are heavily penalised but near-matches are not.
+    const lengthFactor = Math.sqrt(lengthRatio);
+    
+    return maxScore * lengthFactor;
   }
 
   /**
    * Calculates phonetic similarity between two strings using Soundex codes.
+   * Uses a fuzzy word overlap algorithm that rewards correct sequence.
    */
   public phoneticSimilarity(a: string, b: string): number {
-    const codesA = this.getUniqueSoundexCodes(a);
-    const codesB = this.getUniqueSoundexCodes(b);
+    const codesA = this.getSoundexCodeSequence(a);
+    const codesB = this.getSoundexCodeSequence(b);
 
-    if (codesA.size === 0 || codesB.size === 0) return 0;
+    if (codesA.length === 0 || codesB.length === 0) return 0;
 
-    let commonCount = 0;
-    codesA.forEach(code => {
-      if (codesB.has(code)) commonCount++;
+    // 1. Calculate basic Jaccard similarity (Bag of Words)
+    const setA = new Set(codesA);
+    const setB = new Set(codesB);
+    let intersection = 0;
+    setA.forEach(code => {
+      if (setB.has(code)) intersection++;
     });
+    const jaccard = intersection / Math.max(setA.size, setB.size);
 
-    const maxUnique = Math.max(codesA.size, codesB.size);
-    return commonCount / maxUnique;
+    // 2. Calculate Longest Common Subsequence (LCS) to reward order
+    // This is more flexible than bigrams for speech.
+    const lcs = this.calculateLCS(codesA, codesB);
+    const lcsScore = lcs / Math.max(codesA.length, codesB.length);
+
+    // Combine: Jaccard gives us the "what", LCS gives us the "order"
+    return (jaccard * 0.4) + (lcsScore * 0.6);
   }
 
   /**
-   * Normalizes a string for comparison by removing punctuation and smart quotes.
+   * Calculates the length of the Longest Common Subsequence of words.
+   */
+  private calculateLCS(a: string[], b: string[]): number {
+    const m = a.length;
+    const n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (a[i - 1] === b[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+    return dp[m][n];
+  }
+  /**
+   * Normalises a string for comparison by removing punctuation and smart quotes.
    */
   public normalise(str: string): string {
     return str
       .toLowerCase()
       .replace(/[\u2019\u2018’‘']/g, '') // Remove all types of apostrophes
-      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"”“[\]\|<>–—]/g, ' ') // Remove punctuation
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"”“[\]\\|<>–—]/g, ' ') // Remove punctuation
       .replace(/\s+/g, ' ') // Collapse spaces
       .trim();
   }
 
   /**
-   * Returns a set of unique Soundex codes for words in the string.
+   * Returns an array of Soundex codes for words in the string (preserving order).
    */
-  private getUniqueSoundexCodes(str: string): Set<string> {
+  private getSoundexCodeSequence(str: string): string[] {
     const normalised = this.normalise(str);
     const words = normalised.split(' ');
-    const codes = new Set<string>();
-
-    for (const word of words) {
-      if (word.length > 0) {
-        const code = this.soundex(word);
-        if (code) codes.add(code);
-      }
-    }
-
-    return codes;
+    return words
+      .filter(w => w.length > 0)
+      .map(w => this.soundex(w))
+      .filter(c => c !== '');
   }
 
   /**

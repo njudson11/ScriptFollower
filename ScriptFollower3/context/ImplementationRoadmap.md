@@ -37,6 +37,7 @@ Phase 6: Production Ready ✅ (PWA & Core UI)
 - ✅ **Automatic Channel Management**: Virtual channels generated from script subtypes
 - ✅ **Real-Time monitor**: Live active playback list with `soundRef` resolution
 - ✅ **Environment Awareness**: Privacy-compliant device discovery and adaptive UI logic
+- ✅ **Voice Recognition**: Proximity-weighted phonetic script following with auto-focus support
 
 ## Phase 5: UI Polish & Testing ✅
 - ✅ **CSS Modernization**: Initial decoupling of component styles to dedicated files.

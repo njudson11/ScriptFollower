@@ -20,6 +20,7 @@ export class VoiceRecognitionFeature implements FeaturePlugin {
   private engine: IVoiceRecognitionEngine;
   private textMatcher: TextMatcher;
   private currentTranscript: string = '';
+  private highlightTimeouts: Map<string, any> = new Map();
 
   constructor(
     private appStore: AppStore,
@@ -118,14 +119,34 @@ export class VoiceRecognitionFeature implements FeaturePlugin {
   private async stopVoice(): Promise<void> {
     await this.engine.stop();
     this.appStore.setLastVoiceTranscript(null);
+    this.currentTranscript = '';
+    this.clearAllVoiceHighlights();
+  }
+
+  private clearAllVoiceHighlights(): void {
+    // Collect keys first to avoid modification during iteration issues
+    const keys = Array.from(this.highlightTimeouts.keys());
+    for (const lineId of keys) {
+      this.removeVoiceHighlight(lineId);
+    }
+  }
+
+  private removeVoiceHighlight(lineId: string): void {
+    this.selectionManager.removeHighlight(lineId, 'voice:matched');
+    this.selectionManager.removeHighlight(lineId, 'voice:partial');
+    
+    const timeout = this.highlightTimeouts.get(lineId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.highlightTimeouts.delete(lineId);
+    }
   }
 
   private handleResult(result: VoiceRecognitionResult): void {
-    // For rolling streams, we keep the last segment
     this.currentTranscript = result.transcript;
     this.appStore.setLastVoiceTranscript(this.currentTranscript);
 
-    // Filter for DIALOGUE lines and map to matchable objects using metadata.dialogue
+    // Filter for DIALOGUE lines
     const allLines = this.appStore.getLines();
     const dialogueLines = allLines
       .filter(line => line.lineType === LineType.DIALOGUE && line.metadata?.dialogue)
@@ -152,28 +173,49 @@ export class VoiceRecognitionFeature implements FeaturePlugin {
 
     if (match.index !== -1) {
       const matchedLineId = dialogueLines[match.index].id;
+      const isHighConfidence = match.score >= AppConfig.voice.textMatcher.threshold;
+
+      // Clear existing voice highlights on OTHER lines
+      for (const [lineId, timeout] of this.highlightTimeouts.entries()) {
+        if (lineId !== matchedLineId) {
+          this.removeVoiceHighlight(lineId);
+        }
+      }
+
+      // Visual feedback
+      const highlightType = isHighConfidence ? 'voice:matched' : 'voice:partial';
       
-      // Visual feedback with confidence score
-      this.selectionManager.addHighlight(matchedLineId, 'voice:matched', { score: match.score });
-      
-      // Auto-expire highlight based on config
-      setTimeout(() => {
-        this.selectionManager.removeHighlight(matchedLineId, 'voice:matched');
+      // If we are switching type on the same line, clear the old one
+      if (highlightType === 'voice:matched') {
+        this.selectionManager.removeHighlight(matchedLineId, 'voice:partial');
+      }
+
+      this.selectionManager.addHighlight(matchedLineId, highlightType, { score: match.score });
+
+      // Reset the linger clock
+      const existingTimeout = this.highlightTimeouts.get(matchedLineId);
+      if (existingTimeout) clearTimeout(existingTimeout);
+
+      const timeoutId = setTimeout(() => {
+        this.removeVoiceHighlight(matchedLineId);
       }, AppConfig.voice.matchLingerMs);
 
-      // Check runtime focus setting from store
+      this.highlightTimeouts.set(matchedLineId, timeoutId);
+
+      // Focus logic (only for high confidence and if enabled)
       const setFocus = this.appStore.state.voiceSettings.setFocusOnMatch;
-      
-      if (setFocus && matchedLineId !== currentLineId) {
+      if (isHighConfidence && setFocus && matchedLineId !== currentLineId) {
         this.actionController.dispatch({
           type: ACTION_TYPES.SELECT_LINE as any,
           payload: { lineId: matchedLineId }
         });
         
         // Clear transcript buffer after a successful focus-advancing match
-        // to prevent immediate re-matching or "echo" matches
-        this.currentTranscript = '';
-        this.appStore.setLastVoiceTranscript(null);
+        // if it's a final result or if we want to reset for the next line
+        if (result.isFinal) {
+          this.currentTranscript = '';
+          this.appStore.setLastVoiceTranscript(null);
+        }
       }
     }
   }

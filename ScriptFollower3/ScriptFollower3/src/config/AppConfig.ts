@@ -104,7 +104,7 @@ export const AppConfig: {
   voice: {
     setFocusOnMatch: false,
     language: 'en-GB',
-    matchLingerMs: 1000,
+    matchLingerMs: 3000,
     textMatcher: {
       preWindow: 5,
       postWindow: 15,
