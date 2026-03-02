@@ -20,6 +20,10 @@ export interface AppState {
   searchMatches: string[]
   activeSearchIndex: number | null
   characterColours: Record<string, string> // New: store colours for characters
+  highlightColours: {
+    activeLine: string
+    voiceMatch: string
+  }
   lastVoiceTranscript: string | null
   voiceSettings: {
     setFocusOnMatch: boolean
@@ -58,6 +62,10 @@ export class AppStore {
     searchMatches: [],
     activeSearchIndex: null,
     characterColours: {},
+    highlightColours: {
+      activeLine: '#ffeb3b', // Default palette-yellow-500
+      voiceMatch: '#4caf50'  // Default palette-green-500
+    },
     lastVoiceTranscript: null,
     voiceSettings: {
       setFocusOnMatch: AppConfig.voice.setFocusOnMatch
@@ -92,6 +100,23 @@ export class AppStore {
 
   setActiveSearchIndex(index: number | null): void {
     this.state.activeSearchIndex = index;
+  }
+
+  // --- Highlight Colour Management ---
+  setHighlightColour(key: keyof AppState['highlightColours'], colour: string): void {
+    this.state.highlightColours[key] = colour;
+    
+    // Sync with CSS variables
+    if (key === 'activeLine') {
+      document.documentElement.style.setProperty('--color-active-line', colour);
+    } else if (key === 'voiceMatch') {
+      document.documentElement.style.setProperty('--color-voice-matched-border', colour);
+      // Also update background with opacity
+      const r = parseInt(colour.slice(1, 3), 16);
+      const g = parseInt(colour.slice(3, 5), 16);
+      const b = parseInt(colour.slice(5, 7), 16);
+      document.documentElement.style.setProperty('--color-voice-matched-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+    }
   }
 
   // --- Voice Management ---

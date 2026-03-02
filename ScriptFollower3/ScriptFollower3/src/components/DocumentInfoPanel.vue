@@ -85,24 +85,57 @@ const styleTree = computed(() => {
     </div>
     <div v-if="dialogueSubTypes.length > 0" class="divider"></div>
 
-    <div class="info-section">
-      <label>Name:</label>
-      <p>{{ currentDocument.name }}</p>
+    <div class="styles-section">
+      <div class="section-header">
+        <h4>UI Highlighting</h4>
+      </div>
+      <div class="character-list">
+        <div class="character-item">
+          <input 
+            type="color" 
+            :value="appStore.state.highlightColours.activeLine" 
+            @input="e => appStore.setHighlightColour('activeLine', (e.target as HTMLInputElement).value)"
+            class="color-picker"
+          />
+          <span class="character-name">Active Line Border</span>
+        </div>
+        <div class="character-item">
+          <input 
+            type="color" 
+            :value="appStore.state.highlightColours.voiceMatch" 
+            @input="e => appStore.setHighlightColour('voiceMatch', (e.target as HTMLInputElement).value)"
+            class="color-picker"
+          />
+          <span class="character-name">Voice Match Highlight</span>
+        </div>
+      </div>
     </div>
 
-    <div class="info-section">
-      <label>Format:</label>
-      <p>{{ currentDocument.format }}</p>
-    </div>
+    <div class="divider"></div>
 
-    <div class="info-section">
-      <label>Total Lines:</label>
-      <p>{{ currentDocument.lines.length }}</p>
-    </div>
+    <div class="styles-section">
+      <div class="section-header">
+        <h4>Document Info</h4>
+      </div>
+      <div class="info-section">
+        <label>Name:</label>
+        <p>{{ currentDocument.name }}</p>
+      </div>
 
-    <div class="info-section">
-      <label>Created:</label>
-      <p>{{ currentDocument.createdAt.toLocaleDateString() }}</p>
+      <div class="info-section">
+        <label>Format:</label>
+        <p>{{ currentDocument.format }}</p>
+      </div>
+
+      <div class="info-section">
+        <label>Total Lines:</label>
+        <p>{{ currentDocument.lines.length }}</p>
+      </div>
+
+      <div class="info-section">
+        <label>Created:</label>
+        <p>{{ currentDocument.createdAt.toLocaleDateString() }}</p>
+      </div>
     </div>
     <div class="divider"></div>
 
@@ -120,43 +153,4 @@ const styleTree = computed(() => {
 
 <style scoped>
 @import '../css/DocumentInfoPanel.css';
-
-.character-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.character-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.color-picker {
-  border: none;
-  padding: 0;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  cursor: pointer;
-  background: none;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.color-picker::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.color-picker::-webkit-color-swatch {
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-}
-
-.character-name {
-  font-size: 0.9em;
-  color: var(--color-text-primary);
-}
 </style>

@@ -265,38 +265,5 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.audio-waveform-container {
-  position: relative;
-  width: 100%;
-  height: 100px;
-  background: #1e1e1e;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  user-select: none;
-  margin: 10px 0;
-}
-.waveform-placeholder {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #aaa; font-size: 12px; z-index: 5; background: rgba(30, 30, 30, 0.9);
-}
-.waveform-placeholder.error { color: #f44336; }
-.loading-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 80%; }
-.loading-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-.loading-bar-fill { height: 100%; background: var(--color-primary); transition: width 0.2s ease-out; }
-.pulse { animation: pulse-opacity 1.5s infinite ease-in-out; }
-@keyframes pulse-opacity { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-.waveform-canvas { width: 100%; height: 100%; display: block; z-index: 1; }
-.waveform-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-.dimmed-area { position: absolute; top: 0; height: 100%; background: rgba(0, 0, 0, 0.5); }
-.active-area { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--color-primary); border-right: 1px solid var(--color-primary); background: rgba(33, 150, 243, 0.05); }
-.handle { position: absolute; top: 0; width: 14px; height: 100%; margin-left: -7px; cursor: ew-resize; pointer-events: auto; z-index: 10; display: flex; justify-content: center; }
-.handle::after { content: ""; width: 2px; height: 100%; background: var(--color-primary); }
-.handle-label { position: absolute; top: -18px; background: var(--color-primary); color: white; font-size: 10px; padding: 2px 4px; border-radius: 2px; font-weight: bold; }
-.handle-fade-in, .handle-fade-out { height: 24px; top: 0; background: rgba(255, 255, 255, 0.8); border: 1px solid #ccc; border-radius: 0 0 4px 4px; width: 10px; margin-left: -5px; pointer-events: auto; cursor: ew-resize; }
-.handle-fade-out { top: auto; bottom: 0; border-radius: 4px 4px 0 0; }
-.fade-lines { position: absolute; top: 0; left: 0; pointer-events: none; }
-.playhead { position: absolute; top: 0; width: 2px; height: 100%; background: #ff5252; box-shadow: 0 0 4px rgba(0,0,0,0.8); z-index: 20; }
+@import '../css/AudioWaveform.css';
 </style>

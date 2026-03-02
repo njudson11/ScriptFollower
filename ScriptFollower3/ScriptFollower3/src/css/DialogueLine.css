@@ -7,11 +7,11 @@
   padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.5s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid transparent; /* No border for non-active lines */
+  border: 1px solid transparent;
 }
 
 .script-line.active {
-  border-color: var(--color-active);
+  border-color: var(--color-active-line);
   border-width: 4px;
   border-style: solid;
   box-shadow: 0 4px 12px var(--color-shadow-heavy);
@@ -19,12 +19,12 @@
 
 .line-type-badge,
 .line-meta {
-  display: none; /* Hide line type and line number */
+  display: none;
 }
 
 .line-content {
-  display: flex; /* Changed to flex for horizontal alignment */
-  align-items: baseline; /* Align first line of dialogue with character name */
+  display: flex;
+  align-items: baseline;
 }
 
 .character-name {
@@ -33,24 +33,22 @@
   text-transform: uppercase;
   font-size: 0.9em;
   color: var(--color-text-muted);
-  flex-shrink: 0; /* Prevent character name from shrinking */
-  white-space: nowrap; /* Ensure character name stays on one line */
-  width: 8rem; /* Fixed width for character name to align dialogue */;
+  flex-shrink: 0;
+  white-space: nowrap;
+  width: 8rem;
 }
 
 .dialogue-text-no-char{
-  margin-left: 8rem; /* Indent dialogue when no character name */;
+  margin-left: 8rem;
 }
 
 .dialogue-text {
-  flex-grow: 1; /* Allows dialogue to take up remaining space */
+  flex-grow: 1;
   font-size: 1em;
   line-height: 1.4;
   color: var(--color-text-dark);
-  white-space: pre-wrap; /* Preserve whitespace and wrap text */
+  white-space: pre-wrap;
 }
-
-
 
 .script-line.dialogue-line.context-sidebar {
   font-size: 8px;
@@ -59,13 +57,13 @@
 .script-line.dialogue-line.context-sidebar .character-name {
   margin: 0;
   font-weight: bold;
-  flex-shrink: 0; /* Prevent character name from shrinking */
-  white-space: nowrap; /* Ensure character name stays on one line */
+  flex-shrink: 0;
+  white-space: nowrap;
   width: unset;
   font-size: unset;
   text-transform: unset;
 }
 
 .dialogue-line.context-sidebar .dialogue-text-no-char{
-  margin:0; /* Remove indent for dialogue without character name in sidebar */
+  margin: 0;
 }

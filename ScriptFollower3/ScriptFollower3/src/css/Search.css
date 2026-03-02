@@ -1,4 +1,4 @@
 .search-match {
-  background-color: var(--color-highlight-bg);
-  outline: 1px solid var(--color-highlight-border);
+  background-color: var(--color-search-found-bg);
+  outline: 1px solid var(--color-search-found-border);
 }

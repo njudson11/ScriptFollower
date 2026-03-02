@@ -220,14 +220,9 @@ const resetProject = () => {
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>
 @import '../css/Toolbar.css';
-
-.btn-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 </style>

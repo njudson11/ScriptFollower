@@ -5,7 +5,7 @@
   min-height: var(--toolbar-height);
   background-color: var(--color-primary);
   color: var(--color-text-on-primary);
-  box-shadow: 0 2px 4px var(--color-shadow);
+  box-shadow: 0 2px 4px var(--color-shadow-medium);
   z-index: 100;
 }
 
@@ -23,8 +23,8 @@
   align-items: center;
   height: 32px;
   padding: 0 12px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--color-shadow-heavy);
+  border-top: 1px solid var(--color-shadow-medium);
   width: 100%;
 }
 
@@ -57,7 +57,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid var(--color-shadow-heavy);
 }
 
 .toolbar-centre {
@@ -89,10 +89,10 @@
   justify-content: center;
   gap: 4px;
   padding: 4px 8px;
-  height: 28px; /* Fixed height to prevent stretching */
+  height: 28px;
   background-color: var(--color-primary-dark);
-  color: white;
-  border: 1px solid var(--color-border);
+  color: var(--color-text-on-primary);
+  border: 1px solid var(--color-shadow-heavy);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8em;
@@ -103,35 +103,35 @@
 .voice-toggle-btn:hover,
 .voice-focus-btn:hover,
 .toolbar-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-shadow-heavy);
 }
 
 .voice-toggle-btn.is-active,
 .voice-focus-btn.is-active {
-  background-color: #ff9800;
-  color: #000;
-  border-color: #f57c00;
+  background-color: var(--palette-orange-500);
+  color: var(--palette-black);
+  border-color: var(--palette-orange-700);
   font-weight: 600;
 }
 
 .btn-danger {
-  background-color: rgba(211, 47, 47, 0.4);
+  background-color: var(--color-shadow-heavy); /* Reusing heavy shadow for subtle danger bg */
 }
 .btn-danger:hover {
-  background-color: #d32f2f;
+  background-color: var(--color-error);
 }
 
 .divider {
   width: 1px;
   height: 20px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-shadow-heavy);
   margin: 0 4px;
 }
 
 .search-container {
   display: flex;
   align-items: center;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-shadow-medium);
   border-radius: 4px;
   padding: 0 6px;
   gap: 2px;
@@ -141,14 +141,14 @@
 .search-input {
   background: none;
   border: none;
-  color: white;
+  color: var(--color-text-on-primary);
   padding: 4px;
   font-size: 0.85em;
   width: 120px;
 }
 
 .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--palette-gray-400);
 }
 
 .search-input:focus {
@@ -158,7 +158,7 @@
 .search-nav-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--color-text-on-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -209,7 +209,7 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #ff9800;
+  color: var(--palette-orange-500);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -220,6 +220,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: white;
+  color: var(--color-text-on-primary);
   flex: 1;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

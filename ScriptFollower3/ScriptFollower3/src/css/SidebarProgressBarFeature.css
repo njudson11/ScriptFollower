@@ -1,20 +1,20 @@
-.sidebar-progress-bar-container {
+.sidebar-active-line-progress {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 4px; /* Slightly thinner for overlay */
-  background-color: rgba(33, 150, 243, 0.1); /* Subtle track */
+  height: 4px;
+  background-color: var(--color-wave-active-bg);
   margin: 0; 
   border-radius: 0;
   overflow: hidden;
-  z-index: 10; /* Ensure it stays on top of the line */
-  pointer-events: none; /* Don't interfere with clicks on the line */
+  z-index: 10;
+  pointer-events: none;
 }
 
-.sidebar-progress-bar {
+.sidebar-active-line-progress-bar {
   height: 100%;
-  background-color: var(--color-status-success-text); /* Green color for progress */
-  transition: width 0.2s ease-out; /* Smooth transition for width changes */
-  width: 0%; /* Default to 0% */
+  background-color: var(--color-success);
+  transition: width 0.2s ease-out;
+  width: 0%;
 }

@@ -7,26 +7,24 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: min-width 0.3s ease, max-width 0.3s ease, border-left 0.3s ease; /* Add transition for width changes */
+  transition: min-width 0.3s ease, max-width 0.3s ease, border-left 0.3s ease;
 }
 
 .tab-header {
   display: flex;
-  justify-content: space-between; /* Distribute space between tab buttons and collapse button */
+  justify-content: space-between;
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-background);
   align-items: center;
-  /* padding-right: 5px; Removed, let the button's padding handle it */
-  padding-left: 5px; /* Add padding for the tabs */
+  padding-left: 5px;
 }
 
-.tab-buttons-wrapper { /* New wrapper for the main tab buttons */
+.tab-buttons-wrapper {
   display: flex;
-  flex-grow: 1; /* Allow tab buttons to take available space */
+  flex-grow: 1;
 }
 
-.tab-header button { /* This applies to the tab buttons within .tab-buttons-wrapper */
-  /* flex-grow: 1; Removed */
+.tab-header button {
   padding: 10px 15px;
   border: none;
   background-color: transparent;
@@ -41,7 +39,7 @@
 }
 
 .tab-header button:hover:not(:disabled) {
-  background-color: var(--color-hover-dark);
+  background-color: var(--color-active-overlay);
 }
 
 .tab-header button.active {
@@ -67,7 +65,6 @@
 }
 
 .collapse-button {
-  /* margin-left: auto; Removed - no longer needed with justify-content: space-between on parent */
   background: none;
   border: none;
   color: var(--color-text-secondary);
@@ -78,21 +75,18 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  z-index: 1; /* Ensure it's above other elements if needed */
-  flex-shrink: 0; /* Prevent button from shrinking */
-  height: 100%; /* Make button take full height of tab-header */
+  z-index: 1;
+  flex-shrink: 0;
+  height: 100%;
 }
 
 .collapse-button:hover {
-  background-color: var(--color-hover);
+  background-color: var(--color-hover-overlay);
 }
 
 /* Styles for collapsed state */
 .right-panel.is-collapsed {
-  /* min-width: 0; Removed */
-  /* max-width: 0; Removed */
   border-left: none;
-  /* overflow: hidden; Removed, this will be handled by App.vue's grid */
 }
 
 .right-panel.is-collapsed .tab-buttons-wrapper {
@@ -100,10 +94,9 @@
 }
 
 .right-panel.is-collapsed .collapse-button {
-  /* Keep visible */
-  color: var(--color-primary); /* Make it more prominent when collapsed */
-  padding: 0 10px; /* Ensure padding for button space */
-  font-size: 1.5em; /* Make icon larger when collapsed for better visibility */
+  color: var(--color-primary);
+  padding: 0 10px;
+  font-size: 1.5em;
   height: 100%;
 }
 

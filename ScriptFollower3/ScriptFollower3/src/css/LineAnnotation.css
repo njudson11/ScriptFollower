@@ -37,11 +37,11 @@
 
 .line-annotation:hover .copy-btn {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-shadow-light);
 }
 
 .copy-btn:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
+  background: var(--color-shadow-medium) !important;
   transform: scale(1.1);
 }
 

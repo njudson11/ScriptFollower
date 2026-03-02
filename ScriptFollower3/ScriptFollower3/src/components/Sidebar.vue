@@ -56,8 +56,8 @@ const handleLineClick = (lineId: string) => {
     <div class="sidebar-content" ref="sidebarContentRef">
       <div v-for="line in visibleLines" :key="line.id" class="sidebar-line-wrapper">
         <!-- Progress bar integration via feature -->
-        <div v-if="line.id === activeSidebarLineId && sidebarProgressBarFeature.progressPercentage.value > 0" class="sidebar-progress-bar-container">
-          <div class="sidebar-progress-bar" :style="{ width: sidebarProgressBarFeature.progressPercentage.value + '%' }"></div>
+        <div v-if="line.id === activeSidebarLineId && sidebarProgressBarFeature.progressPercentage.value > 0" class="sidebar-active-line-progress">
+          <div class="sidebar-active-line-progress-bar" :style="{ width: sidebarProgressBarFeature.progressPercentage.value + '%' }"></div>
         </div>
         <component
           :is="getLineComponent(line.lineType)"

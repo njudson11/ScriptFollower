@@ -191,9 +191,9 @@ onBeforeUnmount(() => {
           <span class="icon">{{ isPlaying ? '■' : (isLoading ? '⋯' : (soundCue ? '▶' : '⚡')) }}</span>
         </button>
         
-        <div v-if="soundCue" class="sidebar-progress-container">
-          <div class="sidebar-progress-fill" :style="{ width: playbackProgress + '%' }"></div>
-          <div class="sidebar-progress-text">
+        <div v-if="soundCue" class="sound-cue-sidebar-progress" :class="{ 'is-active': isPlaying }">
+          <div class="sound-cue-sidebar-progress-fill" :style="{ width: playbackProgress + '%' }"></div>
+          <div class="sound-cue-sidebar-progress-text">
             {{ isPlaying ? formatTime(remainingTime) : (isLoading ? 'Loading...' : (isPreloaded ? 'Ready' : 'Not Loaded')) }}
           </div>
         </div>
@@ -211,8 +211,4 @@ onBeforeUnmount(() => {
 <style scoped>
 @import '../css/DefaultLineComponent.css';
 @import '../css/SoundCueLine.css';
-
-.playback-btn.is-preloaded {
-    border: 1px solid var(--color-status-success-text);
-}
 </style>

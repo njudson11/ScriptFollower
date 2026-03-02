@@ -69,42 +69,9 @@ const handleLineClick = (lineId: string) => {
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>
 @import '../css/DocumentViewer.css';
-
-.empty-state {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.empty-state h1 {
-  font-size: 2em;
-  color: var(--color-text-primary);
-  margin-bottom: 12px;
-}
-
-.empty-state p {
-  color: var(--color-text-secondary);
-  margin-bottom: 24px;
-}
-
-.upload-button {
-  display: inline-block;
-  padding: 12px 32px;
-  background-color: var(--color-primary);
-  color: var(--color-text-on-primary);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s;
-}
-
-.upload-button:hover {
-  background-color: var(--color-primary-dark);
-}
 </style>

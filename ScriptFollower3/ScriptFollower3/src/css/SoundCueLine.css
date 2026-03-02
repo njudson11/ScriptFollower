@@ -25,7 +25,6 @@
 
 .context-sidebar  .line-content{
   flex-direction: column;
-
 }
 
 .playback-btn {
@@ -53,14 +52,15 @@
   cursor: pointer;
   font-size: 14px;
   flex-shrink: 0;
-  background-color: var(--color-button-bg);
+  background-color: var(--color-background-soft);
 }
 
 .playback-btn.is-preloaded {
+    border: 1px solid var(--color-success);
 }
 
 .btn-play {
-  color: var(--color-status-success-text);
+  color: var(--color-success);
 }
 
 .btn-play:hover {
@@ -69,7 +69,7 @@
 }
 
 .btn-stop {
-  color: var(--color-status-error-text);
+  color: var(--color-error);
 }
 
 .btn-stop:hover {
@@ -78,13 +78,13 @@
 }
 
 .btn-trigger {
-  color: var(--color-status-warning-text);
-  border: 1px solid var(--color-status-warning-text);
+  color: var(--palette-orange-500);
+  border: 1px solid var(--palette-orange-500);
   background: var(--color-background);
 }
 
 .btn-trigger:hover {
-  background: var(--color-status-warning-bg);
+  background: var(--color-warning-bg);
 }
 
 .remaining-time {
@@ -95,26 +95,33 @@
   min-width: 50px;
 }
 
-/* Sidebar Progress Bar */
-.sidebar-progress-container {
+/* Sidebar Sound Progress / Status */
+.sound-cue-sidebar-progress {
   flex: 1;
   height: 18px;
-  background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   position: relative;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  background: var(--color-background-soft);
+  background: var(--color-surface); /* Solid background */
 }
 
-.sidebar-progress-fill {
+.sound-cue-sidebar-progress.is-active {
+  background: var(--color-surface);
+}
+
+.sound-cue-sidebar-progress-fill {
   height: 100%;
-  background: var(--color-status-info-text);
+  background: var(--color-info);
   transition: width 0.1s linear;
+  opacity: 0; /* Hidden when not active */
+}
+
+.sound-cue-sidebar-progress.is-active .sound-cue-sidebar-progress-fill {
   opacity: 0.3;
 }
 
-.sidebar-progress-text {
+.sound-cue-sidebar-progress-text {
   position: absolute;
   top: 0;
   left: 0;
@@ -125,9 +132,14 @@
   justify-content: center;
   font-family: monospace;
   font-size: 10px;
+  color: var(--color-text-secondary);
+  font-weight: normal;
+  pointer-events: none;
+}
+
+.sound-cue-sidebar-progress.is-active .sound-cue-sidebar-progress-text {
   color: var(--color-text-primary);
   font-weight: bold;
-  pointer-events: none;
 }
 
 .sidebar-annotation-trigger-label {

@@ -1,8 +1,8 @@
 /* Base Script Line Style (moved from components) */
 .script-line {
   margin-bottom: 4px;
-  border-left-width: 0; /* Set width here */
-  border-left-style: solid; /* Set style here */
+  border-left-width: 0;
+  border-left-style: solid;
   border-radius: 0;
   cursor: pointer;
   transition: background-color 0.5s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -14,12 +14,12 @@
 }
 
 .script-line:hover {
-  box-shadow: 0 2px 8px var(--color-shadow);
+  box-shadow: 0 2px 8px var(--color-shadow-medium);
   transform: translateX(4px);
 }
 
 .script-line.active {
-  border-color: var(--color-active);
+  border-color: var(--color-active-line);
   border-width: 4px;
   border-style: solid;
   box-shadow: 0 4px 12px var(--color-shadow-heavy);
@@ -68,7 +68,6 @@
 
 .context-sidebar .line-annotation{
   display: none; /* Hide annotations in context sidebar */
-
 }
 
 .context-sidebar.line-type-scene-heading {

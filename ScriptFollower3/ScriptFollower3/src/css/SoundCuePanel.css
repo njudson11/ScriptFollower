@@ -60,22 +60,22 @@
   text-transform: uppercase;
 }
 
-.status-playing { background: var(--color-status-info-bg); color: var(--color-status-info-text); }
-.status-loaded { background: var(--color-status-success-bg); color: var(--color-status-success-text); }
-.status-idle { background: var(--color-status-idle-bg); color: var(--color-status-idle-text); }
+.status-playing { background: var(--color-info-bg); color: var(--color-info); }
+.status-loaded { background: var(--color-success-bg); color: var(--color-success); }
+.status-idle { background: var(--color-divider); color: var(--color-text-secondary); }
 
 .btn {
   padding: 8px;
   border-radius: 4px;
   border: 1px solid var(--color-border);
   cursor: pointer;
-  background: var(--color-button-bg);
+  background: var(--color-background-soft);
   color: var(--color-text-primary);
 }
 
 .btn-primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-primary);
   border: none;
 }
 
@@ -125,7 +125,7 @@
 
 .no-cue-warning-footer {
   padding: 8px;
-  background: rgba(245, 127, 23, 0.1);
+  background: var(--color-warning-bg);
   color: var(--color-warning);
   border: 1px solid var(--color-warning);
   border-radius: 4px;
@@ -169,13 +169,13 @@ input[type="range"] {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--color-background);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 4px;
   z-index: 10;
   max-height: 250px;
   overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px var(--color-shadow-medium);
 }
 
 .dropdown-menu button, .checkbox-item {
@@ -189,7 +189,7 @@ input[type="range"] {
 }
 
 .dropdown-menu button:hover {
-  background: var(--color-hover);
+  background: var(--color-hover-overlay);
 }
 
 .dropdown-divider {

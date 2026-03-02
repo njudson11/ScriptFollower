@@ -16,40 +16,38 @@
 
 /* Tech Cue */
 .script-line.line-type-tech-cue {
-  background-color: var(--line-type-tech-cue-bg);
+  background-color: var(--color-cue-tech-bg);
 }
-
 
 /* Sound Cue */
 .script-line.line-type-sound-cue {
-  background-color: var(--line-type-sound-cue-bg);
-  padding: 0 0 0 3px 
+  background-color: var(--color-cue-sound-bg);
+  padding: 0 0 0 3px;
 }
-
 
 /* Light Cue */
 .script-line.line-type-light-cue {
-  background-color: var(--line-type-light-cue-bg);
-  padding: 0 0 0 3px 
+  background-color: var(--color-cue-light-bg);
+  padding: 0 0 0 3px;
 }
 
 .line-type-blank { border-left-color: var(--line-type-blank); }
 
 /* Specific Line Subtype Styles for Sound Cue */
 .script-line.line-type-sound-cue.line-subtype-a {
-  background-color: var(--line-type-sound-cue-bg);
+  background-color: var(--color-cue-sound-bg);
 }
 
 .script-line.line-type-sound-cue.line-subtype-b {
-  background-color: var(--line-type-sound-cue-subtype-b-bg);
+  background-color: var(--color-cue-sound-alt-bg);
 }
 
 .script-line.line-type-tech-cue.line-subtype-curtains {
-  background-color: var(--line-type-tech-cue-subtype-curtains-bg);
+  background-color: var(--color-cue-curtains-bg);
 }
 
 .line-type-page-number {
-  background-color: var(--line-type-page-number-bg); /* Dark purple for stage directions */
+  background-color: var(--color-page-number-bg);
 }
 
 /* Specific Line Type Styles */
@@ -58,16 +56,15 @@
   font-weight: bold;
   text-align: center;
   margin-top: 1em;
-  color: var(--color-title); /* Dark blue */
+  color: var(--line-type-title);
 }
 
 .line-type-title.line-subtype-subtitle {
   font-size: 1.3em;
   font-weight: bold;
   text-align: center;
-  margin-top: 1em;
   margin-top: 0.5em;
-  color: var(--color-subtitle); /* Indigo */
+  color: var(--line-type-subtitle);
 }
 
 .line-type-scene-heading, .line-type-act-heading {
@@ -75,15 +72,15 @@
   font-weight: bold;
   margin-top: 20px;
   margin-bottom: 10px;
-  color: var(--color-heading); /* Brown */
-  border-bottom: 1px solid var(--color-heading-border); /* Light brown border */
+  color: var(--palette-gray-800);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 5px;
 }
 
 .line-type-stage-direction .line-content {
   font-style: italic;
-  text-align: left; /* Changed from centre to left */
-  max-width: 70%; /* Ensures centreing with auto margins */
-  margin: 0 auto; /* Centre the block */
-  color: var(--color-stage-direction); /* Dark purple for stage directions */
+  text-align: left;
+  max-width: 70%;
+  margin: 0 auto;
+  color: var(--line-type-stage-direction);
 }

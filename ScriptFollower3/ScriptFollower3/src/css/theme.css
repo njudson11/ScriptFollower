@@ -1,87 +1,143 @@
 :root {
-  /* Brand Colors */
-  --color-primary: #2196f3;
-  --color-primary-dark: #1976d2;
-  --color-primary-light: #e3f2fd;
+  /* --- Base Palette (Primitives) --- */
   
+  /* Primary */
+  --palette-blue-50: #e3f2fd;
+  --palette-blue-100: #bbdefb;
+  --palette-blue-200: #90caf9;
+  --palette-blue-300: #64b5f6;
+  --palette-blue-400: #42a5f5;
+  --palette-blue-500: #2196f3;
+  --palette-blue-600: #1e88e5;
+  --palette-blue-700: #1976d2;
+  --palette-blue-800: #1565c0;
+  --palette-blue-900: #0d47a1;
+
+  /* Neutrals */
+  --palette-white: #ffffff;
+  --palette-gray-50: #fafafa;
+  --palette-gray-100: #f5f5f5;
+  --palette-gray-200: #eeeeee;
+  --palette-gray-300: #e0e0e0;
+  --palette-gray-400: #bdbdbd;
+  --palette-gray-500: #9e9e9e;
+  --palette-gray-600: #757575;
+  --palette-gray-700: #616161;
+  --palette-gray-800: #424242;
+  --palette-gray-900: #212121;
+  --palette-black: #000000;
+
+  /* Errors & Warnings */
+  --palette-red-50: #ffebee;
+  --palette-red-500: #f44336;
+  --palette-red-700: #d32f2f;
+  --palette-red-900: #b71c1c;
+  
+  --palette-orange-50: #fff3e0;
+  --palette-orange-500: #ff9800;
+  --palette-orange-700: #f57c00;
+  
+  --palette-yellow-50: #fffde7;
+  --palette-yellow-500: #ffeb3b;
+  
+  --palette-green-50: #e8f5e9;
+  --palette-green-500: #4caf50;
+  --palette-green-700: #388e3c;
+
+  /* --- Semantic Mappings --- */
+
   /* UI Base */
-  --color-background: #f5f5f5;
-  --color-background-soft: #fafafa;
-  --color-surface: #ffffff;
-  --color-border: #e0e0e0;
-  --color-divider: #f1f1f1;
-  --color-shadow: rgba(0, 0, 0, 0.1);
-  --color-shadow-heavy: rgba(0, 0, 0, 0.5);
+  --color-background: var(--palette-gray-100);
+  --color-background-soft: var(--palette-gray-50);
+  --color-surface: var(--palette-white);
+  --color-border: var(--palette-gray-300);
+  --color-divider: var(--palette-gray-200);
   
-  /* Text Colors */
-  --color-text-primary: #333333;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-text-on-primary: #ffffff;
-  --color-text-muted: #424242;
-  --color-text-dark: #212121;
+  /* Shadows */
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+  --color-shadow-medium: rgba(0, 0, 0, 0.1);
+  --color-shadow-heavy: rgba(0, 0, 0, 0.2);
+
+  /* Brand */
+  --color-primary: var(--palette-blue-500);
+  --color-primary-dark: var(--palette-blue-700);
+  --color-primary-light: var(--palette-blue-50);
   
-  /* Feature Text Colors */
-  --color-title: #1a237e;
-  --color-subtitle: #3f51b5;
-  --color-heading: #5d4037;
-  --color-heading-border: #d7ccc8;
-  --color-stage-direction: #4a148c;
+  /* Text */
+  --color-text-primary: #333333; /* Specific dark gray for text */
+  --color-text-secondary: var(--palette-gray-700);
+  --color-text-tertiary: var(--palette-gray-500);
+  --color-text-on-primary: var(--palette-white);
+  --color-text-muted: var(--palette-gray-600);
+  --color-text-dark: var(--palette-gray-900);
+
+  /* State Colors */
+  --color-error: var(--palette-red-700);
+  --color-error-bg: var(--palette-red-50);
+  --color-error-border: var(--palette-red-500);
   
-  /* Interaction */
-  --color-hover: rgba(0, 0, 0, 0.05);
-  --color-hover-dark: rgba(0, 0, 0, 0.1);
-  --color-active: #f1f530;
-  --color-selected: var(--color-primary-light);
-  --color-button-bg: #f5f5f5;
-  --color-button-hover: #e0e0e0;
-  --color-disabled-bg: #e0e0e0;
-  --color-disabled-text: #999999;
+  --color-warning: var(--palette-orange-700);
+  --color-warning-bg: var(--palette-orange-50);
   
-  /* Feedback */
-  --color-error: #c62828;
-  --color-error-background: #ffebee;
-  --color-error-border: #ef5350;
-  --color-warning: #f57f17;
-  --color-success: #2e7d32;
-  --color-info: #1565c0;
-  --color-highlight-bg: #bae9f8;
-  --color-highlight-text: #edea17;
-  --color-highlight-border: #f92525;
+  --color-success: var(--palette-green-700);
+  --color-success-bg: var(--palette-green-50);
   
+  --color-info: var(--palette-blue-800);
+  --color-info-bg: var(--palette-blue-50);
+
+  /* Interactions */
+  --color-hover-overlay: rgba(0, 0, 0, 0.05);
+  --color-active-overlay: rgba(0, 0, 0, 0.1);
+  --color-selection: var(--color-primary-light);
+  --color-active-line: #ffeb3b;
+  
+  /* --- Feature Specific --- */
+
+  /* Script Line Types */
+  --line-type-title: #1a237e;
+  --line-type-subtitle: #283593;
+  --line-type-act-heading: #4a148c;
+  --line-type-scene-heading: var(--palette-blue-800);
+  --line-type-character-list: var(--palette-orange-700);
+  --line-type-dialogue: var(--palette-gray-800);
+  --line-type-stage-direction: var(--palette-green-700);
+  --line-type-blank: var(--palette-gray-500);
+
+  /* Cues & Special Lines */
+  --color-cue-tech-bg: #d38210;
+  --color-cue-sound-bg: #d91515;
+  --color-cue-sound-alt-bg: #24b005;
+  --color-cue-light-bg: #105fe7;
+  --color-cue-curtains-bg: #9f0bb9;
+  --color-page-number-bg: var(--palette-gray-200);
+
   /* Annotations */
   --color-annotation-text: #841307;
   --color-annotation-bg: #fbe5e3;
   --color-annotation-border: #e74c3c;
-  
-  /* Status Badges */
-  --color-status-success-bg: rgba(76, 175, 80, 0.2);
-  --color-status-success-text: #4caf50;
-  --color-status-info-bg: rgba(33, 150, 243, 0.2);
-  --color-status-info-text: #2196f3;
-  --color-status-idle-bg: rgba(158, 158, 158, 0.2);
-  --color-status-idle-text: #9e9e9e;
 
-  /* Line Types (Borders) */
-  --line-type-title: #1a237e;
-  --line-type-subtitle: #283593;
-  --line-type-act-heading: #4a148c;
-  --line-type-scene-heading: #1565c0;
-  --line-type-character-list: #f57f17;
-  --line-type-dialogue: #424242;
-  --line-type-stage-direction: #2e7d32;
-  --line-type-blank: #9e9e9e;
+  /* Voice / Search Highlighting */
+  --color-voice-matched-bg: rgba(76, 175, 80, 0.15);
+  --color-voice-matched-border: #4caf50;
+  --color-voice-partial-bg: rgba(255, 235, 59, 0.15);
+  --color-voice-partial-border: #fbc02d;
   
-  /* Line Types (Backgrounds) */
-  --line-type-tech-cue-bg: #d38210;
-  --line-type-sound-cue-bg: #d91515;
-  --line-type-sound-cue-subtype-b-bg: #24b005;
-  --line-type-light-cue-bg: #105fe7;
-  --line-type-tech-cue-subtype-curtains-bg: #9f0bb9;
-  --line-type-page-number-bg: #cacaca;
+  --color-search-current-bg: #fff59d;
+  --color-search-current-border: #fdd835;
+  --color-search-found-bg: #ffe082;
+  --color-search-found-border: #ffb300;
 
-  /* Dimensions */
+  /* Audio Meter / Waves / Canvas */
+  --color-wave-bg: var(--palette-gray-900);
+  --color-wave-progress: rgba(33, 150, 243, 0.3);
+  --color-wave-playhead: var(--palette-red-500);
+  --color-wave-dimmed: rgba(0, 0, 0, 0.5);
+  --color-wave-active-bg: rgba(33, 150, 243, 0.05);
+  --color-wave-handle-fade: rgba(255, 255, 255, 0.8);
+
+  /* --- Dimensions --- */
   --toolbar-height: 36px;
   --sidebar-width: 200px;
   --right-panel-width: 350px;
+  --collapsed-panel-width: 40px;
 }
