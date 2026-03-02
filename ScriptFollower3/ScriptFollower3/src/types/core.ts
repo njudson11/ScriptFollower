@@ -278,6 +278,14 @@ export interface SoundCue {
 }
 
 /**
+ * Interface for document format parsers
+ */
+export interface IDocumentParser {
+  readonly format: 'DOCX' | 'ODT' | 'PDF' | 'XML';
+  parse(data: File | ArrayBuffer, fileName: string, config: any): Promise<Document>;
+}
+
+/**
  * Standardized audio event types
  */
 export const AUDIO_EVENT_TYPES = {

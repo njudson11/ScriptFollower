@@ -5,7 +5,6 @@ import { EventBus, EVENT_TYPES } from './EventBus';
 import { ACTION_TYPES } from '@/types/actions';
 import { LineType, ScriptLineBase, SoundCue } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
-import { defaultODTConfig } from '@/parsers/ODTConfig';
 import { DocumentWorkerManager } from './DocumentWorkerManager';
 import type { AudioPlaybackManager } from './AudioPlaybackManager';
 
@@ -90,7 +89,7 @@ export class ProjectManager {
         const document = await DocumentWorkerManager.parseDocument(
           file, 
           'ODT', 
-          defaultODTConfig, 
+          AppConfig.parsing, 
           AppConfig.parsing.metadataExtractionRules
         );
         
@@ -129,7 +128,7 @@ export class ProjectManager {
         const document = await DocumentWorkerManager.parseDocument(
           odtFile, 
           'ODT', 
-          defaultODTConfig, 
+          AppConfig.parsing, 
           AppConfig.parsing.metadataExtractionRules
         );
         this.appStore.loadDocument(document);

@@ -179,15 +179,6 @@ const resetProject = () => {
 
         <div class="divider"></div>
 
-        <button 
-          v-if="hasDocument" 
-          class="toolbar-action-btn btn-danger" 
-          @click="resetProject" 
-          title="Reset Project"
-        >
-          <Trash2 :size="14" />
-        </button>
-
         <label class="toolbar-action-btn" title="Load Project Folder">
           <input
             type="file"
@@ -210,6 +201,15 @@ const resetProject = () => {
           />
           <FileText :size="14" />
         </label>
+
+        <button 
+          v-if="hasDocument" 
+          class="toolbar-action-btn btn-danger" 
+          @click="resetProject" 
+          title="Reset Project"
+        >
+          <Trash2 :size="14" />
+        </button>
       </div>
     </div>
 
