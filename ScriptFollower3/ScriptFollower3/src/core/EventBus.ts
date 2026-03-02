@@ -64,7 +64,7 @@ export const EVENT_TYPES = {
   HIGHLIGHT_REMOVED: 'highlight:removed',
 
   // Feature events
-  FEATURE_INITIALIZED: 'feature:initialized',
+  FEATURE_INITIALISED: 'feature:initialised',
   FEATURE_DESTROYED: 'feature:destroyed',
   FEATURE_ERROR: 'feature:error',
 

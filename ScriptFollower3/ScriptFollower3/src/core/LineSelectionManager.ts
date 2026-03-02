@@ -79,7 +79,7 @@ export class HighlightTypeRegistry implements IHighlightTypeRegistry {
 export class LineSelectionManager {
   private _currentLineId = ref<string | null>(null) // Made reactive
   private _selectedLineIds = reactive(new Set<string>()) // Made reactive
-  private highlights: Map<string, Highlight[]> = new Map()
+  private highlights = reactive(new Map<string, Highlight[]>())
   private highlightTypeRegistry: HighlightTypeRegistry
   private eventBus: EventBus
   private appStore: AppStore // Added AppStore dependency
@@ -166,10 +166,9 @@ export class LineSelectionManager {
       data
     }
 
-    if (!this.highlights.has(lineId)) {
-      this.highlights.set(lineId, [])
-    }
-    this.highlights.get(lineId)!.push(highlight)
+    const currentHighlights = this.highlights.get(lineId) || [];
+    // Replace the array to ensure Vue reactivity tracks the change
+    this.highlights.set(lineId, [...currentHighlights, highlight]);
 
     this.eventBus.emit({
       type: EVENT_TYPES.HIGHLIGHT_ADDED,
@@ -187,11 +186,14 @@ export class LineSelectionManager {
 
     const index = highlights.findIndex(h => h.type === type)
     if (index !== -1) {
-      const highlight = highlights[index]
-      highlights.splice(index, 1)
+      const newHighlights = [...highlights];
+      newHighlights.splice(index, 1);
 
-      if (highlights.length === 0) {
+      if (newHighlights.length === 0) {
         this.highlights.delete(lineId)
+      } else {
+        // Replace the array to ensure Vue reactivity tracks the change
+        this.highlights.set(lineId, newHighlights);
       }
 
       this.eventBus.emit({
@@ -245,8 +247,18 @@ export class LineSelectionManager {
    * Get the highest priority highlight for a line
    */
   getPrimaryHighlight(lineId: string): Highlight | undefined {
-    const highlights = this.getHighlights(lineId)
-    return highlights[0]
+    const highlights = this.highlights.get(lineId) ?? []
+    if (highlights.length === 0) return undefined
+    
+    // Sort and get highest priority
+    return [...highlights].sort((a, b) => b.priority - a.priority)[0]
+  }
+
+  /**
+   * Get highlight style by type
+   */
+  getHighlightStyle(type: string): HighlightStyle | undefined {
+    return this.highlightTypeRegistry.get(type)
   }
 
   /**

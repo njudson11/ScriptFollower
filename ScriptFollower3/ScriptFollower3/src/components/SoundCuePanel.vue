@@ -39,7 +39,7 @@ const currentPlayer = computed(() => {
   return audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url, selectedChannelId.value);
 });
 
-// --- Stop Behavior State ---
+// --- Stop Behaviour State ---
 const isStopDropdownOpen = ref(false);
 type StopMode = 'none' | 'previous' | 'all' | 'refs';
 const stopMode = ref<StopMode>('none');
@@ -74,7 +74,7 @@ const stopDisplayValue = computed(() => {
     default: return 'None';
   }
 });
-// --- End Stop Behavior State ---
+// --- End Stop Behaviour State ---
 
 const availableChannels = computed(() => appStore.state.virtualChannels);
 
@@ -104,7 +104,7 @@ const parseAnnotations = () => {
   const panVal = get('pan', 0);
   if (panVal === 'left') balance.value = -1;
   else if (panVal === 'right') balance.value = 1;
-  else if (panVal === 'center') balance.value = 0;
+  else if (panVal === 'centre') balance.value = 0;
   else balance.value = typeof panVal === 'number' ? panVal : parseFloat(panVal) || 0;
 
   startTime.value = get('start', 0);
@@ -198,7 +198,7 @@ const togglePlayback = () => {
     const updatedCue: SoundCue = {
       ...soundCue.value,
       volume: volume.value,
-      pan: (balance.value < -0.1 ? 'left' : balance.value > 0.1 ? 'right' : 'center') as any, 
+      pan: (balance.value < -0.1 ? 'left' : balance.value > 0.1 ? 'right' : 'centre') as any, 
       startOffsetSeconds: startTime.value,
       endOffsetSeconds: endTime.value,
       fadeIn: fadeIn.value,
@@ -270,16 +270,16 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
-    <!-- Stop Behavior Section -->
+    <!-- Stop Behaviour Section -->
     <div class="section-column">
       <div class="input-group">
-        <label>Stop Behavior</label>
+        <label>Stop Behaviour</label>
         <div class="custom-dropdown">
           <button class="dropdown-toggle" @click="isStopDropdownOpen = !isStopDropdownOpen">
             {{ stopDisplayValue }}
             <ChevronDown :size="14" class="dropdown-arrow" />
           </button>
-          <div v-if="isStopDropdownOpen" class="dropdown-menu stopBehavior">
+          <div v-if="isStopDropdownOpen" class="dropdown-menu stopBehaviour">
             <button @click="setStopMode('none')">None</button>
             <button @click="setStopMode('previous')">Stop Previous</button>
             <button @click="setStopMode('all')">Stop All</button>
@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
       </div>
       
       <div class="input-group">
-        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Center' }} ({{ balance.toFixed(1) }})</label>
+        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Centre' }} ({{ balance.toFixed(1) }})</label>
         <input type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
       </div>
     </div>

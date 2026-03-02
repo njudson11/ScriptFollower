@@ -13,7 +13,7 @@ export class MasterAudioPanelFeature implements FeaturePlugin {
   async init(): Promise<void> {
     // Register the UI component for the right panel
     this.featureManager.registerLineRenderer('MASTER_AUDIO_PANEL' as any, MasterAudioPanel, 'right-panel');
-    console.log('MasterAudioPanelFeature initialized');
+    console.log('MasterAudioPanelFeature initialised');
   }
 
   async destroy(): Promise<void> {

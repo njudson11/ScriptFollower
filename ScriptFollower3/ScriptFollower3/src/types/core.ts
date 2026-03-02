@@ -90,6 +90,36 @@ export interface Highlight {
 }
 
 /**
+ * Interface for any object that can be matched by the TextMatcher
+ */
+export interface IMatchableLine {
+  readonly text: string;
+}
+
+/**
+ * Configuration options for the TextMatcher matching logic
+ */
+export interface TextMatcherOptions {
+  readonly activeIndex?: number;
+  readonly preWindow: number;     // Lines to search before activeIndex
+  readonly postWindow: number;    // Lines to search after activeIndex
+  readonly threshold: number;     // Minimum similarity (0-1) for a valid match
+  readonly weights: {
+    readonly maxPreWeight: number;  // Initial weight for previous lines (e.g., 1.5)
+    readonly maxPostWeight: number; // Initial weight for future lines (e.g., 2.0)
+  };
+}
+
+/**
+ * Result of a text matching operation
+ */
+export interface MatchResult {
+  readonly index: number;         // Index of the matched line, or -1 if no match
+  readonly score: number;         // The weighted similarity score
+  readonly rawScore: number;      // The unweighted phonetic similarity score
+}
+
+/**
  * Selection state for line selection
  */
 export interface SelectionState {
@@ -239,7 +269,7 @@ export interface SoundCue {
   readonly url: string;
   readonly name: string;
   readonly volume: number; // 0-100
-  readonly pan: 'left' | 'right' | 'center';
+  readonly pan: 'left' | 'right' | 'centre';
   readonly startOffsetSeconds?: number;
   readonly endOffsetSeconds?: number;
   readonly fadeIn?: number; // ms

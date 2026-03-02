@@ -82,8 +82,8 @@
 
 .line-type-stage-direction .line-content {
   font-style: italic;
-  text-align: left; /* Changed from center to left */
-  max-width: 70%; /* Ensures centering with auto margins */
-  margin: 0 auto; /* Center the block */
+  text-align: left; /* Changed from centre to left */
+  max-width: 70%; /* Ensures centreing with auto margins */
+  margin: 0 auto; /* Centre the block */
   color: var(--color-stage-direction); /* Dark purple for stage directions */
 }

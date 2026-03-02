@@ -19,7 +19,11 @@ export interface AppState {
   searchQuery: string | null
   searchMatches: string[]
   activeSearchIndex: number | null
-  characterColors: Record<string, string> // New: store colors for characters
+  characterColours: Record<string, string> // New: store colours for characters
+  lastVoiceTranscript: string | null
+  voiceSettings: {
+    setFocusOnMatch: boolean
+  }
 }
 
 export class AppStore {
@@ -53,7 +57,11 @@ export class AppStore {
     searchQuery: null,
     searchMatches: [],
     activeSearchIndex: null,
-    characterColors: {}
+    characterColours: {},
+    lastVoiceTranscript: null,
+    voiceSettings: {
+      setFocusOnMatch: AppConfig.voice.setFocusOnMatch
+    }
   })
 
   private eventBus: EventBus
@@ -62,14 +70,14 @@ export class AppStore {
     this.eventBus = eventBus
   }
 
-  // --- Character Color Management ---
-  setCharacterColor(character: string, color: string): void {
-    this.state.characterColors[character] = color;
+  // --- Character Colour Management ---
+  setCharacterColour(character: string, colour: string): void {
+    this.state.characterColours[character] = colour;
   }
 
-  getCharacterColor(character: string | undefined): string | undefined {
+  getCharacterColour(character: string | undefined): string | undefined {
     if (!character) return undefined;
-    return this.state.characterColors[character];
+    return this.state.characterColours[character];
   }
 
   // --- Search Methods ---
@@ -84,6 +92,15 @@ export class AppStore {
 
   setActiveSearchIndex(index: number | null): void {
     this.state.activeSearchIndex = index;
+  }
+
+  // --- Voice Management ---
+  updateVoiceSettings(updates: Partial<AppState['voiceSettings']>): void {
+    this.state.voiceSettings = { ...this.state.voiceSettings, ...updates };
+  }
+
+  setLastVoiceTranscript(transcript: string | null): void {
+    this.state.lastVoiceTranscript = transcript;
   }
 
   isLineSearchMatch(lineId: string): boolean {
@@ -143,7 +160,7 @@ export class AppStore {
   clearProject(): void {
     this.state.currentDocument = null;
     this.state.error = null;
-    this.state.characterColors = {};
+    this.state.characterColours = {};
     this.state.searchQuery = null;
     this.state.searchMatches = [];
     this.state.activeSearchIndex = null;

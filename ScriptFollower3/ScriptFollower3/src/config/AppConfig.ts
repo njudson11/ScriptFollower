@@ -1,4 +1,4 @@
-import { LineType, MetadataExtractionRule } from '@/types/core'
+import { LineType, MetadataExtractionRule, TextMatcherOptions } from '@/types/core'
 
 export interface LineTypeConfig {
   label: string
@@ -14,7 +14,7 @@ export interface AudioConfig {
   preloadCuesBehind: number
   defaultVolume: number
   defaultChannelVolume: number // New: default volume for virtual channels
-  defaultPan: 'left' | 'right' | 'center'
+  defaultPan: 'left' | 'right' | 'centre'
   baseChannelId: string
   refreshIntervalMs: number
   supportedExtensions: string[]
@@ -38,6 +38,13 @@ export interface ParsingConfig {
   metadataExtractionRules: MetadataExtractionRule[]
 }
 
+export interface VoiceConfig {
+  setFocusOnMatch: boolean
+  language: string
+  matchLingerMs: number
+  textMatcher: TextMatcherOptions
+}
+
 export const AppConfig: {
   lineTypes: Record<LineType, LineTypeConfig>
   viewers: {
@@ -48,6 +55,7 @@ export const AppConfig: {
   layout: LayoutConfig
   ui: UIConfig
   parsing: ParsingConfig
+  voice: VoiceConfig
 } = {
   lineTypes: {
     [LineType.TITLE]: { label: 'Title', defaultFilterValue: false },
@@ -77,7 +85,7 @@ export const AppConfig: {
     preloadCuesBehind: 10,
     defaultVolume: 1.0,
     defaultChannelVolume: 1.0,
-    defaultPan: 'center',
+    defaultPan: 'centre',
     baseChannelId: 'A',
     refreshIntervalMs: 100,
     supportedExtensions: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'],
@@ -91,6 +99,20 @@ export const AppConfig: {
   ui: {
     documentInfo: {
       defaultStylesCollapsed: true
+    }
+  },
+  voice: {
+    setFocusOnMatch: false,
+    language: 'en-GB',
+    matchLingerMs: 1000,
+    textMatcher: {
+      preWindow: 5,
+      postWindow: 15,
+      threshold: 0.3,
+      weights: {
+        maxPreWeight: 1.5,
+        maxPostWeight: 2.0
+      }
     }
   },
   parsing: {

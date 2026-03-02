@@ -28,12 +28,13 @@ These are the main public functions. Both perform the same fundamental task but 
     - It first compares the script line to the entire `spokenText`.
     - It then creates a "sliding window" over the words in `spokenText`. If the spoken phrase is longer than the script line, it compares the script line against every possible subsequence of the spoken text that has the same length. This is crucial for matching a line when the user says more than just the line itself (e.g., "Okay, now, **the line of dialogue** is what I'm saying").
     - If the spoken phrase is shorter, it compares it against the start of the script line.
-4.  **Phonetic Scoring**: Each comparison is done using `phoneticSimilarity`, which calculates a score based on how similar the words *sound*, not just how they are spelled. This makes the matching robust against minor mispronunciations or recognition errors.
-5.  **Weighting**: The raw similarity score is then weighted based on the line's position relative to the `activeIdx`.
-    - Lines that appear *after* the current line are given a higher weight, making the algorithm favor forward progress through the script.
-    - The further away a line is from the `activeIdx`, the lower its weight becomes.
+4.  **Phonetic Scoring**: Each comparison is done using `phoneticSimilarity`, which calculates a score based on how similar the words *sound*, not just how they are spelled. It calculates the ratio of common unique Soundex codes to the total number of unique codes in the longer of the two phrases. This makes the matching robust against minor mispronunciations or recognition errors.
+5.  **Weighting**: The raw similarity score is weighted based on the line's position relative to the `activeIdx` using a linear decay model:
+    - **Forward Progress (Post-window)**: Lines appearing after the current line (`distance >= 1`) start with a `maxPostWeight` (typically 2.0) and decrease linearly toward 0 as they reach the edge of the `postWindow`.
+    - **Backtracking (Pre-window)**: Lines appearing before the current line (`distance < 0`) start with a `maxPreWeight` (typically 1.5) and decrease linearly toward 0 as they reach the edge of the `preWindow`.
+    - This weighting system favors forward progress through the script while still allowing for corrections or backtracking, with a higher preference for upcoming lines.
 6.  **Best Match**: The function keeps track of the line with the highest `weightedScore`.
-7.  **Threshold Check**: After checking all lines in the window, if the best score found is above the `threshold`, the index of that line is returned. Otherwise, `-1` is returned, indicating no confident match was found.
+7.  **Threshold Check**: After checking all lines in the window, if the best score found is above the `threshold` (default 0.3), the index of that line is returned. Otherwise, `-1` is returned.
 
 ## Helper Functions
 
@@ -50,15 +51,44 @@ This is the heart of the matching algorithm.
 
 ### `soundex(word)`
 
-A standard implementation of the Soundex algorithm, which indexes words by their English pronunciation.
+A standard implementation of the Soundex algorithm.
+- **Mapping**:
+    - `B, F, P, V` -> `1`
+    - `C, G, J, K, Q, S, X, Z` -> `2`
+    - `D, T` -> `3`
+    - `L` -> `4`
+    - `M, N` -> `5`
+    - `R` -> `6`
+- **Process**:
+    1. Retain the first letter of the word.
+    2. Drop all occurrences of `A, E, I, O, U, Y, W, H` (unless it's the first letter).
+    3. Replace consonants with digits as per the mapping.
+    4. If two or more letters with the same number are adjacent in the original word (before step 2), only retain the first.
+    5. Return a 4-character code (padded with `0`s or truncated).
 
 ### `normalize(str)`
 
-A utility function to clean up strings by converting them to lowercase and removing a wide range of punctuation and special characters before they are passed to the phonetic algorithm.
+Cleans strings for comparison.
+1.  Convert to **lowercase**.
+2.  Remove **apostrophes**: Specifically standard `'` and "smart" quotes `\u2019\u2018’‘`.
+3.  Remove **punctuation**: `[.,\/#!$%\^&\*;:{}=\-_`~()?"”“[\]\\|<>–—]`.
+4.  Collapse multiple spaces into a single space and trim.
 
-### `wordOverlapSimilarity(a, b)`
+### `phoneticSimilarity(a, b)`
 
-A simpler, alternative similarity function based on direct word overlap rather than phonetics. (Note: This function is not used by the main `findClosestLine` functions in the current implementation but remains in the file).
+1. Normalize both strings.
+2. Convert to unique sets of Soundex codes (filtering out empty results).
+3. `score = (count of common codes) / (count of unique codes in the longer phrase)`.
+
+### Weighting Calculation
+
+For each line `i` at `distance = i - activeIdx`:
+- **If `distance >= 1` (Forward)**:
+  - `weight = maxPostWeight - ((maxPostWeight / postWindow) * distance)`
+- **If `distance < 0` (Backward)**:
+  - `weight = maxPreWeight - ((maxPreWeight / preWindow) * abs(distance))`
+- **Default/Active**: `weight = 1`
+- **Final Score**: `weightedScore = maxPhoneticScore * weight`
 
 ## Dependencies
 

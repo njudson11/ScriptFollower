@@ -73,12 +73,12 @@ export class SoundFeature implements FeaturePlugin {
       },
       {
         name: 'pan',
-        description: 'Stereo pan (-1 to 1, or left/center/right)',
+        description: 'Stereo pan (-1 to 1, or left/centre/right)',
         type: 'string',
         defaultValue: AppConfig.audio.defaultPan,
         parseValue: (val) => {
           const lowerVal = val.toLowerCase();
-          if (['left', 'center', 'right'].includes(lowerVal)) {
+          if (['left', 'centre', 'right'].includes(lowerVal)) {
             return lowerVal;
           }
           const num = parseFloat(val);
@@ -86,7 +86,7 @@ export class SoundFeature implements FeaturePlugin {
         },
         validateValue: (val) => {
           if (typeof val === 'string') {
-            return ['left', 'center', 'right'].includes(val);
+            return ['left', 'centre', 'right'].includes(val);
           }
           if (typeof val === 'number') {
             return val >= -1 && val <= 1;
@@ -139,7 +139,7 @@ export class SoundFeature implements FeaturePlugin {
       },
       {
         name: 'stop',
-        description: 'Stop behavior: "previous", "all", or a comma-separated list of SoundRefs e.g., "[0001,0002]"',
+        description: 'Stop behaviour: "previous", "all", or a comma-separated list of SoundRefs e.g., "[0001,0002]"',
         type: 'string',
         parseValue: (val) => val.trim(),
         validateValue: (val) => {

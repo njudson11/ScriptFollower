@@ -31,13 +31,13 @@ const dialogueSubTypes = computed(() => {
   return Array.from(subTypes).sort();
 });
 
-const getCharacterColor = (character: string) => {
-  return appStore.state.characterColors[character] || '#ffffff';
+const getCharacterColour = (character: string) => {
+  return appStore.state.characterColours[character] || '#ffffff';
 }
 
-const updateCharacterColor = (character: string, event: Event) => {
+const updateCharacterColour = (character: string, event: Event) => {
   const color = (event.target as HTMLInputElement).value;
-  appStore.setCharacterColor(character, color);
+  appStore.setCharacterColour(character, color);
 }
 
 // Computed property to build the style tree
@@ -70,13 +70,13 @@ const styleTree = computed(() => {
 <template>
   <div v-if="currentDocument" class="panel-content document-info-panel">
     <div v-if="dialogueSubTypes.length > 0" class="info-section characters-section">
-      <label>Characters & Colors:</label>
+      <label>Characters & Colours:</label>
       <div class="character-list">
         <div v-for="type in dialogueSubTypes" :key="type" class="character-item">
           <input 
             type="color" 
-            :value="getCharacterColor(type)" 
-            @input="updateCharacterColor(type, $event)"
+            :value="getCharacterColour(type)" 
+            @input="updateCharacterColour(type, $event)"
             class="color-picker"
           />
           <span class="character-name">{{ type }}</span>

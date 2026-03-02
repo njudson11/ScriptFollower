@@ -99,9 +99,9 @@ export class PersistenceManager {
       Object.assign(state.lineTypeVisibility, saved.lineTypeVisibility)
     }
     
-    if (saved.characterColors) {
-      console.log('[PersistenceManager] Applying characterColors')
-      Object.assign(state.characterColors, saved.characterColors)
+    if (saved.characterColours) {
+      console.log('[PersistenceManager] Applying characterColours')
+      Object.assign(state.characterColours, saved.characterColours)
     }
 
     if (saved.isRightPanelCollapsed !== undefined) {
@@ -123,11 +123,11 @@ export class PersistenceManager {
   private setupAutoSave(): void {
     console.log('[PersistenceManager] Setting up auto-save watchers...')
     
-    // Watch settings (colors, visibility, etc.)
+    // Watch settings (colours, visibility, etc.)
     watch(
       () => ({
         lineTypeVisibility: { ...this.appStore.state.lineTypeVisibility },
-        characterColors: { ...this.appStore.state.characterColors },
+        characterColours: { ...this.appStore.state.characterColours },
         isRightPanelCollapsed: this.appStore.state.isRightPanelCollapsed,
         virtualChannels: [...this.appStore.state.virtualChannels]
       }),

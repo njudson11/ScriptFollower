@@ -1,22 +1,24 @@
 /**
  * Feature Manager for registering and managing feature plugins
  */
-
 import { FeaturePlugin, LineType, KeyBinding } from '@/types/core'
 import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { ActionController } from './ActionController'
+import { LineSelectionManager } from './LineSelectionManager'
 import { Component } from 'vue'
 
 export class FeatureManager {
   private features: Map<string, FeaturePlugin> = new Map()
   private eventBus: EventBus
   private actionController: ActionController 
+  private selectionManager: LineSelectionManager
   private lineRenderers: Map<LineType, Map<string, Component>> = new Map()
   private registeredKeybindingUnregisters: Map<string, Array<() => void>> = new Map()
 
-  constructor(eventBus: EventBus, actionController: ActionController) { 
+  constructor(eventBus: EventBus, actionController: ActionController, selectionManager: LineSelectionManager) { 
     this.eventBus = eventBus
     this.actionController = actionController 
+    this.selectionManager = selectionManager
   }
 
   /**
@@ -29,14 +31,19 @@ export class FeatureManager {
     }
 
     try {
-      // Add to map FIRST so that it's tracked during initialization
+      // Add to map FIRST so that it's tracked during initialisation
       this.features.set(feature.id, feature)
       
-      // Initialize the feature
+      // Initialise the feature
       await feature.init()
 
+      // Register any custom highlight types defined by the feature
+      if (feature.registerHighlightTypes) {
+        feature.registerHighlightTypes(this.selectionManager.getHighlightRegistry());
+      }
+
       this.eventBus.emit({
-        type: EVENT_TYPES.FEATURE_INITIALIZED,
+        type: EVENT_TYPES.FEATURE_INITIALISED,
         payload: { featureId: feature.id, featureName: feature.name },
         timestamp: new Date()
       })

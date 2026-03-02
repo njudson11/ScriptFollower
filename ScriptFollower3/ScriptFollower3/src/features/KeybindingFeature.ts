@@ -43,7 +43,7 @@ export class KeybindingFeature implements FeaturePlugin {
     }
   }
 
-  private normalizeKeyEvent(event: KeyboardEvent): { keys: string[]; modifiers: KeyBinding['modifiers'] } {
+  private normaliseKeyEvent(event: KeyboardEvent): { keys: string[]; modifiers: KeyBinding['modifiers'] } {
     const keys: string[] = [];
     const modifiers: KeyBinding['modifiers'] = {
       shift: event.shiftKey,
@@ -85,7 +85,7 @@ export class KeybindingFeature implements FeaturePlugin {
         }
     }
 
-    const { keys, modifiers } = this.normalizeKeyEvent(event);
+    const { keys, modifiers } = this.normaliseKeyEvent(event);
     const allKeybindings = this.featureManager.getAllKeybindings();
 
     const appState = this.appStore.getState();

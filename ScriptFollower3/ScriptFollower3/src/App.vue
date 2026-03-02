@@ -18,6 +18,8 @@ import { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
 import { MasterAudioPanelFeature } from '@/features/MasterAudioPanelFeature'
 import { SoundFeature } from '@/features/SoundFeature'
 import { SearchFeature } from '@/features/SearchFeature'
+import { VoiceRecognitionFeature } from '@/features/VoiceRecognitionFeature'
+import { WebSpeechEngine } from '@/core/WebSpeechEngine'
 import { ProjectManager } from '@/core/ProjectManager'
 import { ACTION_TYPES } from './types/actions'
 import { AnnotationManager } from '@/core/AnnotationManager'
@@ -32,7 +34,7 @@ const appStore = new AppStore(eventBus)
 const actionController = new ActionController(eventBus)
 const audioPlaybackManager = new AudioPlaybackManager(eventBus)
 const selectionManager = new LineSelectionManager(eventBus, appStore, actionController)
-const featureManager = new FeatureManager(eventBus, actionController)
+const featureManager = new FeatureManager(eventBus, actionController, selectionManager)
 const persistenceManager = new PersistenceManager(appStore)
 
 // Initialize business logic manager
@@ -57,6 +59,9 @@ onMounted(async () => {
   // Initialize persistence layer first to load saved state
   await persistenceManager.init()
 
+  // Create voice engine
+  const voiceEngine = new WebSpeechEngine(AppConfig.voice.language || 'en-GB')
+
   // Create features
   const features = [
     new DialogueRenderingFeature(featureManager),
@@ -65,7 +70,8 @@ onMounted(async () => {
     new SidebarProgressBarFeature(selectionManager, appStore),
     new MasterAudioPanelFeature(featureManager),
     new SoundFeature(featureManager, actionController, audioPlaybackManager, appStore, eventBus, annotationManager, selectionManager),
-    new SearchFeature(actionController, appStore)
+    new SearchFeature(actionController, appStore),
+    new VoiceRecognitionFeature(appStore, eventBus, actionController, selectionManager, voiceEngine)
   ]
 
   // Register all features and track IDs for cleanup
