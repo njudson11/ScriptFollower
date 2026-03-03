@@ -115,7 +115,7 @@
 }
 
 .btn-danger {
-  background-color: var(--color-shadow-heavy); /* Reusing heavy shadow for subtle danger bg */
+  background-color: var(--color-danger-dark); /* Reusing heavy shadow for subtle danger bg */
 }
 .btn-danger:hover {
   background-color: var(--color-error);

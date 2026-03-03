@@ -62,6 +62,8 @@
   --color-primary: var(--palette-blue-500);
   --color-primary-dark: var(--palette-blue-700);
   --color-primary-light: var(--palette-blue-50);
+  --color-secondary-dark: var(--palette-yellow-50);
+  --color-danger-dark: var(--palette-red-500);
   
   /* Text */
   --color-text-primary: #333333; /* Specific dark gray for text */

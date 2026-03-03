@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ScriptLineBase } from '@/types/core'
+import { Copy, Check } from 'lucide-vue-next'
 
 interface LineDataPanelProps {
   currentLine: ScriptLineBase | undefined
@@ -11,6 +12,7 @@ const props = defineProps<LineDataPanelProps>()
 
 // XML pretty-printing functionality
 const showFullXml = ref(false)
+const isCopied = ref(false)
 
 const prettyPrintXml = (xmlString: string): string => {
   try {
@@ -29,6 +31,18 @@ const prettyPrintXml = (xmlString: string): string => {
 
 const toggleFullXml = () => {
   showFullXml.value = !showFullXml.value
+}
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    isCopied.value = true;
+    setTimeout(() => {
+      isCopied.value = false;
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy!', err);
+  }
 }
 </script>
 
@@ -92,11 +106,24 @@ const toggleFullXml = () => {
             <div v-if="typeof value === 'string' && value.includes('<') && value.includes('>')" class="xml-content">
               <div v-if="!showFullXml" class="truncated-xml">
                 <pre>{{ value.substring(0, 100) + '...' }}</pre>
-                <button @click="toggleFullXml" class="show-full-button">Show Full XML</button>
               </div>
               <div v-else class="full-xml">
                 <pre>{{ prettyPrintXml(value) }}</pre>
-                <button @click="toggleFullXml" class="show-full-button">Hide Full XML</button>
+              </div>
+              
+              <div class="xml-controls">
+                <button @click="toggleFullXml" class="xml-btn" :class="{ 'is-active': showFullXml }">
+                  {{ showFullXml ? 'Hide Full XML' : 'Show Full XML' }}
+                </button>
+                <button 
+                  v-if="key === 'originalXml'" 
+                  @click="copyToClipboard(value)" 
+                  class="xml-btn"
+                  :class="{ 'is-copied': isCopied }"
+                >
+                  <component :is="isCopied ? Check : Copy" :size="12" />
+                  {{ isCopied ? 'Copied!' : 'Copy XML' }}
+                </button>
               </div>
             </div>
             <span v-else class="metadata-value">{{ typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value }}</span>
