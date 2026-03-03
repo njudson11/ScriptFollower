@@ -108,6 +108,15 @@ const styleTree = computed(() => {
           />
           <span class="character-name">Voice Match Highlight</span>
         </div>
+        <div class="character-item">
+          <input 
+            type="color" 
+            :value="appStore.state.highlightColours.searchMatch" 
+            @input="e => appStore.setHighlightColour('searchMatch', (e.target as HTMLInputElement).value)"
+            class="color-picker"
+          />
+          <span class="character-name">Search Match Highlight</span>
+        </div>
       </div>
     </div>
 

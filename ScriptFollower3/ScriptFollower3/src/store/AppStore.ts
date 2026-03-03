@@ -20,9 +20,11 @@ export interface AppState {
   searchMatches: string[]
   activeSearchIndex: number | null
   characterColours: Record<string, string> // New: store colours for characters
+  loadedSounds: Record<string, File> // Store sound files by soundRef for persistence across document loads
   highlightColours: {
     activeLine: string
     voiceMatch: string
+    searchMatch: string
   }
   lastVoiceTranscript: string | null
   voiceSettings: {
@@ -62,9 +64,11 @@ export class AppStore {
     searchMatches: [],
     activeSearchIndex: null,
     characterColours: {},
+    loadedSounds: {},
     highlightColours: {
       activeLine: '#ffeb3b', // Default palette-yellow-500
-      voiceMatch: '#4caf50'  // Default palette-green-500
+      voiceMatch: '#4caf50', // Default palette-green-500
+      searchMatch: '#ffe082'  // Default palette-amber-200 / color-search-found-bg
     },
     lastVoiceTranscript: null,
     voiceSettings: {
@@ -86,6 +90,24 @@ export class AppStore {
   getCharacterColour(character: string | undefined): string | undefined {
     if (!character) return undefined;
     return this.state.characterColours[character];
+  }
+
+  // --- Sound Cache Management ---
+  registerLoadedSounds(sounds: Record<string, File>): void {
+    this.state.loadedSounds = { ...this.state.loadedSounds, ...sounds };
+  }
+
+  clearLoadedSounds(): void {
+    // Revoke object URLs before clearing
+    const document = this.state.currentDocument;
+    if (document) {
+      document.lines.forEach(line => {
+        if (line.metadata?.sound?.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(line.metadata.sound.url);
+        }
+      });
+    }
+    this.state.loadedSounds = {};
   }
 
   // --- Search Methods ---
@@ -116,6 +138,10 @@ export class AppStore {
       const g = parseInt(colour.slice(3, 5), 16);
       const b = parseInt(colour.slice(5, 7), 16);
       document.documentElement.style.setProperty('--color-voice-matched-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+    } else if (key === 'searchMatch') {
+      document.documentElement.style.setProperty('--color-search-found-bg', colour);
+      // For border, we can use a slightly darker version or a fixed one. 
+      // Let's just update the background for now as requested.
     }
   }
 
@@ -171,7 +197,33 @@ export class AppStore {
   }
 
   loadDocument(document: Document): void {
-    this.state.currentDocument = document
+    // Before loading, check if we have sounds in cache that should be applied to new lines
+    const lines = document.lines.map(line => {
+      if (line.lineType === LineType.SOUND_CUE) {
+        const soundRef = line.metadata.soundRef;
+        if (soundRef && this.state.loadedSounds[soundRef]) {
+          const file = this.state.loadedSounds[soundRef];
+          const objectUrl = URL.createObjectURL(file);
+          
+          const soundCue: SoundCue = {
+            id: `cue_${line.id}`,
+            name: file.name,
+            url: objectUrl,
+            volume: AppConfig.audio.defaultVolume * 100,
+            pan: AppConfig.audio.defaultPan,
+            channelId: this.resolveChannelId(line, { getValue: () => undefined })
+          };
+
+          return {
+            ...line,
+            metadata: { ...line.metadata, sound: soundCue }
+          };
+        }
+      }
+      return line;
+    });
+
+    this.state.currentDocument = { ...document, lines }
     this.state.isLoading = false
     this.state.error = null
     
@@ -180,6 +232,10 @@ export class AppStore {
       payload: { documentId: document.id },
       timestamp: new Date()
     });
+
+    if (Object.keys(this.state.loadedSounds).length > 0) {
+      this.eventBus.emit({ type: EVENT_TYPES.SOUNDS_LOADED, timestamp: new Date() });
+    }
   }
 
   clearProject(): void {
@@ -189,6 +245,7 @@ export class AppStore {
     this.state.searchQuery = null;
     this.state.searchMatches = [];
     this.state.activeSearchIndex = null;
+    this.clearLoadedSounds();
     
     // Also reset virtual channels to default
     this.state.virtualChannels = [

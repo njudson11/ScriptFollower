@@ -57,20 +57,10 @@ export class ProjectManager {
       this.audioPlaybackManager.stopAll();
     }
 
-    // 2. Revoke any object URLs from sound cues to prevent memory leaks
-    const document = this.appStore.getCurrentDocument();
-    if (document) {
-      document.lines.forEach(line => {
-        if (line.metadata?.sound?.url?.startsWith('blob:')) {
-          URL.revokeObjectURL(line.metadata.sound.url);
-        }
-      });
-    }
-
-    // 3. Clear store state
+    // 2. Clear store state (includes clearing sound cache and revoking URLs)
     this.appStore.clearProject();
     
-    // 4. Reset selection
+    // 3. Reset selection
     this.selectionManager.selectLine(null);
     
     console.log('[ProjectManager] Project cleared');
@@ -156,6 +146,13 @@ export class ProjectManager {
           }
         }
       }
+
+      // Register sounds in store cache for persistence
+      const soundsToCache: Record<string, File> = {};
+      fileMap.forEach((file, ref) => {
+        soundsToCache[ref] = file;
+      });
+      this.appStore.registerLoadedSounds(soundsToCache);
 
       const updatedLines: ScriptLineBase[] = [];
       for (const line of document.lines) {

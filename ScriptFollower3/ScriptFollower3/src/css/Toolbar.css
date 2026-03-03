@@ -144,7 +144,7 @@
   color: var(--color-text-on-primary);
   padding: 4px;
   font-size: 0.85em;
-  width: 120px;
+  width: 15rem;
 }
 
 .search-input::placeholder {
@@ -187,7 +187,7 @@
 }
 
 .page-number-input {
-  width: 40px;
+  width: 3rem;
   height: 24px;
   padding: 0 4px;
   border: none;
