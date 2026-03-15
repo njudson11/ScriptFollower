@@ -33,6 +33,7 @@ const fadeOut = ref(0);
 const endBehaviour = ref<EndBehaviour>('none');
 const loopCount = ref(0);
 const jumpRef = ref('');
+const isJumpDropdownOpen = ref(false);
 
 // Initialize with correctly resolved channel ID to prevent race conditions/mismatches on mount
 const selectedChannelId = ref(appStore.resolveChannelId(props.line, annotationManager));
@@ -84,6 +85,39 @@ const stopDisplayValue = computed(() => {
   }
 });
 // --- End Stop Behaviour State ---
+
+// --- Jump Behaviour State ---
+const allSoundCues = computed(() => {
+  return appStore.getLines()
+    .filter(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef)
+    .map(l => ({
+      ref: l.metadata.soundRef as string,
+      text: l.text,
+      description: l.metadata.soundDescription || l.text
+    }));
+});
+
+const filteredJumpCues = computed(() => {
+  const query = jumpRef.value.toLowerCase();
+  if (!query) return allSoundCues.value.slice(0, 10); // Show first 10 if empty
+  return allSoundCues.value.filter(c => 
+    c.ref.toLowerCase().includes(query) || 
+    c.description.toLowerCase().includes(query)
+  ).slice(0, 10);
+});
+
+const selectJumpRef = (ref: string) => {
+  jumpRef.value = ref;
+  isJumpDropdownOpen.value = false;
+};
+
+const handleJumpBlur = () => {
+  // Delay closing to allow mousedown on dropdown items to fire first
+  setTimeout(() => {
+    isJumpDropdownOpen.value = false;
+  }, 200);
+};
+// --- End Jump Behaviour State ---
 
 const availableChannels = computed(() => appStore.state.virtualChannels);
 
@@ -362,9 +396,28 @@ onBeforeUnmount(() => {
 
       <div v-if="endBehaviour === 'jump-to'" class="input-group nested-input">
         <label>Jump to Cue Reference</label>
-        <div class="input-row">
-          <span class="ref-symbol">#</span>
-          <input type="text" v-model="jumpRef" placeholder="e.g. 0005" />
+        <div class="custom-dropdown">
+          <div class="input-row">
+            <span class="ref-symbol">#</span>
+            <input 
+              type="text" 
+              v-model="jumpRef" 
+              placeholder="e.g. 0005" 
+              @focus="isJumpDropdownOpen = true"
+              @blur="handleJumpBlur"
+            />
+          </div>
+          <div v-if="isJumpDropdownOpen && filteredJumpCues.length > 0" class="dropdown-menu jump-ref-dropdown">
+            <button 
+              v-for="cue in filteredJumpCues" 
+              :key="cue.ref"
+              @mousedown="selectJumpRef(cue.ref)"
+              class="jump-ref-item"
+            >
+              <span class="ref-id">[{{ cue.ref }}]</span>
+              <span class="ref-text">{{ cue.description }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -483,5 +536,26 @@ onBeforeUnmount(() => {
   margin-left: 12px;
   padding-left: 12px;
   border-left: 2px solid var(--palette-gray-700);
+}
+
+.jump-ref-dropdown {
+  width: 100%;
+  top: 100%;
+}
+
+.jump-ref-item {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.jump-ref-item .ref-id {
+  flex-shrink: 0;
+}
+
+.jump-ref-item .ref-text {
+  flex: 1;
+  text-align: left;
 }
 </style>
