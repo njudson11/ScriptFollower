@@ -1,4 +1,4 @@
-import { FeaturePlugin, LineType, SoundCue, Annotation, KeyBinding } from '@/types/core'
+import { FeaturePlugin, LineType, SoundCue, Annotation, KeyBinding, EndBehaviour } from '@/types/core'
 import type { FeatureManager } from '@/core/FeatureManager'
 import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
@@ -37,6 +37,9 @@ export class SoundFeature implements FeaturePlugin {
   private boundHandleTogglePlaySound: any;
 
   private managedPlayerIds: Set<string> = new Set()
+  
+  // Track loop counts for players currently playing
+  private playerLoopCounts: Map<string, number> = new Map()
 
   constructor(
     featureManager: FeatureManager,
@@ -164,6 +167,31 @@ export class SoundFeature implements FeaturePlugin {
           if (val === 'all' || val === 'previous') return true;
           return /^\[\s*\w+(\s*,\s*\w+)*\s*\]$/.test(val);
         }
+      },
+      {
+        name: 'end-behaviour',
+        description: 'Behaviour when playback ends: "none", "loop", "next-line", "next-cue", "jump-to"',
+        type: 'enum',
+        defaultValue: 'none',
+        constraints: { enum: ['none', 'loop', 'next-line', 'next-cue', 'jump-to'] },
+        parseValue: (val) => val.trim().toLowerCase(),
+        validateValue: (val) => ['none', 'loop', 'next-line', 'next-cue', 'jump-to'].includes(val)
+      },
+      {
+        name: 'loop-count',
+        description: 'Number of times to loop (0 for indefinite)',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: 0 },
+        parseValue: (val) => parseInt(val, 10),
+        validateValue: (val) => !isNaN(val) && val >= 0
+      },
+      {
+        name: 'jump-ref',
+        description: 'Cue reference to jump to when playback ends',
+        type: 'string',
+        parseValue: (val) => val.trim(),
+        validateValue: (val) => val.length > 0
       }
     ]
   }
@@ -254,6 +282,7 @@ export class SoundFeature implements FeaturePlugin {
     this.unregisterEvents.forEach(unreg => unreg())
     this.managedPlayerIds.clear()
     this.audioPlaybackManager.stopAll()
+    this.playerLoopCounts.clear()
   }
 
   private managePreloading(activeLineId: string): void {
@@ -352,7 +381,6 @@ export class SoundFeature implements FeaturePlugin {
       }
 
       // If there's no cue, we've still executed the stop action (if any)
-      // and we might have other annotation-based logic in the future.
       if (!cue) return; 
 
       const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
@@ -369,6 +397,9 @@ export class SoundFeature implements FeaturePlugin {
       let end = cue.endOffsetSeconds;
       let fadeIn = cue.fadeIn;
       let fadeOut = cue.fadeOut;
+      let endBehaviour: EndBehaviour = cue.endBehaviour || 'none';
+      let loopCount = cue.loopCount !== undefined ? cue.loopCount : 0;
+      let jumpRef = cue.jumpRef;
 
       if (line.annotation) {
         const v = this.annotationManager.getValue(line.annotation, 'volume');
@@ -388,6 +419,15 @@ export class SoundFeature implements FeaturePlugin {
 
         const fo = this.annotationManager.getValue(line.annotation, 'fade-out');
         if (fo !== undefined) fadeOut = fo;
+
+        const eb = this.annotationManager.getValue(line.annotation, 'end-behaviour');
+        if (eb !== undefined) endBehaviour = eb as EndBehaviour;
+
+        const lc = this.annotationManager.getValue(line.annotation, 'loop-count');
+        if (lc !== undefined) loopCount = lc;
+
+        const jr = this.annotationManager.getValue(line.annotation, 'jump-ref');
+        if (jr !== undefined) jumpRef = jr;
       }
 
       player.volume = (volume || (AppConfig.audio.defaultVolume * 100)) / 100
@@ -413,6 +453,24 @@ export class SoundFeature implements FeaturePlugin {
         }
       }
 
+      // Clear any existing loop count tracking for this player
+      this.playerLoopCounts.delete(player.id);
+
+      // Set up onEnded callback for behaviours
+      player.onEnded(() => {
+        this.handleEndBehaviour(player, {
+          endBehaviour,
+          loopCount,
+          jumpRef,
+          startTimeSeconds: start,
+          endTimeSeconds: end,
+          fadeInDurationMs: fadeIn,
+          fadeOutDurationMs: fadeOut,
+          panStart: pStart,
+          panEnd: pEnd
+        }, lineId);
+      });
+
       await player.play({
         startTimeSeconds: start,
         endTimeSeconds: end,
@@ -423,6 +481,63 @@ export class SoundFeature implements FeaturePlugin {
       });
     } catch (error) {
       console.error(`[Sound Feature] Failed to play cue ${cue.id}:`, error)
+    }
+  }
+
+  private async handleEndBehaviour(player: any, options: any, currentLineId: string) {
+    const { endBehaviour, loopCount, jumpRef } = options;
+
+    if (endBehaviour === 'none') return;
+
+    if (endBehaviour === 'loop') {
+      let currentLoops = this.playerLoopCounts.get(player.id) || 0;
+      
+      // loopCount 0 means indefinite
+      if (loopCount === 0 || currentLoops < loopCount) {
+        this.playerLoopCounts.set(player.id, currentLoops + 1);
+        
+        // Re-play the sound with same options
+        await player.play({
+          startTimeSeconds: options.startTimeSeconds,
+          endTimeSeconds: options.endTimeSeconds,
+          fadeInDurationMs: options.fadeInDurationMs,
+          fadeOutDurationMs: options.fadeOutDurationMs,
+          panStart: options.panStart,
+          panEnd: options.panEnd
+        });
+      } else {
+        this.playerLoopCounts.delete(player.id);
+      }
+    } else if (endBehaviour === 'next-line') {
+      const lines = this.appStore.getLines();
+      const currentIndex = this.appStore.getLineIndex(currentLineId);
+      if (currentIndex !== -1 && currentIndex < lines.length - 1) {
+        this.actionController.dispatch({
+          type: ACTION_TYPES.SELECT_LINE,
+          payload: { lineId: lines[currentIndex + 1].id }
+        });
+      }
+    } else if (endBehaviour === 'next-cue') {
+      const lines = this.appStore.getLines();
+      const currentIndex = this.appStore.getLineIndex(currentLineId);
+      if (currentIndex !== -1) {
+        const nextCue = lines.slice(currentIndex + 1).find(l => l.lineType === LineType.SOUND_CUE);
+        if (nextCue) {
+          this.actionController.dispatch({
+            type: ACTION_TYPES.SELECT_LINE,
+            payload: { lineId: nextCue.id }
+          });
+        }
+      }
+    } else if (endBehaviour === 'jump-to' && jumpRef) {
+      const lines = this.appStore.getLines();
+      const targetCue = lines.find(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef === jumpRef);
+      if (targetCue) {
+        this.actionController.dispatch({
+          type: ACTION_TYPES.SELECT_LINE,
+          payload: { lineId: targetCue.id }
+        });
+      }
     }
   }
 
@@ -458,5 +573,6 @@ export class SoundFeature implements FeaturePlugin {
   private handleStopSound(action: any): void {
     const { cueId } = action.payload;
     this.audioPlaybackManager.stopCues([cueId])
+    this.playerLoopCounts.delete(cueId)
   }
 }

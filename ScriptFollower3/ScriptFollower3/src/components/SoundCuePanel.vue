@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, onBeforeUnmount, computed, watch, watchEffect } from 'vue';
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager';
-import type { IAudioPlayer, ScriptLineBase, SoundCue } from '@/types/core';
+import type { IAudioPlayer, ScriptLineBase, SoundCue, EndBehaviour } from '@/types/core';
 import type { AppStore } from '@/store/AppStore';
 import type { ActionController } from '@/core/ActionController';
 import type { AnnotationManager } from '@/core/AnnotationManager';
@@ -29,6 +29,11 @@ const startTime = ref(0);
 const endTime = ref(0);
 const fadeIn = ref(0);
 const fadeOut = ref(0);
+
+const endBehaviour = ref<EndBehaviour>('none');
+const loopCount = ref(0);
+const jumpRef = ref('');
+
 // Initialize with correctly resolved channel ID to prevent race conditions/mismatches on mount
 const selectedChannelId = ref(appStore.resolveChannelId(props.line, annotationManager));
 
@@ -132,6 +137,10 @@ const parseAnnotations = () => {
   fadeIn.value = get('fade-in', 0);
   fadeOut.value = get('fade-out', 0);
   
+  endBehaviour.value = get('end-behaviour', 'none');
+  loopCount.value = get('loop-count', 0);
+  jumpRef.value = get('jump-ref', '');
+
   selectedChannelId.value = resolveChannelId();
 
   const stopValue = get('stop', null);
@@ -168,7 +177,10 @@ const updateAnnotations = () => {
     'fade-in': fadeIn.value > 0 ? fadeIn.value : null,
     'fade-out': fadeOut.value > 0 ? fadeOut.value : null,
     'chan': chanToStore,
-    'stop': stopValue
+    'stop': stopValue,
+    'end-behaviour': endBehaviour.value !== 'none' ? endBehaviour.value : null,
+    'loop-count': endBehaviour.value === 'loop' && loopCount.value > 0 ? loopCount.value : null,
+    'jump-ref': endBehaviour.value === 'jump-to' && jumpRef.value ? jumpRef.value : null
   });
   
   if (props.line.annotation !== annotationString) {
@@ -200,7 +212,7 @@ const toggleStopRef = (refId: string) => {
   }
 };
 
-watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId], () => {
+watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId, endBehaviour, loopCount, jumpRef], () => {
   updateAnnotations();
 }, { deep: true });
 
@@ -227,7 +239,10 @@ const togglePlayback = () => {
       endOffsetSeconds: endTime.value,
       fadeIn: fadeIn.value,
       fadeOut: fadeOut.value,
-      channelId: selectedChannelId.value
+      channelId: selectedChannelId.value,
+      endBehaviour: endBehaviour.value,
+      loopCount: loopCount.value,
+      jumpRef: jumpRef.value
     };
     
     actionController.dispatch({
@@ -294,7 +309,7 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
-    <!-- Stop Behaviour Section -->
+    <!-- Behaviour & Channel Section -->
     <div class="section-column">
       <div class="input-group">
         <label>Stop Behaviour</label>
@@ -328,6 +343,31 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+
+      <div class="input-group">
+        <label>End Behaviour</label>
+        <select v-model="endBehaviour" class="behaviour-select">
+          <option value="none">None</option>
+          <option value="loop">Loop</option>
+          <option value="next-line">Next Line</option>
+          <option value="next-cue">Next Cue</option>
+          <option value="jump-to">Jump to Reference</option>
+        </select>
+      </div>
+
+      <div v-if="endBehaviour === 'loop'" class="input-group nested-input">
+        <label>Loop Count (0 = infinite)</label>
+        <input type="number" v-model.number="loopCount" min="0" step="1" />
+      </div>
+
+      <div v-if="endBehaviour === 'jump-to'" class="input-group nested-input">
+        <label>Jump to Cue Reference</label>
+        <div class="input-row">
+          <span class="ref-symbol">#</span>
+          <input type="text" v-model="jumpRef" placeholder="e.g. 0005" />
+        </div>
+      </div>
+
       <div class="input-group">
         <label>Virtual Channel</label>
         <select v-model="selectedChannelId" class="channel-select">
@@ -387,11 +427,11 @@ onBeforeUnmount(() => {
         <input type="number" v-model.number="startTime" step="0.1" min="0" :disabled="!soundCue" />
       </div>
       <div class="input-group">
-        <label>Fade In</label>
+        <label>Fade In (ms)</label>
         <input type="number" v-model.number="fadeIn" step="100" min="0" />
       </div>
       <div class="input-group">
-        <label>Fade Out</label>
+        <label>Fade Out (ms)</label>
         <input type="number" v-model.number="fadeOut" step="100" min="0" />
       </div>
       <div class="input-group">
@@ -409,4 +449,39 @@ onBeforeUnmount(() => {
 <style scoped>
 @import '../css/SoundCuePanel.css';
 
+.behaviour-select {
+  width: 100%;
+  padding: 6px;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: 4px;
+}
+
+.input-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.ref-symbol {
+  padding: 0 8px;
+  background: var(--palette-gray-800);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+}
+
+.input-row input {
+  flex: 1;
+  border-radius: 0 4px 4px 0;
+}
+
+.nested-input {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--palette-gray-700);
+}
 </style>
