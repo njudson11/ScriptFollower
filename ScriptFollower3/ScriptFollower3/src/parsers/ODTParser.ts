@@ -15,14 +15,17 @@ export class ODTParser implements IDocumentParser {
       ignoreAttributes: false,
       attributeNamePrefix: '@_',
       processEntities: true,
-      trimValues: false
+      trimValues: false,
+      parseTagValue: false
     })
 
     this.orderedParser = new XMLParser({
       ignoreAttributes: false,
       preserveOrder: true,
       attributeNamePrefix: '@_',
-      trimValues: false
+      processEntities: true,
+      trimValues: false,
+      parseTagValue: false
     })
 
     this.builder = new XMLBuilder({
