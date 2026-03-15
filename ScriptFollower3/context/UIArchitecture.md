@@ -17,10 +17,11 @@ App.vue (Root)
 └── RightPanel
     ├── TabHeader
     │   └── CollapseButton
-    ├── DocumentInfoPanel
-    │   ├── CharacterColors (List + Pickers)
-    │   ├── UIHighlightingColors (Pickers for Active Line / Voice)
-    │   └── StyleTreeItem (recursive)
+    ├── TabContent
+    │   ├── ActionPanel (Contextual)
+    │   ├── MasterAudioPanel
+    │   ├── LineDataPanel
+    │   └── DocumentInfoPanel
     └── LineDataPanel
 ```
 
@@ -39,26 +40,34 @@ To maintain a clean codebase and support global theming:
 ## Core Components
 
 ### App.vue
-Root component that initializes all managers and provides them to the tree. It manages the high-level grid layout and PWA lifecycle.
+Root component that initializes all managers and provides them to the tree. It manages the high-level grid layout, PWA lifecycle, and **Global Drag and Drop** for project loading.
 
-### DocumentInfoPanel.vue
-The central hub for UI customization and document metadata.
-- **Dynamic Theming**: Allows users to customize character dialogue background colors and global highlight colors (Active Line, Voice Match) via color pickers.
-- **Store Sync**: Updates to these colors are synchronized through the `AppStore`, which dynamically updates CSS variables on `document.documentElement` for immediate visual feedback.
+### DocumentViewer.vue
+The central script area. Standardizes line rendering with a vertical stack: content on top, custom controls (like Trigger buttons) in the middle, and annotations at the bottom.
+
+### RightPanel.vue
+Context-sensitive sidebar that manages several diagnostic and control tabs.
+- **Action Tab (New)**: Displays contextual controls for the currently selected line.
+    - If a sound cue is selected, it shows the full `SoundCuePanel`.
+    - If a dialogue or stage direction with actions is selected, it shows the `BaseCuePanel`.
+- **Master Audio Tab**: Global mixing desk and hardware routing.
+- **Line Data Tab**: Raw metadata and XML debugging.
+- **Doc Info Tab**: Global project settings and character colour mapping.
+
+**Contextual Switching Logic**:
+- When a line is selected, the panel automatically switches to the **Action** tab if the line has registered contextual actions.
+- If no line is selected, it defaults to **Doc Info** (if a script is loaded) or **Master Audio**.
 
 ## Global Interactions
 
 ### 1. Action Controller
-The central hub for user intent. Components dispatch actions (e.g., `LOAD_DOCUMENT`, `SELECT_LINE`), and features register handlers to process them. This ensures a clean decoupling between UI components and the underlying business logic.
+The central hub for user intent. Components dispatch actions (e.g., `LOAD_DOCUMENT`, `TRIGGER_LINE_ACTION`), and features register handlers to process them.
 
 ### 2. Drag and Drop
 The application supports global drag-and-drop for streamlined project loading:
 - **Global Drop Zone**: The entire `App.vue` container acts as a drop target.
-- **Recursive Processing**: Handles dropped folders and multiple files using recursive file tree traversal.
-- **Smart Logic**: 
-    - Dropping a single `.odt` file triggers `LOAD_DOCUMENT`.
-    - Dropping a folder or a mix of files triggers `LOAD_SOUNDS`, which attempts to match sounds to the script and can even load an `.odt` found within the folder.
-- **Visual Feedback**: A full-screen blurred overlay with an upload icon appears when files are dragged over the window.
+- **Smart Logic**: Handles dropped folders and multiple files (e.g., `.odt` scripts and associated sound directories).
+- **Visual Feedback**: A blurred overlay with an upload icon appears when files are dragged over the window.
 
 ## State Management with AppStore
 

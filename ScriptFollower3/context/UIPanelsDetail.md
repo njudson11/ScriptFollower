@@ -30,9 +30,12 @@
 **Width:** Flexible (flex: 1)  
 **Responsibilities:**
 - Primary script reading interface.
-- Full-detail rendering of script lines (Dialogue, Cues, Headings).
+- **Standardized Line Stack**: All line renderers follow a vertical standard:
+    1. **Content Row**: The main text (e.g., Dialogue, Stage Direction).
+    2. **Control Row**: Contextual buttons (like **Trigger** or Play) and status (remaining time).
+    3. **Annotation Row**: Brace-syntax metadata.
 - **Sticky Scroll**: Automatic alignment of the active line to a consistent vertical position.
-- **Interactions**: Direct playback of sound cues and manual selection.
+- **Interactions**: Direct playback of sound cues and manual trigger of actions.
 
 ### 4. RightPanel
 
@@ -40,19 +43,21 @@
 **Width:** Fixed (350px via `--right-panel-width`)  
 **Collapsible:** Collapses to a 40px icon strip.
 **Responsibilities:**
-- **Tabbed Interface**: Swaps between `DocumentInfoPanel` and `LineDataPanel`.
-- **Mixing Hub**: Host for the `MasterAudioPanel` (when active) for virtual channel management.
+- Context-sensitive data managed through a tabbed interface.
 
-### 5. DocumentInfoPanel
+#### Tabs:
+- **Action (Contextual)**: 
+    - The default tab when a line with actions is selected.
+    - Displays specialized controls like the `SoundCuePanel` (for audio) or `BaseCuePanel` (for shared stop/end logic).
+- **Master Audio**: Detailed virtual channel mixing desk and hardware output routing.
+- **Line Data**:
+    - **Detail View**: Full metadata dump for the currently selected line.
+    - **XML Debugger**: Pretty-printed view of raw ODT/XML attributes for the line.
+- **Doc Info**: Global project settings, character colour mapping, and hierarchical style tree.
 
+### 5. TouchControls
+
+**Location:** Screen overlay (bottom-right)  
 **Responsibilities:**
-- **Metadata**: Display document name, format, and creation date.
-- **Character Management**: Interface for assigning custom colors to character dialogue.
-- **UI Customization**: Global color pickers for the Active Line border and Voice Match highlights.
-- **Style Tree**: Hierarchical view of document-level styles.
-
-### 6. LineDataPanel
-
-**Responsibilities:**
-- **Detail View**: Full metadata dump for the currently selected line.
-- **XML Debugger**: Pretty-printed view of raw ODT/XML attributes for the line.
+- Large navigation buttons (Up / Trigger / Down) for tablet use.
+- Automatically toggles visibility based on touch-device detection.

@@ -12,23 +12,19 @@ import SoundCuePanel from '@/components/SoundCuePanel.vue'
 import { markRaw } from 'vue'
 import type { AnnotationManager } from '@/core/AnnotationManager'
 import type { LineSelectionManager } from '@/core/LineSelectionManager'
+import { BaseCueFeature } from './BaseCueFeature'
 
 /**
  * Feature responsible for managing sound cues and playback.
+ * Inherits base cue behaviours like stop and end behaviours.
  */
-export class SoundFeature implements FeaturePlugin {
-  readonly id = 'sound-feature'
-  readonly name = 'Sound Cues'
-  readonly version = '1.0.0'
-  readonly description = 'Provides playback controls for sound cues within the script.'
+export class SoundFeature extends BaseCueFeature {
+  readonly id: string = 'sound-feature'
+  readonly name: string = 'Sound Cues'
+  readonly version: string = '1.1.0'
+  readonly description: string = 'Provides playback controls for sound cues within the script.'
 
-  private featureManager: FeatureManager
-  private actionController: ActionController
   private audioPlaybackManager: AudioPlaybackManager
-  private appStore: AppStore
-  private eventBus: EventBus
-  private annotationManager: AnnotationManager
-  private selectionManager: LineSelectionManager
   private unregisterActions: Array<() => void> = []
   private unregisterEvents: Array<() => void> = []
 
@@ -50,13 +46,8 @@ export class SoundFeature implements FeaturePlugin {
     annotationManager: AnnotationManager,
     selectionManager: LineSelectionManager
   ) {
-    this.featureManager = featureManager
-    this.actionController = actionController
+    super(featureManager, actionController, appStore, annotationManager, eventBus, selectionManager);
     this.audioPlaybackManager = audioPlaybackManager
-    this.appStore = appStore
-    this.eventBus = eventBus
-    this.annotationManager = annotationManager
-    this.selectionManager = selectionManager
 
     this.boundHandlePlaySound = this.handlePlaySound.bind(this);
     this.boundHandleStopSound = this.handleStopSound.bind(this);
@@ -64,7 +55,9 @@ export class SoundFeature implements FeaturePlugin {
   }
 
   getAnnotations(): Annotation[] {
+    // Combine base annotations with sound-specific ones
     return [
+      ...super.getAnnotations(),
       {
         name: 'volume',
         description: 'Sound volume (0-100)',
@@ -157,41 +150,6 @@ export class SoundFeature implements FeaturePlugin {
         constraints: { min: 0 },
         parseValue: (val) => parseFloat(val),
         validateValue: (val) => val >= 0
-      },
-      {
-        name: 'stop',
-        description: 'Stop behaviour: "previous", "all", or a comma-separated list of SoundRefs e.g., "[0001,0002]"',
-        type: 'string',
-        parseValue: (val) => val.trim(),
-        validateValue: (val) => {
-          if (val === 'all' || val === 'previous') return true;
-          return /^\[\s*\w+(\s*,\s*\w+)*\s*\]$/.test(val);
-        }
-      },
-      {
-        name: 'end-behaviour',
-        description: 'Behaviour when playback ends: "none", "loop", "next-line", "next-cue", "jump-to"',
-        type: 'enum',
-        defaultValue: 'none',
-        constraints: { enum: ['none', 'loop', 'next-line', 'next-cue', 'jump-to'] },
-        parseValue: (val) => val.trim().toLowerCase(),
-        validateValue: (val) => ['none', 'loop', 'next-line', 'next-cue', 'jump-to'].includes(val)
-      },
-      {
-        name: 'loop-count',
-        description: 'Number of times to loop (0 for indefinite)',
-        type: 'number',
-        defaultValue: 0,
-        constraints: { min: 0 },
-        parseValue: (val) => parseInt(val, 10),
-        validateValue: (val) => !isNaN(val) && val >= 0
-      },
-      {
-        name: 'jump-ref',
-        description: 'Cue reference to jump to when playback ends',
-        type: 'string',
-        parseValue: (val) => val.trim(),
-        validateValue: (val) => val.length > 0
       }
     ]
   }
@@ -207,14 +165,16 @@ export class SoundFeature implements FeaturePlugin {
         isActive: (context) => {
           if (!context.hasDocument || !context.currentLineId) return false;
           const line = this.appStore.getLineById(context.currentLineId);
-          return line?.lineType === LineType.SOUND_CUE && (!!line.metadata.sound || !!line.annotation);
+          // Only activate if this line actually has sound metadata.
+          // If it only has annotations, let BaseCueFeature handle it via Space.
+          return line?.lineType === LineType.SOUND_CUE && !!line.metadata.sound;
         },
       },
     ];
   }
 
   async init(): Promise<void> {
-    this.annotationManager.registerFeatureAnnotations(this.id, this.getAnnotations())
+    await super.init();
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
@@ -278,6 +238,7 @@ export class SoundFeature implements FeaturePlugin {
   }
 
   async destroy(): Promise<void> {
+    await super.destroy();
     this.unregisterActions.forEach(unreg => unreg())
     this.unregisterEvents.forEach(unreg => unreg())
     this.managedPlayerIds.clear()
@@ -336,7 +297,10 @@ export class SoundFeature implements FeaturePlugin {
     })
   }
 
-  private executeStopAction(lineId: string, stopValue: string): void {
+  /**
+   * Override executeStopAction to provide sound-specific implementation.
+   */
+  protected executeStopAction(lineId: string, stopValue: string): void {
     if (stopValue === 'all') {
       this.audioPlaybackManager.stopAll();
     } else if (stopValue === 'previous') {
@@ -375,6 +339,8 @@ export class SoundFeature implements FeaturePlugin {
       const line = this.appStore.getLineById(lineId);
       if (!line) return;
 
+      // BaseCueFeature already handles 'stop' on line selection, 
+      // but manual play might still want to trigger it if not already triggered.
       const stopValue = this.annotationManager.getValue(line.annotation, 'stop');
       if (stopValue) {
         this.executeStopAction(lineId, stopValue);
@@ -456,19 +422,26 @@ export class SoundFeature implements FeaturePlugin {
       // Clear any existing loop count tracking for this player
       this.playerLoopCounts.delete(player.id);
 
-      // Set up onEnded callback for behaviours
+      // Set up onEnded callback using shared logic
       player.onEnded(() => {
-        this.handleEndBehaviour(player, {
+        this.handleEndBehaviour({
           endBehaviour,
           loopCount,
           jumpRef,
-          startTimeSeconds: start,
-          endTimeSeconds: end,
-          fadeInDurationMs: fadeIn,
-          fadeOutDurationMs: fadeOut,
-          panStart: pStart,
-          panEnd: pEnd
-        }, lineId);
+          currentLineId: lineId,
+          playerId: player.id,
+          loopTracker: this.playerLoopCounts,
+          onRestart: async () => {
+            await player.play({
+              startTimeSeconds: start,
+              endTimeSeconds: end,
+              fadeInDurationMs: fadeIn,
+              fadeOutDurationMs: fadeOut,
+              panStart: pStart,
+              panEnd: pEnd
+            });
+          }
+        });
       });
 
       await player.play({
@@ -481,63 +454,6 @@ export class SoundFeature implements FeaturePlugin {
       });
     } catch (error) {
       console.error(`[Sound Feature] Failed to play cue ${cue.id}:`, error)
-    }
-  }
-
-  private async handleEndBehaviour(player: any, options: any, currentLineId: string) {
-    const { endBehaviour, loopCount, jumpRef } = options;
-
-    if (endBehaviour === 'none') return;
-
-    if (endBehaviour === 'loop') {
-      let currentLoops = this.playerLoopCounts.get(player.id) || 0;
-      
-      // loopCount 0 means indefinite
-      if (loopCount === 0 || currentLoops < loopCount) {
-        this.playerLoopCounts.set(player.id, currentLoops + 1);
-        
-        // Re-play the sound with same options
-        await player.play({
-          startTimeSeconds: options.startTimeSeconds,
-          endTimeSeconds: options.endTimeSeconds,
-          fadeInDurationMs: options.fadeInDurationMs,
-          fadeOutDurationMs: options.fadeOutDurationMs,
-          panStart: options.panStart,
-          panEnd: options.panEnd
-        });
-      } else {
-        this.playerLoopCounts.delete(player.id);
-      }
-    } else if (endBehaviour === 'next-line') {
-      const lines = this.appStore.getLines();
-      const currentIndex = this.appStore.getLineIndex(currentLineId);
-      if (currentIndex !== -1 && currentIndex < lines.length - 1) {
-        this.actionController.dispatch({
-          type: ACTION_TYPES.SELECT_LINE,
-          payload: { lineId: lines[currentIndex + 1].id }
-        });
-      }
-    } else if (endBehaviour === 'next-cue') {
-      const lines = this.appStore.getLines();
-      const currentIndex = this.appStore.getLineIndex(currentLineId);
-      if (currentIndex !== -1) {
-        const nextCue = lines.slice(currentIndex + 1).find(l => l.lineType === LineType.SOUND_CUE);
-        if (nextCue) {
-          this.actionController.dispatch({
-            type: ACTION_TYPES.SELECT_LINE,
-            payload: { lineId: nextCue.id }
-          });
-        }
-      }
-    } else if (endBehaviour === 'jump-to' && jumpRef) {
-      const lines = this.appStore.getLines();
-      const targetCue = lines.find(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef === jumpRef);
-      if (targetCue) {
-        this.actionController.dispatch({
-          type: ACTION_TYPES.SELECT_LINE,
-          payload: { lineId: targetCue.id }
-        });
-      }
     }
   }
 
@@ -570,9 +486,17 @@ export class SoundFeature implements FeaturePlugin {
     });
   }
 
+  /**
+   * Handle generic stop action dispatched by BaseCueFeature or others.
+   */
   private handleStopSound(action: any): void {
-    const { cueId } = action.payload;
-    this.audioPlaybackManager.stopCues([cueId])
-    this.playerLoopCounts.delete(cueId)
+    const { cueId, mode, sourceLineId } = action.payload;
+    
+    if (cueId) {
+      this.audioPlaybackManager.stopCues([cueId]);
+      this.playerLoopCounts.delete(cueId);
+    } else if (mode && sourceLineId) {
+      this.executeStopAction(sourceLineId, mode);
+    }
   }
 }

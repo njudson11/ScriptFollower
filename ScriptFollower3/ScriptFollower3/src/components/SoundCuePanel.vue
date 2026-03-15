@@ -7,6 +7,7 @@ import type { ActionController } from '@/core/ActionController';
 import type { AnnotationManager } from '@/core/AnnotationManager';
 import { ACTION_TYPES } from '@/types/actions';
 import AudioWaveform from './AudioWaveform.vue';
+import BaseCuePanel from './BaseCuePanel.vue';
 import { LineType } from '@/types/core';
 import { ChevronDown, Play, Square, AlertCircle } from 'lucide-vue-next';
 
@@ -48,43 +49,6 @@ const currentPlayer = computed(() => {
   if (!soundCue.value) return null;
   return audioPlaybackManager.getPlayer(soundCue.value.id, soundCue.value.url, selectedChannelId.value);
 });
-
-// --- Stop Behaviour State ---
-const isStopDropdownOpen = ref(false);
-type StopMode = 'none' | 'previous' | 'all' | 'refs';
-const stopMode = ref<StopMode>('none');
-const selectedStopRefs = ref<string[]>([]);
-
-const recentSoundCues = computed(() => {
-  const allLines = appStore.getLines();
-  const currentIndex = appStore.getLineIndex(props.line.id);
-  if (currentIndex === -1) return [];
-
-  return allLines
-    .slice(0, currentIndex)
-    .filter(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef)
-    .slice(-5) 
-    .map(l => ({
-      ref: l.metadata.soundRef,
-      text: l.text,
-      lineNumber: l.lineNumber,
-      soundDescription: l.metadata.soundDescription || l.text 
-    }))
-    .reverse();
-});
-
-const stopDisplayValue = computed(() => {
-  switch (stopMode.value) {
-    case 'previous': return 'Stop Previous';
-    case 'all': return 'Stop All';
-    case 'refs':
-      if (selectedStopRefs.value.length === 0) return 'Select Cues...';
-      if (selectedStopRefs.value.length === 1) return `Stop [${selectedStopRefs.value[0]}]`;
-      return `Stop [${selectedStopRefs.value.length}] Cues`;
-    default: return 'None';
-  }
-});
-// --- End Stop Behaviour State ---
 
 // --- Jump Behaviour State ---
 const allSoundCues = computed(() => {
@@ -176,28 +140,9 @@ const parseAnnotations = () => {
   jumpRef.value = get('jump-ref', '');
 
   selectedChannelId.value = resolveChannelId();
-
-  const stopValue = get('stop', null);
-  if (stopValue === 'previous' || stopValue === 'all') {
-    stopMode.value = stopValue;
-    selectedStopRefs.value = [];
-  } else if (typeof stopValue === 'string' && stopValue.startsWith('[') && stopValue.endsWith(']')) {
-    stopMode.value = 'refs';
-    selectedStopRefs.value = stopValue.slice(1, -1).split(',').map(s => s.trim());
-  } else {
-    stopMode.value = 'none';
-    selectedStopRefs.value = [];
-  }
 };
 
 const updateAnnotations = () => {
-  let stopValue: string | null = null;
-  if (stopMode.value === 'previous' || stopMode.value === 'all') {
-    stopValue = stopMode.value;
-  } else if (stopMode.value === 'refs' && selectedStopRefs.value.length > 0) {
-    stopValue = `[${selectedStopRefs.value.join(',')}]`;
-  }
-
   const defaultChan = props.line.lineSubType || (appStore.state.virtualChannels[0]?.id || 'A');
   const chanToStore = selectedChannelId.value !== defaultChan ? selectedChannelId.value : null;
 
@@ -211,7 +156,6 @@ const updateAnnotations = () => {
     'fade-in': fadeIn.value > 0 ? fadeIn.value : null,
     'fade-out': fadeOut.value > 0 ? fadeOut.value : null,
     'chan': chanToStore,
-    'stop': stopValue,
     'end-behaviour': endBehaviour.value !== 'none' ? endBehaviour.value : null,
     'loop-count': endBehaviour.value === 'loop' && loopCount.value > 0 ? loopCount.value : null,
     'jump-ref': endBehaviour.value === 'jump-to' && jumpRef.value ? jumpRef.value : null
@@ -228,25 +172,7 @@ const updateAnnotations = () => {
   }
 };
 
-const setStopMode = (mode: StopMode) => {
-  stopMode.value = mode;
-  if (mode !== 'refs') {
-    selectedStopRefs.value = [];
-  }
-  isStopDropdownOpen.value = false;
-};
-
-const toggleStopRef = (refId: string) => {
-  stopMode.value = 'refs';
-  const index = selectedStopRefs.value.indexOf(refId);
-  if (index === -1) {
-    selectedStopRefs.value.push(refId);
-  } else {
-    selectedStopRefs.value.splice(index, 1);
-  }
-};
-
-watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId, endBehaviour, loopCount, jumpRef], () => {
+watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, selectedChannelId, endBehaviour, loopCount, jumpRef], () => {
   updateAnnotations();
 }, { deep: true });
 
@@ -343,40 +269,10 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
-    <!-- Behaviour & Channel Section -->
+    <!-- Combined Base Behaviours & Channel Section -->
     <div class="section-column">
-      <div class="input-group">
-        <label>Stop Behaviour</label>
-        <div class="custom-dropdown">
-          <button class="dropdown-toggle" @click="isStopDropdownOpen = !isStopDropdownOpen">
-            {{ stopDisplayValue }}
-            <ChevronDown :size="14" class="dropdown-arrow" />
-          </button>
-          <div v-if="isStopDropdownOpen" class="dropdown-menu stopBehaviour">
-            <button @click="setStopMode('none')">None</button>
-            <button @click="setStopMode('previous')">Stop Previous</button>
-            <button @click="setStopMode('all')">Stop All</button>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-header">Stop Specific Cues:</div>
-            <div v-for="cue in recentSoundCues" :key="cue.ref" class="checkbox-item">
-              <input 
-                type="checkbox" 
-                :id="`stop-ref-${cue.ref}`"
-                :value="cue.ref" 
-                :checked="selectedStopRefs.includes(cue.ref)"
-                @change="toggleStopRef(cue.ref)"
-              />
-              <label :for="`stop-ref-${cue.ref}`">
-                <span class="ref-id">[{{ cue.ref }}]</span> 
-                <span class="ref-text">{{ cue.soundDescription }}</span>
-              </label>
-            </div>
-             <div v-if="recentSoundCues.length === 0" class="no-recent-cues">
-              No recent sound cues found.
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Stop Behaviour handled by BaseCuePanel logic but UI included here for grouping -->
+      <BaseCuePanel :line="props.line" style="padding: 0;" />
 
       <div class="input-group">
         <label>End Behaviour</label>

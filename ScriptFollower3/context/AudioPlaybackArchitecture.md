@@ -22,8 +22,8 @@ interface AudioPlayOptions {
   endTimeSeconds?: number;
   fadeInDurationMs?: number;
   fadeOutDurationMs?: number;
-  panStart?: number; // -1.0 to 1.0
-  panEnd?: number;   // -1.0 to 1.0
+  panStart?: number; // -1.0 to 1.0 (Dynamic start position)
+  panEnd?: number;   // -1.0 to 1.0 (Dynamic end position)
 }
 
 interface IAudioPlayer {

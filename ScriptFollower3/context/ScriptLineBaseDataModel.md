@@ -178,6 +178,46 @@ All fields are `readonly` to ensure:
 3. **Performance**: Can safely cache and reference lines
 4. **Multi-threading ready**: No synchronization needed
 
+## Common Cue Behaviours
+
+To provide consistent interaction across different cue types, ScriptFollower 3 defines a `BaseCue` structure for shared automation and control logic.
+
+### BaseCue Interface
+```typescript
+interface BaseCue {
+  readonly stop?: string           // Stop behaviour: "all", "previous", or list of SoundRefs "[0001,0002]"
+  readonly endBehaviour?: EndBehaviour // Action to take when a timed event completes
+  readonly loopCount?: number      // For 'loop' behaviour: number of iterations (0 = indefinite)
+  readonly jumpRef?: string        // For 'jump-to' behaviour: target SoundRef to navigate to
+}
+```
+
+### EndBehaviour Type
+```typescript
+type EndBehaviour = 'none' | 'loop' | 'next-line' | 'next-cue' | 'jump-to';
+```
+
+## SoundCue Data Structure
+
+Specific cue types like `SoundCue` extend this base structure to add type-specific properties.
+
+```typescript
+interface SoundCue extends BaseCue {
+  readonly id: string
+  readonly url: string
+  readonly name: string
+  readonly volume: number          // 0-100
+  readonly pan: 'left' | 'right' | 'centre'
+  readonly panStart?: number       // -1.0 to 1.0 (Dynamic start balance)
+  readonly panEnd?: number         // -1.0 to 1.0 (Dynamic end balance)
+  readonly startOffsetSeconds?: number
+  readonly endOffsetSeconds?: number
+  readonly fadeIn?: number         // ms
+  readonly fadeOut?: number        // ms
+  readonly channelId: string       // Target mixing channel
+}
+```
+
 ## ID Generation
 
 IDs follow format: `line_{documentId}_{lineNumber}`

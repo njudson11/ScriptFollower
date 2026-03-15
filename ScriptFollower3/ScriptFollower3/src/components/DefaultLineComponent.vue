@@ -4,6 +4,9 @@ import { computed, inject } from 'vue'
 import type { ScriptLineBase } from '@/types/core'
 import type { AppStore } from '@/store/AppStore'
 import type { LineSelectionManager } from '@/core/LineSelectionManager'
+import type { ActionController } from '@/core/ActionController'
+import type { FeatureManager } from '@/core/FeatureManager'
+import { ACTION_TYPES } from '@/types/actions'
 import LineAnnotation from './LineAnnotation.vue'
 
 const props = defineProps({
@@ -20,10 +23,24 @@ const props = defineProps({
     default: ''
   }
 })
+
 const appStore = inject('appStore') as AppStore
 const selectionManager = inject('selectionManager') as LineSelectionManager
+const actionController = inject('actionController') as ActionController
+const featureManager = inject('featureManager') as FeatureManager
 
-const primaryHighlight = computed(() => selectionManager.getPrimaryHighlight(props.line.id))
+const hasAction = computed(() => {
+  const baseFeature = featureManager.getFeature('base-cue-feature') as any;
+  return baseFeature?.hasAction(props.line.id) || false;
+});
+
+const handleTrigger = (e: MouseEvent) => {
+  e.stopPropagation();
+  actionController.dispatch({
+    type: ACTION_TYPES.TRIGGER_LINE_ACTION,
+    payload: { lineId: props.line.id }
+  });
+};
 
 const lineClasses = computed(() => {
   const classes: string[] = ['script-line'];
@@ -33,49 +50,29 @@ const lineClasses = computed(() => {
   if (props.contextClass) {
     classes.push(props.contextClass);
   }
-  if (appStore.isLineSearchMatch(props.line.id)) {
-    classes.push('search-match');
-  }
-  if (primaryHighlight.value) {
-    classes.push(`highlight-${primaryHighlight.value.type.replace(':', '-')}`);
-  }
-  // Add generic classes from AppStore (e.g., line-type-SOUND-CUE)
   classes.push(...appStore.getLineClasses(props.line));
   return classes;
-});
+})
 
-const highlightStyle = computed(() => {
-  if (!primaryHighlight.value) return {};
-  const style = selectionManager.getHighlightStyle(primaryHighlight.value.type);
-  if (!style) return {};
-
-  const result: any = {
-    backgroundColor: style.backgroundColor,
-    color: style.color,
-    borderColor: style.borderColor,
-    borderWidth: style.borderWidth,
-    opacity: style.opacity
-  };
-
-  // Dynamically adjust opacity based on confidence score if available
-  if (primaryHighlight.value.type === 'voice:matched' && primaryHighlight.value.data?.score) {
-    const score = primaryHighlight.value.data.score;
-    result.backgroundColor = `rgba(76, 175, 80, ${Math.min(0.6, 0.1 + (score * 0.2))})`;
-  }
-
-  return result;
-});
+const isSearchMatch = computed(() => appStore.isLineSearchMatch(props.line.id))
 </script>
 
 <template>
-  <div :class="lineClasses" :style="highlightStyle">
-    <div class="line-type-badge">
-      {{ line.lineType }}
-    </div>
+  <div :class="lineClasses" :data-line-id="line.id">
     <div class="line-content">
-      <p class="line-text">{{ line.text }}</p>
-      <div class="line-meta">Line {{ line.lineNumber }}</div>
+      <div class="line-text" :class="{ 'search-match': isSearchMatch }">
+        {{ line.text }}
+      </div>
     </div>
+    
+    <!-- Action row below content -->
+    <div class="line-actions" v-if="hasAction">
+      <button class="btn-trigger" @click="handleTrigger" title="Trigger Action (Space)">
+        <span class="icon">⚡</span>
+        <span class="label">Trigger</span>
+      </button>
+    </div>
+
     <LineAnnotation v-if="line.annotation" :annotation="line.annotation" />
   </div>
 </template>

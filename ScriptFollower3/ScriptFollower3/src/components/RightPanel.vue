@@ -22,37 +22,52 @@ const currentLine = computed((): ScriptLineBase | undefined => {
   return appStore.getLineById(currentLineId.value)
 })
 
-const isSoundCue = computed(() => currentLine.value?.lineType === LineType.SOUND_CUE)
+// Determine if there are "Action" components for this line
+const contextualActionComponent = computed(() => {
+  if (!currentLine.value) return null;
+  return featureManager.getLineRenderer(currentLine.value.lineType, 'right-panel');
+});
 
-type Tab = 'documentInfo' | 'lineData' | 'masterAudio' | 'soundCue';
+const hasActionTab = computed(() => !!contextualActionComponent.value);
+
+type Tab = 'documentInfo' | 'lineData' | 'masterAudio' | 'action';
 const activeTab = ref<Tab>('documentInfo');
 
 const masterAudioComponent = computed(() => {
-  // Use the new registration ID
   return featureManager.getLineRenderer('MASTER_AUDIO_PANEL' as any, 'right-panel');
 });
 
-const soundCueComponent = computed(() => {
-  if (!isSoundCue.value) return null;
-  return featureManager.getLineRenderer(LineType.SOUND_CUE, 'right-panel');
-});
-
 const getFirstVisibleTab = (): Tab => {
-  if (isSoundCue.value) return 'soundCue';
+  if (hasActionTab.value) return 'action';
   if (currentLine.value) return 'lineData';
   if (currentDocument.value) return 'documentInfo';
   return 'masterAudio'; // Fallback
 };
 
 const updateCurrentLine = () => {
-  currentLineId.value = selectionManager.getCurrentLine();
+  const newLineId = selectionManager.getCurrentLine();
+  const lineChanged = newLineId !== currentLineId.value;
+  currentLineId.value = newLineId;
   
   if (currentLineId.value) {
-    // If a line is selected, switch to the most relevant contextual tab
-    activeTab.value = getFirstVisibleTab();
+    if (lineChanged) {
+        // Force switch to 'action' tab if it's available for the new line
+        if (hasActionTab.value) {
+            activeTab.value = 'action';
+        } else {
+            activeTab.value = getFirstVisibleTab();
+        }
+    } else {
+        // Tab preservation logic for non-line-change updates
+        if (activeTab.value === 'action' && !hasActionTab.value) {
+            activeTab.value = getFirstVisibleTab();
+        }
+    }
   } else {
     // No line selected, default to document info if a document is loaded
-    activeTab.value = currentDocument.value ? 'documentInfo' : 'masterAudio';
+    if (activeTab.value !== 'masterAudio' && activeTab.value !== 'documentInfo') {
+        activeTab.value = currentDocument.value ? 'documentInfo' : 'masterAudio';
+    }
   }
 };
 
@@ -78,8 +93,8 @@ onMounted(() => {
   <div class="right-panel" :class="{ 'is-collapsed': appStore.state.isRightPanelCollapsed }">
     <div class="tab-header" v-if="!appStore.state.isRightPanelCollapsed">
       <div class="tab-buttons-wrapper">
-        <button v-if="isSoundCue" :class="{ active: activeTab === 'soundCue' }" @click="activeTab = 'soundCue'">
-          Sound Cue
+        <button v-if="hasActionTab" :class="{ active: activeTab === 'action' }" @click="activeTab = 'action'">
+          Action
         </button>
         <button :class="{ active: activeTab === 'masterAudio' }" @click="activeTab = 'masterAudio'">
           Master Audio
@@ -103,7 +118,7 @@ onMounted(() => {
     </div>
 
     <div class="panel-content" v-if="!appStore.state.isRightPanelCollapsed">
-        <component v-if="activeTab === 'soundCue' && soundCueComponent" :is="soundCueComponent" :line="currentLine" />
+        <component v-if="activeTab === 'action' && contextualActionComponent" :is="contextualActionComponent" :line="currentLine" />
         <LineDataPanel v-if="activeTab === 'lineData' && currentLine" :current-line="currentLine" :on-clear-selection="clearSelection" />
         <DocumentInfoPanel v-if="activeTab === 'documentInfo' && currentDocument" :current-document="currentDocument" />
         <component v-if="activeTab === 'masterAudio' && masterAudioComponent" :is="masterAudioComponent" />

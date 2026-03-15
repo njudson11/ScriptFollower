@@ -271,11 +271,21 @@ export interface IAudioOutputDevice {
 }
 
 /**
- * Configuration for a specific sound cue
+ * Configuration for basic cue behaviours (stop, end behaviour)
  */
 export type EndBehaviour = 'none' | 'loop' | 'next-line' | 'next-cue' | 'jump-to';
 
-export interface SoundCue {
+export interface BaseCue {
+  readonly stop?: string; // "all", "previous", or "[0001,0002]"
+  readonly endBehaviour?: EndBehaviour;
+  readonly loopCount?: number; // 0 for indefinite
+  readonly jumpRef?: string;   // Reference ID for 'jump-to' behaviour
+}
+
+/**
+ * Configuration for a specific sound cue
+ */
+export interface SoundCue extends BaseCue {
   readonly id: string;
   readonly url: string;
   readonly name: string;
@@ -288,9 +298,6 @@ export interface SoundCue {
   readonly fadeIn?: number; // ms
   readonly fadeOut?: number; // ms
   readonly channelId?: string; // Target virtual audio channel
-  readonly endBehaviour?: EndBehaviour;
-  readonly loopCount?: number; // 0 for indefinite
-  readonly jumpRef?: string;   // Reference ID for 'jump-to' behaviour
 }
 
 /**

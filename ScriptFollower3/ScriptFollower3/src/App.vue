@@ -27,6 +27,7 @@ import { PersistenceManager } from '@/core/PersistenceManager'
 import { AppConfig } from '@/config/AppConfig'
 import { useTouch } from '@/composables/useTouch'
 import { Upload } from 'lucide-vue-next'
+import { BaseCueFeature } from '@/features/BaseCueFeature'
 
 // Initialize core managers
 const eventBus = new EventBus()
@@ -153,6 +154,7 @@ onMounted(async () => {
 
   // Create features
   const features = [
+    new BaseCueFeature(featureManager, actionController, appStore, annotationManager, eventBus, selectionManager),
     new DialogueRenderingFeature(featureManager),
     new KeybindingFeature(featureManager, actionController, appStore, selectionManager),
     new NavigationFeature(featureManager, actionController, appStore, selectionManager),
