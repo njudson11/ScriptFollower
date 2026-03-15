@@ -26,6 +26,7 @@ import { AnnotationManager } from '@/core/AnnotationManager'
 import { PersistenceManager } from '@/core/PersistenceManager'
 import { AppConfig } from '@/config/AppConfig'
 import { useTouch } from '@/composables/useTouch'
+import { Upload } from 'lucide-vue-next'
 
 // Initialize core managers
 const eventBus = new EventBus()
@@ -54,6 +55,94 @@ watch(isTouchDevice, (isTouch) => {
   }
 }, { immediate: true });
 
+// Drag and Drop Logic
+const isDragging = ref(false)
+let dragCounter = 0
+
+const onDragEnter = (e: DragEvent) => {
+  e.preventDefault()
+  dragCounter++
+  if (e.dataTransfer?.types.includes('Files')) {
+    isDragging.value = true
+  }
+}
+
+const onDragLeave = (e: DragEvent) => {
+  e.preventDefault()
+  dragCounter--
+  if (dragCounter <= 0) {
+    isDragging.value = false
+    dragCounter = 0
+  }
+}
+
+const onDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const traverseFileTree = async (item: any, path?: string): Promise<File[]> => {
+  path = path || ''
+  if (item.isFile) {
+    return new Promise((resolve) => {
+      item.file((file: File) => {
+        resolve([file])
+      })
+    })
+  } else if (item.isDirectory) {
+    const dirReader = item.createReader()
+    const entries: any[] = await new Promise((resolve) => {
+      dirReader.readEntries((results: any[]) => {
+        resolve(results)
+      })
+    })
+    
+    const files: File[] = []
+    for (const entry of entries) {
+      const childFiles = await traverseFileTree(entry, path + item.name + '/')
+      files.push(...childFiles)
+    }
+    return files
+  }
+  return []
+}
+
+const onDrop = async (e: DragEvent) => {
+  e.preventDefault()
+  isDragging.value = false
+  dragCounter = 0
+
+  if (!e.dataTransfer || !e.dataTransfer.items) return
+
+  const files: File[] = []
+  const items = Array.from(e.dataTransfer.items)
+  
+  for (const item of items) {
+    if (item.kind === 'file') {
+      const entry = item.webkitGetAsEntry()
+      if (entry) {
+        const foundFiles = await traverseFileTree(entry)
+        files.push(...foundFiles)
+      }
+    }
+  }
+
+  if (files.length === 0) return
+
+  // Logic: 
+  // 1. If exactly one .odt file and nothing else, LOAD_DOCUMENT
+  // 2. Otherwise, treat as a potential project folder/collection of sounds, LOAD_SOUNDS
+  
+  const odtFiles = files.filter(f => f.name.toLowerCase().endsWith('.odt'))
+  
+  if (files.length === 1 && odtFiles.length === 1) {
+    actionController.dispatch({ type: ACTION_TYPES.LOAD_DOCUMENT, payload: { file: files[0] } })
+  } else {
+    actionController.dispatch({ type: ACTION_TYPES.LOAD_SOUNDS, payload: { files } })
+  }
+}
 
 onMounted(async () => {
   // Initialize persistence layer first to load saved state
@@ -148,10 +237,26 @@ const gridTemplateColumns = computed(() => {
 <template>
   <div 
     class="app-container" 
-    :class="{ 'has-touch-controls': isTouchDevice }"
+    :class="{ 
+      'has-touch-controls': isTouchDevice,
+      'is-dragging': isDragging
+    }"
     ref="appContainerRef" 
     v-if="isInitialized"
+    @dragenter="onDragEnter"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
   >
+    <!-- Drag Overlay -->
+    <div v-if="isDragging" class="drag-overlay">
+      <div class="drag-message">
+        <Upload :size="48" />
+        <h2>Drop to Load</h2>
+        <p>Drop an .odt script or a folder of sound files</p>
+      </div>
+    </div>
+
     <Toolbar 
       @file-upload="onFileUpload" 
       @sounds-upload="onSoundsUpload"
@@ -186,5 +291,42 @@ const gridTemplateColumns = computed(() => {
   height: 100vh;
   font-size: 1.2em;
   color: var(--color-text-secondary);
+}
+
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* Let the drop event pass through to the container */
+}
+
+.drag-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: white;
+  text-align: center;
+  padding: 40px;
+  border: 3px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+}
+
+.drag-message h2 {
+  margin: 0;
+  font-size: 2em;
+}
+
+.drag-message p {
+  margin: 0;
+  opacity: 0.8;
 }
 </style>

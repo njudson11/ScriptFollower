@@ -46,6 +46,20 @@ The central hub for UI customization and document metadata.
 - **Dynamic Theming**: Allows users to customize character dialogue background colors and global highlight colors (Active Line, Voice Match) via color pickers.
 - **Store Sync**: Updates to these colors are synchronized through the `AppStore`, which dynamically updates CSS variables on `document.documentElement` for immediate visual feedback.
 
+## Global Interactions
+
+### 1. Action Controller
+The central hub for user intent. Components dispatch actions (e.g., `LOAD_DOCUMENT`, `SELECT_LINE`), and features register handlers to process them. This ensures a clean decoupling between UI components and the underlying business logic.
+
+### 2. Drag and Drop
+The application supports global drag-and-drop for streamlined project loading:
+- **Global Drop Zone**: The entire `App.vue` container acts as a drop target.
+- **Recursive Processing**: Handles dropped folders and multiple files using recursive file tree traversal.
+- **Smart Logic**: 
+    - Dropping a single `.odt` file triggers `LOAD_DOCUMENT`.
+    - Dropping a folder or a mix of files triggers `LOAD_SOUNDS`, which attempts to match sounds to the script and can even load an `.odt` found within the folder.
+- **Visual Feedback**: A full-screen blurred overlay with an upload icon appears when files are dragged over the window.
+
 ## State Management with AppStore
 
 The `AppStore` holds the reactive state for the entire UI, including:
