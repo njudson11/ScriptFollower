@@ -21,6 +21,10 @@ const actionController = inject('actionController') as ActionController;
 
 const volume = ref(100);
 const balance = ref(0);
+const panStart = ref(0);
+const panEnd = ref(0);
+const isDynamicPan = ref(false);
+
 const startTime = ref(0);
 const endTime = ref(0);
 const fadeIn = ref(0);
@@ -81,7 +85,10 @@ const availableChannels = computed(() => appStore.state.virtualChannels);
 watchEffect(() => {
   if (currentPlayer.value) {
     currentPlayer.value.volume = volume.value / 100;
-    currentPlayer.value.balance = balance.value;
+    // Only update static balance if dynamic pan is not active
+    if (!isDynamicPan.value) {
+      currentPlayer.value.balance = balance.value;
+    }
   }
 });
 
@@ -106,6 +113,19 @@ const parseAnnotations = () => {
   else if (panVal === 'right') balance.value = 1;
   else if (panVal === 'centre') balance.value = 0;
   else balance.value = typeof panVal === 'number' ? panVal : parseFloat(panVal) || 0;
+
+  const ps = get('pan-start', undefined);
+  const pe = get('pan-end', undefined);
+  
+  if (ps !== undefined || pe !== undefined) {
+    isDynamicPan.value = true;
+    panStart.value = ps !== undefined ? ps : balance.value;
+    panEnd.value = pe !== undefined ? pe : balance.value;
+  } else {
+    isDynamicPan.value = false;
+    panStart.value = balance.value;
+    panEnd.value = balance.value;
+  }
 
   startTime.value = get('start', 0);
   endTime.value = get('end', 0);
@@ -140,7 +160,9 @@ const updateAnnotations = () => {
 
   const annotationString = annotationManager.update(props.line.annotation, {
     'volume': volume.value !== 100 ? volume.value : null,
-    'pan': balance.value !== 0 ? balance.value.toFixed(1) : null,
+    'pan': !isDynamicPan.value && balance.value !== 0 ? balance.value.toFixed(1) : null,
+    'pan-start': isDynamicPan.value ? panStart.value.toFixed(1) : null,
+    'pan-end': isDynamicPan.value ? panEnd.value.toFixed(1) : null,
     'start': startTime.value > 0 ? startTime.value.toFixed(2) : null,
     'end': endTime.value > 0 ? endTime.value.toFixed(2) : null,
     'fade-in': fadeIn.value > 0 ? fadeIn.value : null,
@@ -178,7 +200,7 @@ const toggleStopRef = (refId: string) => {
   }
 };
 
-watch([volume, balance, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId], () => {
+watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, stopMode, selectedStopRefs, selectedChannelId], () => {
   updateAnnotations();
 }, { deep: true });
 
@@ -199,6 +221,8 @@ const togglePlayback = () => {
       ...soundCue.value,
       volume: volume.value,
       pan: (balance.value < -0.1 ? 'left' : balance.value > 0.1 ? 'right' : 'centre') as any, 
+      panStart: isDynamicPan.value ? panStart.value : undefined,
+      panEnd: isDynamicPan.value ? panEnd.value : undefined,
       startOffsetSeconds: startTime.value,
       endOffsetSeconds: endTime.value,
       fadeIn: fadeIn.value,
@@ -211,7 +235,7 @@ const togglePlayback = () => {
       payload: { 
         cue: updatedCue, 
         lineId: props.line.id,
-        overridePan: balance.value 
+        overridePan: isDynamicPan.value ? undefined : balance.value 
       }
     });
   }
@@ -321,8 +345,25 @@ onBeforeUnmount(() => {
       </div>
       
       <div class="input-group">
-        <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Centre' }} ({{ balance.toFixed(1) }})</label>
-        <input type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label>Balance: {{ balance < 0 ? 'Left' : balance > 0 ? 'Right' : 'Centre' }} ({{ balance.toFixed(1) }})</label>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" id="dynamic-pan-toggle" v-model="isDynamicPan" />
+            <label for="dynamic-pan-toggle" style="margin:0; font-size: 10px; cursor: pointer;">Dynamic Pan</label>
+          </div>
+        </div>
+        <input v-if="!isDynamicPan" type="range" min="-1" max="1" step="0.1" v-model.number="balance" />
+        
+        <div v-if="isDynamicPan" style="display: flex; gap: 12px; margin-top: 4px;">
+          <div class="input-group">
+            <label>Start: {{ panStart.toFixed(1) }}</label>
+            <input type="range" min="-1" max="1" step="0.1" v-model.number="panStart" />
+          </div>
+          <div class="input-group">
+            <label>End: {{ panEnd.toFixed(1) }}</label>
+            <input type="range" min="-1" max="1" step="0.1" v-model.number="panEnd" />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -335,6 +376,8 @@ onBeforeUnmount(() => {
         v-model:endTime="endTime"
         v-model:fadeIn="fadeIn"
         v-model:fadeOut="fadeOut"
+        :panStart="isDynamicPan ? panStart : balance"
+        :panEnd="isDynamicPan ? panEnd : balance"
       />
     </div>
 

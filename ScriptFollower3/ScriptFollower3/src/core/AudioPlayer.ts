@@ -1,4 +1,4 @@
-import { IAudioPlayer } from '@/types/core';
+import { IAudioPlayer, AudioPlayOptions } from '@/types/core';
 
 export class AudioPlayer implements IAudioPlayer {
   readonly id: string;
@@ -17,6 +17,7 @@ export class AudioPlayer implements IAudioPlayer {
   private _balance = 0.0;
   private _startTime = 0; // When playback started in audioContext time
   private _offset = 0;    // Current offset within the buffer
+  private _panningActive = false; // Flag to indicate if a panning transition is active
 
   private _loadStatus: 'idle' | 'loading' | 'decoding' | 'loaded' | 'error' = 'idle';
   private _loadProgress = 0;
@@ -60,7 +61,7 @@ export class AudioPlayer implements IAudioPlayer {
     const wasPlaying = this._isPlaying;
     if (wasPlaying) this.stopSource();
     this._offset = Math.max(0, Math.min(value, this.duration));
-    if (wasPlaying) this.play();
+    if (wasPlaying) this.play({ startTimeSeconds: this._offset });
   }
 
   get volume() { return this._volume; }
@@ -72,7 +73,10 @@ export class AudioPlayer implements IAudioPlayer {
   get balance() { return this._balance; }
   set balance(value: number) {
     this._balance = Math.max(-1, Math.min(value, 1));
-    this.pannerNode.pan.setTargetAtTime(this._balance, this.audioContext.currentTime, 0.01);
+    // Only set balance directly if we are not currently doing a dynamic pan transition
+    if (!this._panningActive) {
+      this.pannerNode.pan.setTargetAtTime(this._balance, this.audioContext.currentTime, 0.01);
+    }
   }
 
   async load(): Promise<void> {
@@ -141,7 +145,16 @@ export class AudioPlayer implements IAudioPlayer {
     this.callbacks.onLoadProgress.forEach(cb => cb(this._loadProgress, this._loadStatus));
   }
 
-  async play(startTimeSeconds?: number, endTimeSeconds?: number, fadeInDurationMs?: number, fadeOutDurationMs?: number): Promise<void> {
+  async play(options: AudioPlayOptions = {}): Promise<void> {
+    const {
+      startTimeSeconds,
+      endTimeSeconds,
+      fadeInDurationMs,
+      fadeOutDurationMs,
+      panStart,
+      panEnd
+    } = options;
+
     if (!this._isLoaded) await this.load();
     if (!this.buffer) return;
     if (this._isPlaying) this.stopSource();
@@ -162,33 +175,49 @@ export class AudioPlayer implements IAudioPlayer {
     this.sourceNode.onended = () => {
       if (this._isPlaying) {
         this._isPlaying = false;
+        this._panningActive = false;
         this.callbacks.onEnded.forEach(cb => cb());
       }
     };
 
+    const now = this.audioContext.currentTime;
+
     if (fadeInDurationMs && fadeInDurationMs > 0) {
-      this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      this.gainNode.gain.linearRampToValueAtTime(this._volume, this.audioContext.currentTime + fadeInDurationMs / 1000);
+      this.gainNode.gain.setValueAtTime(0, now);
+      this.gainNode.gain.linearRampToValueAtTime(this._volume, now + fadeInDurationMs / 1000);
     } else {
-      this.gainNode.gain.setValueAtTime(this._volume, this.audioContext.currentTime);
+      this.gainNode.gain.setValueAtTime(this._volume, now);
     }
 
     const start = Math.max(0, Math.min(this._offset, this.duration));
-    let playDuration = undefined;
+    let playDuration = this.duration - start;
 
-    if (endTimeSeconds !== undefined || (fadeOutDurationMs && fadeOutDurationMs > 0)) {
-        const stopTime = endTimeSeconds !== undefined ? endTimeSeconds : this.duration;
-        playDuration = Math.max(0, stopTime - start);
-        
-        if (fadeOutDurationMs && fadeOutDurationMs > 0) {
-            const fadeOutStart = this.audioContext.currentTime + playDuration - (fadeOutDurationMs / 1000);
-            this.gainNode.gain.setValueAtTime(this._volume, Math.max(this.audioContext.currentTime, fadeOutStart));
-            this.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + playDuration);
-        }
+    if (endTimeSeconds !== undefined) {
+        playDuration = Math.max(0, endTimeSeconds - start);
+    }
+
+    // Dynamic Panning Implementation
+    if (panStart !== undefined && panEnd !== undefined && panStart !== panEnd) {
+      this._panningActive = true;
+      this.pannerNode.pan.setValueAtTime(panStart, now);
+      this.pannerNode.pan.linearRampToValueAtTime(panEnd, now + playDuration);
+    } else if (panStart !== undefined) {
+      this.pannerNode.pan.setValueAtTime(panStart, now);
+      this._panningActive = false;
+    } else {
+      // Use existing static balance
+      this.pannerNode.pan.setValueAtTime(this._balance, now);
+      this._panningActive = false;
+    }
+
+    if (fadeOutDurationMs && fadeOutDurationMs > 0) {
+        const fadeOutStart = now + playDuration - (fadeOutDurationMs / 1000);
+        this.gainNode.gain.setValueAtTime(this._volume, Math.max(now, fadeOutStart));
+        this.gainNode.gain.linearRampToValueAtTime(0, now + playDuration);
     }
 
     this.sourceNode.start(0, start, playDuration);
-    this._startTime = this.audioContext.currentTime;
+    this._startTime = now;
     this._isPlaying = true;
     this.callbacks.onPlay.forEach(cb => cb());
   }
@@ -198,6 +227,7 @@ export class AudioPlayer implements IAudioPlayer {
     this._offset = this.currentTime;
     this.stopSource();
     this._isPlaying = false;
+    this._panningActive = false;
     this.callbacks.onPause.forEach(cb => cb());
   }
 
@@ -205,6 +235,7 @@ export class AudioPlayer implements IAudioPlayer {
     this._offset = 0;
     this.stopSource();
     this._isPlaying = false;
+    this._panningActive = false;
     this.callbacks.onStop.forEach(cb => cb());
   }
 

@@ -133,7 +133,12 @@ const handleAdhocPlay = async () => {
     const start = adhocStartTime.value > 0 ? adhocStartTime.value : undefined;
     const end = adhocEndTime.value > 0 ? adhocEndTime.value : undefined;
     
-    await adhocPlayer.value.play(start, end, adhocFadeIn.value, adhocFadeOut.value);
+    await adhocPlayer.value.play({
+      startTimeSeconds: start,
+      endTimeSeconds: end,
+      fadeInDurationMs: adhocFadeIn.value,
+      fadeOutDurationMs: adhocFadeOut.value
+    });
   }
 };
 
@@ -393,6 +398,8 @@ onBeforeUnmount(() => {
         v-model:endTime="adhocEndTime"
         v-model:fadeIn="adhocFadeIn"
         v-model:fadeOut="adhocFadeOut"
+        :panStart="adhocBalance"
+        :panEnd="adhocBalance"
       />
     </div>
 

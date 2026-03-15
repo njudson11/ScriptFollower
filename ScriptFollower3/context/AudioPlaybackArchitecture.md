@@ -6,13 +6,40 @@ This document outlines the architecture for the robust and flexible Audio Playba
 
 ## Core Component: AudioPlayer
 
-The `AudioPlayer` manages the lifecycle and playback of individual audio buffers. It handles loading, decoding, gain (volume), panning (balance), and precise timing for start/stop and fades.
+The `AudioPlayer` manages the lifecycle and playback of individual audio buffers. It handles loading, decoding, gain (volume), stereo balance (panning), and precise timing for playback segments and fades.
 
 ### Key Features
 1.  **Low Latency**: Direct Web Audio API usage for near-instant response.
 2.  **Independent Mixing**: Each player is connected to a virtual channel mixing bus.
 3.  **Sample-Accurate Segments**: Play specific segments with millisecond precision.
 4.  **Envelopes**: Linear ramp volume fades for smooth entry/exit.
+5.  **Dynamic Panning**: Supports linear balance transitions (e.g., Left to Right) over the duration of a playback segment using `StereoPannerNode`.
+
+### IAudioPlayer Interface
+```typescript
+interface AudioPlayOptions {
+  startTimeSeconds?: number;
+  endTimeSeconds?: number;
+  fadeInDurationMs?: number;
+  fadeOutDurationMs?: number;
+  panStart?: number; // -1.0 to 1.0
+  panEnd?: number;   // -1.0 to 1.0
+}
+
+interface IAudioPlayer {
+  // ... properties (id, url, isLoaded, duration, etc.)
+  currentTime: number;
+  volume: number;   // 0.0 to 1.0
+  balance: number;  // -1.0 to 1.0 (static override)
+
+  load(): Promise<void>;
+  play(options?: AudioPlayOptions): Promise<void>;
+  pause(): void;
+  stop(): void;
+  destroy(): void;
+  // ... event callbacks
+}
+```
 
 ## Mixing Engine: Multi-Context Routing
 

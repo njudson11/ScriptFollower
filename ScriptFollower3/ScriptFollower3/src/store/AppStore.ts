@@ -3,7 +3,7 @@
  */
 
 import { reactive } from 'vue'
-import { Document, ScriptLineBase, LineType, IVirtualChannel, IAudioOutputDevice } from '@/types/core'
+import { Document, ScriptLineBase, LineType, IVirtualChannel, IAudioOutputDevice, SoundCue } from '@/types/core'
 import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { AppConfig } from '@/config/AppConfig'
 

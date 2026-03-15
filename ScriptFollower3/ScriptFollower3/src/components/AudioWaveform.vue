@@ -8,9 +8,15 @@ interface Props {
   endTime: number;
   fadeIn: number;
   fadeOut: number;
+  panStart?: number; // -1 to 1
+  panEnd?: number;   // -1 to 1
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  panStart: 0,
+  panEnd: 0
+});
+
 const emit = defineEmits(['update:startTime', 'update:endTime', 'update:fadeIn', 'update:fadeOut']);
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -177,6 +183,11 @@ const fadeOutX = computed(() => {
     return timeToX(end - (props.fadeOut / 1000));
 });
 
+// Balance mapping: -1 (Left) -> 10px, 0 (Center) -> 50px, 1 (Right) -> 90px
+const panToY = (pan: number) => 50 + (pan * 40);
+const panStartY = computed(() => panToY(props.panStart));
+const panEndY = computed(() => panToY(props.panEnd));
+
 watch(() => props.player, (newPlayer) => {
   if (newPlayer) {
     loadingStatus.value = newPlayer.loadStatus;
@@ -252,8 +263,18 @@ onBeforeUnmount(() => {
       </div>
 
       <svg class="fade-lines" width="100%" height="100%">
+        <!-- Fade indicators -->
         <line :x1="startX" y1="100" :x2="fadeInX" y2="0" stroke="rgba(255,255,255,0.6)" stroke-dasharray="4" />
         <line :x1="fadeOutX" y1="0" :x2="endX" y2="100" stroke="rgba(255,255,255,0.6)" stroke-dasharray="4" />
+        
+        <!-- Balance Path indicator -->
+        <line :x1="startX" :y1="panStartY" :x2="endX" :y2="panEndY" stroke="rgba(255, 152, 0, 0.8)" stroke-width="2" stroke-dasharray="2,2" />
+        <circle :cx="startX" :cy="panStartY" r="3" fill="rgba(255, 152, 0, 1)" />
+        <circle :cx="endX" :cy="panEndY" r="3" fill="rgba(255, 152, 0, 1)" />
+        
+        <!-- L/R Labels -->
+        <text x="5" y="15" fill="rgba(255,255,255,0.3)" font-size="10" font-family="sans-serif">L</text>
+        <text x="5" y="95" fill="rgba(255,255,255,0.3)" font-size="10" font-family="sans-serif">R</text>
       </svg>
 
       <div class="handle handle-fade-in" :style="{ left: fadeInX + 'px' }" @mousedown="onMouseDown($event, 'fadeIn')" title="Fade In"></div>

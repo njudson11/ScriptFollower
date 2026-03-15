@@ -214,6 +214,15 @@ export interface HighlightStyle {
 /**
  * Interface for an individual audio playback instance
  */
+export interface AudioPlayOptions {
+  startTimeSeconds?: number;
+  endTimeSeconds?: number;
+  fadeInDurationMs?: number;
+  fadeOutDurationMs?: number;
+  panStart?: number;
+  panEnd?: number;
+}
+
 export interface IAudioPlayer {
   readonly id: string;
   readonly url: string;
@@ -228,7 +237,7 @@ export interface IAudioPlayer {
   balance: number;
 
   load(): Promise<void>;
-  play(startTimeSeconds?: number, endTimeSeconds?: number, fadeInDurationMs?: number, fadeOutDurationMs?: number): Promise<void>;
+  play(options?: AudioPlayOptions): Promise<void>;
   pause(): void;
   stop(): void;
   destroy(): void;
@@ -270,6 +279,8 @@ export interface SoundCue {
   readonly name: string;
   readonly volume: number; // 0-100
   readonly pan: 'left' | 'right' | 'centre';
+  readonly panStart?: number; // -1.0 to 1.0, optional override for start balance
+  readonly panEnd?: number;   // -1.0 to 1.0, optional override for end balance
   readonly startOffsetSeconds?: number;
   readonly endOffsetSeconds?: number;
   readonly fadeIn?: number; // ms

@@ -23,20 +23,27 @@ export function useStickyScroll(options: UseStickyScrollOptions) {
     if (!activeId || !viewerRef.value) return
 
     const element = lineRefs.get(activeId)
-    if (!element) return
+    if (!element) {
+      // If element not found, it might be due to a recent re-render.
+      // We don't retry here to avoid loops, but subsequent selection 
+      // changes will trigger it again.
+      return
+    }
 
     const container = viewerRef.value
-    const elementTop = element.offsetTop
     
-    // Calculate if element is outside current view or needs centering
-    const containerScrollTop = container.scrollTop
-    const containerHeight = container.clientHeight
+    // Use getBoundingClientRect for more robust calculation, 
+    // especially when intermediate elements have 'position: relative' (like in Sidebar)
+    const elementRect = element.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
     
-    // Simple logic: if it's not in the "comfort zone", scroll to it
-    const targetScrollTop = elementTop - scrollOffsetPx.value
+    // Relative position of element top within the container's content
+    const relativeTop = elementRect.top - containerRect.top + container.scrollTop
+    
+    const targetScrollTop = relativeTop - scrollOffsetPx.value
 
     container.scrollTo({
-      top: targetScrollTop,
+      top: Math.max(0, targetScrollTop),
       behavior: 'smooth'
     })
   }

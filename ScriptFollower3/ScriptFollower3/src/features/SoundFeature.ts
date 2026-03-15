@@ -95,6 +95,24 @@ export class SoundFeature implements FeaturePlugin {
         }
       },
       {
+        name: 'pan-start',
+        description: 'Stereo pan start (-1 to 1)',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: -1, max: 1 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= -1 && val <= 1
+      },
+      {
+        name: 'pan-end',
+        description: 'Stereo pan end (-1 to 1)',
+        type: 'number',
+        defaultValue: 0,
+        constraints: { min: -1, max: 1 },
+        parseValue: (val) => parseFloat(val),
+        validateValue: (val) => val >= -1 && val <= 1
+      },
+      {
         name: 'chan',
         description: 'Virtual audio channel ID (e.g., "A", "B")',
         type: 'string',
@@ -374,6 +392,17 @@ export class SoundFeature implements FeaturePlugin {
 
       player.volume = (volume || (AppConfig.audio.defaultVolume * 100)) / 100
       
+      let pStart = cue.panStart;
+      let pEnd = cue.panEnd;
+
+      if (line.annotation) {
+        const ps = this.annotationManager.getValue(line.annotation, 'pan-start');
+        if (ps !== undefined) pStart = ps;
+        
+        const pe = this.annotationManager.getValue(line.annotation, 'pan-end');
+        if (pe !== undefined) pEnd = pe;
+      }
+
       if (overridePan !== undefined) {
         player.balance = overridePan;
       } else {
@@ -384,7 +413,14 @@ export class SoundFeature implements FeaturePlugin {
         }
       }
 
-      await player.play(start, end, fadeIn, fadeOut)
+      await player.play({
+        startTimeSeconds: start,
+        endTimeSeconds: end,
+        fadeInDurationMs: fadeIn,
+        fadeOutDurationMs: fadeOut,
+        panStart: pStart,
+        panEnd: pEnd
+      });
     } catch (error) {
       console.error(`[Sound Feature] Failed to play cue ${cue.id}:`, error)
     }
