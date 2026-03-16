@@ -1,4 +1,4 @@
-import { FeaturePlugin, LineType, SoundCue, Annotation, KeyBinding, EndBehaviour } from '@/types/core'
+import { FeaturePlugin, LineType, SoundCue, Annotation, KeyBinding, EndBehaviour, ScriptLineBase, LineWidget } from '@/types/core'
 import type { FeatureManager } from '@/core/FeatureManager'
 import type { ActionController } from '@/core/ActionController'
 import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager'
@@ -7,7 +7,6 @@ import type { EventBus } from '@/core/EventBus'
 import { ACTION_TYPES } from '@/types/actions'
 import { EVENT_TYPES } from '@/core/EventBus'
 import { AppConfig } from '@/config/AppConfig'
-import SoundCueLine from '@/components/SoundCueLine.vue'
 import SoundCuePanel from '@/components/SoundCuePanel.vue'
 import { markRaw } from 'vue'
 import type { AnnotationManager } from '@/core/AnnotationManager'
@@ -173,9 +172,96 @@ export class SoundFeature extends BaseCueFeature {
     ];
   }
 
+  getLineWidgets(line: ScriptLineBase, view: 'main' | 'sidebar'): LineWidget[] {
+    const widgets: LineWidget[] = [];
+
+    if (line.lineType === LineType.SOUND_CUE) {
+      const cue = line.metadata.sound as SoundCue | undefined;
+      const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
+      const player = cue ? this.audioPlaybackManager.getPlayer(cue.id, cue.url, channelId) : null;
+      const isPlaying = player?.isPlaying || false;
+      const isLoading = player?.loadStatus === 'loading' || player?.loadStatus === 'decoding';
+      const isLoaded = player?.isLoaded || false;
+
+      // Toggle Widget (Play/Stop)
+      if (cue) {
+        widgets.push({
+          type: 'toggle',
+          id: `${this.id}-toggle-${line.id}`,
+          props: {
+            active: isPlaying,
+            activeIcon: 'Square',
+            inactiveIcon: isLoading ? 'Loader' : (isLoaded ? 'Play' : 'Zap'),
+            activeLabel: 'Stop',
+            inactiveLabel: isLoading ? 'Loading...' : (isLoaded ? 'Play' : 'Load & Play'),
+            action: {
+              type: ACTION_TYPES.TOGGLE_PLAY_SOUND_CUE,
+              payload: { lineId: line.id }
+            },
+            className: isPlaying ? 'btn-stop' : (isLoading ? 'btn-loading' : (isLoaded ? 'btn-ready' : 'btn-play'))
+          }
+        });
+
+        if (isPlaying && player) {
+          const start = cue.startOffsetSeconds || 0;
+          const duration = (cue.endOffsetSeconds && cue.endOffsetSeconds > 0)
+              ? cue.endOffsetSeconds 
+              : player.duration;
+          
+          const remaining = Math.max(0, duration - player.currentTime);
+          const mins = Math.floor(remaining / 60);
+          const secs = Math.floor(remaining % 60);
+          const remainingText = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+          if (view === 'main') {
+            widgets.push({
+              type: 'timer',
+              id: `${this.id}-timer-${line.id}`,
+              props: {
+                currentTime: player.currentTime,
+                duration: duration,
+                remaining: true
+              }
+            });
+          } else {
+             widgets.push({
+              type: 'progress',
+              id: `${this.id}-progress-${line.id}`,
+              props: {
+                value: player.currentTime - start,
+                total: duration - start,
+                label: remainingText,
+                className: 'is-active'
+              }
+            });
+          }
+        }
+      }
+
+      // Trigger Widget (for annotation-only cues or base cues)
+      if (!cue && line.annotation && this.hasAction(line.id)) {
+        widgets.push({
+          type: 'button',
+          id: `${this.id}-trigger-${line.id}`,
+          props: {
+            icon: 'Zap',
+            label: 'Trigger',
+            action: {
+              type: ACTION_TYPES.TRIGGER_LINE_ACTION,
+              payload: { lineId: line.id }
+            },
+            className: 'btn-trigger'
+          }
+        });
+      }
+    }
+
+    return widgets;
+  }
+
   async init(): Promise<void> {
     await super.init();
-    this.featureManager.registerLineRenderer(LineType.SOUND_CUE, SoundCueLine, 'default')
+    
     this.featureManager.registerLineRenderer(LineType.SOUND_CUE, markRaw(SoundCuePanel), 'right-panel')
 
     this.unregisterActions.push(

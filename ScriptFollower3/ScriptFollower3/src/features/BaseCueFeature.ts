@@ -1,4 +1,4 @@
-import { FeaturePlugin, Annotation, EndBehaviour, LineType, KeyBinding } from '@/types/core'
+import { FeaturePlugin, Annotation, EndBehaviour, LineType, KeyBinding, ScriptLineBase, LineWidget } from '@/types/core'
 import type { FeatureManager } from '@/core/FeatureManager'
 import type { ActionController } from '@/core/ActionController'
 import type { AppStore } from '@/store/AppStore'
@@ -81,6 +81,30 @@ export class BaseCueFeature implements FeaturePlugin {
         validateValue: (val) => val.length > 0
       }
     ]
+  }
+
+  getLineWidgets(line: ScriptLineBase, view: 'main' | 'sidebar'): LineWidget[] {
+    // If it's a sound cue, let SoundFeature handle it (it inherits or overrides)
+    if (line.lineType === LineType.SOUND_CUE) return [];
+
+    const widgets: LineWidget[] = [];
+    if (this.hasAction(line.id)) {
+      widgets.push({
+        type: 'button',
+        id: `${this.id}-trigger-${line.id}`,
+        props: {
+          icon: 'Zap',
+          label: 'Trigger',
+          action: {
+            type: ACTION_TYPES.TRIGGER_LINE_ACTION,
+            payload: { lineId: line.id }
+          },
+          className: 'btn-trigger'
+        }
+      });
+    }
+
+    return widgets;
   }
 
   getKeybindings(): KeyBinding[] {

@@ -157,7 +157,7 @@ const resetProject = () => {
         <div v-if="hasDocument" class="voice-controls">
           <button 
             @click="toggleVoice" 
-            class="voice-toggle-btn" 
+            class="toolbar-btn" 
             :class="{ 'is-active': isVoiceActive }"
             :title="isVoiceActive ? 'Stop Voice' : 'Start Voice'"
           >
@@ -168,7 +168,7 @@ const resetProject = () => {
 
           <button 
             @click="toggleVoiceFocus" 
-            class="voice-focus-btn" 
+            class="toolbar-btn" 
             :class="{ 'is-active': setFocusOnMatch }"
             title="Auto-Focus"
           >
@@ -179,7 +179,7 @@ const resetProject = () => {
 
         <div class="divider"></div>
 
-        <label class="toolbar-action-btn" title="Load Project Folder">
+        <label class="toolbar-btn" title="Load Project Folder">
           <input
             type="file"
             webkitdirectory
@@ -191,7 +191,7 @@ const resetProject = () => {
           <FolderOpen :size="14" />
         </label>
 
-        <label class="toolbar-action-btn" title="Load Document">
+        <label class="toolbar-btn" title="Load Document">
           <input
             type="file"
             accept=".odt"
@@ -204,7 +204,7 @@ const resetProject = () => {
 
         <button 
           v-if="hasDocument" 
-          class="toolbar-action-btn btn-danger" 
+          class="toolbar-btn btn-danger" 
           @click="resetProject" 
           title="Reset Project"
         >

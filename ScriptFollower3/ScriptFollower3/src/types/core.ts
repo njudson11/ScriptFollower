@@ -176,6 +176,20 @@ export interface MetadataExtractionRule {
 }
 
 /**
+ * Widget types for modular line rendering
+ */
+export type LineWidgetType = 'toggle' | 'button' | 'timer' | 'progress';
+
+export interface LineWidget {
+  readonly type: LineWidgetType;
+  readonly id: string;
+  readonly icon?: string;
+  readonly label?: string;
+  readonly title?: string;
+  readonly props?: Readonly<Record<string, any>>;
+}
+
+/**
  * Plugin feature definition
  */
 export interface FeaturePlugin {
@@ -188,6 +202,10 @@ export interface FeaturePlugin {
   getKeybindings?(): KeyBinding[];
   getAnnotations?(): Annotation[];
   registerHighlightTypes?(registry: HighlightTypeRegistry): void;
+  /**
+   * Returns widgets to be rendered for a specific line in a specific view context.
+   */
+  getLineWidgets?(line: ScriptLineBase, view: 'main' | 'sidebar'): LineWidget[];
 }
 
 /**

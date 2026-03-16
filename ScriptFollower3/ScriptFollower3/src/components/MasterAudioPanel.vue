@@ -366,7 +366,7 @@ onBeforeUnmount(() => {
               <div class="progress-fill" :style="{ width: getPlayerProgress(player) + '%' }"></div>
             </div>
             <span class="time-display">{{ formatTime(player.currentTime) }}</span>
-            <button class="btn-stop-mini" @click="stopPlayer(player.id)" title="Stop">
+            <button class="btn btn-mini" @click="stopPlayer(player.id)" title="Stop">
               <Square :size="10" fill="currentColor" />
             </button>
           </div>

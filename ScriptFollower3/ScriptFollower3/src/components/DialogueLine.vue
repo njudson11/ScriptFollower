@@ -8,6 +8,8 @@ import type { ActionController } from '@/core/ActionController'
 import type { FeatureManager } from '@/core/FeatureManager'
 import { ACTION_TYPES } from '@/types/actions'
 import LineAnnotation from './LineAnnotation.vue'
+import LineWidgetContainer from './widgets/LineWidgetContainer.vue'
+import { Zap } from 'lucide-vue-next'
 
 const props = defineProps({
   line: {
@@ -62,6 +64,8 @@ const lineClasses = computed(() => {
 })
 
 const isSearchMatch = computed(() => appStore.isLineSearchMatch(props.line.id))
+
+const widgetView = computed(() => props.contextClass.includes('sidebar') ? 'sidebar' : 'main')
 </script>
 
 <template>
@@ -76,9 +80,18 @@ const isSearchMatch = computed(() => appStore.isLineSearchMatch(props.line.id))
     </div>
     
     <!-- Action row below content -->
-    <div class="line-actions" v-if="hasAction">
-      <button class="btn-trigger" @click="handleTrigger" title="Trigger Action (Space)">
-        <span class="icon">⚡</span>
+    <div class="line-actions">
+      <!-- Widgets from features -->
+      <LineWidgetContainer :line="line" :view="widgetView" />
+      
+      <!-- Fallback Trigger if no widgets but has action -->
+      <button 
+        v-if="hasAction && !featureManager.hasWidgets(line, widgetView)" 
+        class="btn-trigger" 
+        @click="handleTrigger" 
+        title="Trigger Action (Space)"
+      >
+        <span class="icon"><Zap :size="14" /></span>
         <span class="label">Trigger</span>
       </button>
     </div>
@@ -91,4 +104,10 @@ const isSearchMatch = computed(() => appStore.isLineSearchMatch(props.line.id))
 @import '../css/DefaultLineComponent.css';
 @import '../css/DialogueLine.css';
 @import '../css/Search.css';
+
+.line-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
 </style>

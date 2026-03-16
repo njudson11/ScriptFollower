@@ -81,46 +81,6 @@
   gap: 6px;
 }
 
-.voice-toggle-btn,
-.voice-focus-btn,
-.toolbar-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  height: 28px;
-  background-color: var(--color-primary-dark);
-  color: var(--color-text-on-primary);
-  border: 1px solid var(--color-shadow-heavy);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.voice-toggle-btn:hover,
-.voice-focus-btn:hover,
-.toolbar-action-btn:hover {
-  background-color: var(--color-shadow-heavy);
-}
-
-.voice-toggle-btn.is-active,
-.voice-focus-btn.is-active {
-  background-color: var(--palette-orange-500);
-  color: var(--palette-black);
-  border-color: var(--palette-orange-700);
-  font-weight: 600;
-}
-
-.btn-danger {
-  background-color: var(--color-danger-dark); /* Reusing heavy shadow for subtle danger bg */
-}
-.btn-danger:hover {
-  background-color: var(--color-error);
-}
-
 .divider {
   width: 1px;
   height: 20px;

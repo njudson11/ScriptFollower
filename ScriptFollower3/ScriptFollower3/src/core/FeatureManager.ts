@@ -1,7 +1,7 @@
 /**
  * Feature Manager for registering and managing feature plugins
  */
-import { FeaturePlugin, LineType, KeyBinding } from '@/types/core'
+import { FeaturePlugin, LineType, KeyBinding, ScriptLineBase } from '@/types/core'
 import { EventBus, EVENT_TYPES } from '@/core/EventBus'
 import { ActionController } from './ActionController'
 import { LineSelectionManager } from './LineSelectionManager'
@@ -155,5 +155,20 @@ export class FeatureManager {
       return undefined
     }
     return viewMap.get(view) || viewMap.get('default')
+  }
+
+  /**
+   * Check if any feature provides widgets for the given line and view.
+   */
+  hasWidgets(line: ScriptLineBase, view: 'main' | 'sidebar'): boolean {
+    for (const feature of this.features.values()) {
+      if (feature.getLineWidgets) {
+        const widgets = feature.getLineWidgets(line, view)
+        if (widgets && widgets.length > 0) {
+          return true
+        }
+      }
+    }
+    return false
   }
 }

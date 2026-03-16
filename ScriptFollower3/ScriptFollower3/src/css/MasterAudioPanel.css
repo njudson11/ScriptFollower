@@ -177,50 +177,6 @@
     color: var(--color-text-secondary);
 }
 
-.btn-stop-mini {
-  background: var(--color-shadow-medium);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  border-radius: 4px;
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  transition: all 0.2s;
-}
-
-.btn-stop-mini:hover {
-    background: var(--color-error);
-    color: var(--color-text-on-primary);
-}
-
-.btn-small {
-  padding: 4px 8px;
-  font-size: 11px;
-}
-
-.btn-icon {
-    font-size: 18px;
-    padding: 4px 8px;
-    background: transparent;
-}
-
-.btn-remove {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.btn-remove:hover {
-    color: var(--color-error);
-}
-
 .device-select {
   width: 100%;
   padding: 6px;
@@ -259,17 +215,6 @@
     width: 100%;
 }
 
-.btn-warn {
-    background: var(--color-warning-bg);
-    color: var(--color-warning);
-    border-color: var(--color-warning);
-}
-
-.btn-warn:hover {
-    background: var(--color-warning);
-    color: var(--color-text-on-primary);
-}
-
 .limitation-box {
     margin-top: 12px;
     padding: 10px;
@@ -292,34 +237,4 @@
     font-size: 16px;
     display: flex;
     align-items: center;
-}
-
-/* General button styles for consistency */
-.btn {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-background-soft);
-  color: var(--color-text-primary);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--color-divider);
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-  border-color: var(--color-primary);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
 }

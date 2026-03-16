@@ -1,0 +1,118 @@
+/* Global Button Styles */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background-soft);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-divider);
+  filter: brightness(1.1);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Button Variants */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.btn-danger {
+  background-color: var(--color-danger-dark);
+  color: var(--color-text-on-primary);
+  border-color: var(--color-error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-error);
+}
+
+.btn-warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.btn-warn:hover:not(:disabled) {
+  background: var(--color-warning);
+  color: var(--color-text-on-primary);
+}
+
+/* Button Sizes */
+.btn-small {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.btn-mini {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+}
+
+/* Toolbar Specific Buttons */
+.toolbar-btn {
+  height: 28px;
+  padding: 4px 8px;
+  font-size: 0.8em;
+  background-color: var(--color-primary-dark);
+  color: var(--color-text-on-primary);
+  border: 1px solid var(--color-shadow-heavy);
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background-color: var(--color-shadow-heavy);
+}
+
+.toolbar-btn.is-active {
+  background-color: var(--palette-orange-500);
+  color: var(--palette-black);
+  border-color: var(--palette-orange-700);
+  font-weight: 600;
+}
+
+/* Icon Buttons */
+.btn-icon {
+  background: transparent;
+  border: none;
+  padding: 4px;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn-remove:hover {
+  color: var(--color-error);
+}

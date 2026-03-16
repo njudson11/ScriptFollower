@@ -1,5 +1,7 @@
 @import './theme.css';
+@import './Buttons.css';
 @import './LineTypeStyles.css';
+@import './Widgets.css';
 
 * {
   margin: 0;

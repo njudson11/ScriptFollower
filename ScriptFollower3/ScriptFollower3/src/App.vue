@@ -268,7 +268,7 @@ const gridTemplateColumns = computed(() => {
 
     <div v-if="appStore.state.error" class="error-banner">
       <span>{{ appStore.state.error }}</span>
-      <button @click="appStore.setError(null)">×</button>
+      <button class="btn-remove" @click="appStore.setError(null)">×</button>
     </div>
 
     <div class="main-content" :style="{ gridTemplateColumns: gridTemplateColumns }">
