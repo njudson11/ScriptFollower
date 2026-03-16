@@ -149,6 +149,14 @@ export class SoundFeature extends BaseCueFeature {
         constraints: { min: 0 },
         parseValue: (val) => parseFloat(val),
         validateValue: (val) => val >= 0
+      },
+      {
+        name: 'preload',
+        description: 'Force the sound to stay preloaded regardless of script position',
+        type: 'boolean',
+        defaultValue: false,
+        parseValue: (val) => (val as any) === 'true' || (val as any) === true,
+        validateValue: (val) => typeof val === 'boolean' || val === 'true' || val === 'false'
       }
     ]
   }
@@ -358,10 +366,13 @@ export class SoundFeature extends BaseCueFeature {
 
     const activePlayerIds = new Set(this.audioPlaybackManager.getCurrentlyPlayingPlayers().map(p => p.id));
 
-    // Identify players to unload: those that are managed but NO LONGER in the window AND NOT currently playing.
+    // Identify players to unload: those that are managed but NO LONGER in the window AND NOT currently playing AND NOT forced to preload.
     const idsToUnload: string[] = []
     this.managedPlayerIds.forEach(id => {
-      if (!cuesInWindow.has(id) && !activePlayerIds.has(id)) {
+      const line = Array.from(this.appStore.getLines()).find(l => l.metadata.sound?.id === id);
+      const isForcedPreload = line && this.annotationManager.getValue(line.annotation, 'preload') === true;
+
+      if (!cuesInWindow.has(id) && !activePlayerIds.has(id) && !isForcedPreload) {
         idsToUnload.push(id)
       }
     })
@@ -372,8 +383,20 @@ export class SoundFeature extends BaseCueFeature {
       idsToUnload.forEach(id => this.managedPlayerIds.delete(id))
     }
 
-    // Load or ensure loaded all cues in the current window
-    cuesInWindow.forEach((info, id) => {
+    // Load or ensure loaded all cues in the current window OR forced to preload
+    const allCuesToEnsure = new Map(cuesInWindow);
+    this.appStore.getLines().forEach(line => {
+      if (line.lineType === LineType.SOUND_CUE && line.metadata.sound) {
+        const isForcedPreload = this.annotationManager.getValue(line.annotation, 'preload') === true;
+        if (isForcedPreload) {
+          const cue = line.metadata.sound as SoundCue;
+          const channelId = this.appStore.resolveChannelId(line, this.annotationManager);
+          allCuesToEnsure.set(cue.id, { cue, channelId });
+        }
+      }
+    });
+
+    allCuesToEnsure.forEach((info, id) => {
       const player = this.audioPlaybackManager.getPlayer(id, info.cue.url, info.channelId)
       this.managedPlayerIds.add(id)
       if (!player.isLoaded && player.loadStatus !== 'loading' && player.loadStatus !== 'decoding') {

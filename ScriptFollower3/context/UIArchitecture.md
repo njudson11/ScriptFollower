@@ -11,9 +11,12 @@ App.vue (Root)
 ├── Toolbar
 ├── DocumentViewer
 │   └── ScriptLine (repeating)
+│       ├── LineWidgetContainer
+│       │   └── Modular Widgets (Toggle, Button, Timer, etc.)
 │       └── LineHighlights
 ├── Sidebar
 │   └── LineItem (repeating)
+│       └── LineWidgetContainer
 └── RightPanel
     ├── TabHeader
     │   └── CollapseButton
@@ -35,6 +38,10 @@ The application uses a two-tier CSS variable system defined in `src/css/theme.cs
 ### Decoupled Styles
 To maintain a clean codebase and support global theming:
 - **No in-component CSS**: All `<style>` blocks in `.vue` files must only contain `@import` statements pointing to dedicated `.css` files in `src/css/`.
+- **Logic-Based Grouping**: Styles are consolidated into shared files:
+    - `Buttons.css`: Global application buttons and variants.
+    - `Widgets.css`: Script-line interaction components and containers.
+    - `theme.css`: Core design system and variables.
 - **Variable-only colors**: No literal hex/rgb values are permitted in component-specific CSS files; they must use semantic variables from `theme.css`.
 
 ## Core Components

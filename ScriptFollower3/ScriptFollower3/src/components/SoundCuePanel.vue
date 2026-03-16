@@ -34,6 +34,7 @@ const fadeOut = ref(0);
 const endBehaviour = ref<EndBehaviour>('none');
 const loopCount = ref(0);
 const jumpRef = ref('');
+const isPreload = ref(false);
 const isJumpDropdownOpen = ref(false);
 
 // Initialize with correctly resolved channel ID to prevent race conditions/mismatches on mount
@@ -138,6 +139,7 @@ const parseAnnotations = () => {
   endBehaviour.value = get('end-behaviour', 'none');
   loopCount.value = get('loop-count', 0);
   jumpRef.value = get('jump-ref', '');
+  isPreload.value = get('preload', false);
 
   selectedChannelId.value = resolveChannelId();
 };
@@ -158,7 +160,8 @@ const updateAnnotations = () => {
     'chan': chanToStore,
     'end-behaviour': endBehaviour.value !== 'none' ? endBehaviour.value : null,
     'loop-count': endBehaviour.value === 'loop' && loopCount.value > 0 ? loopCount.value : null,
-    'jump-ref': endBehaviour.value === 'jump-to' && jumpRef.value ? jumpRef.value : null
+    'jump-ref': endBehaviour.value === 'jump-to' && jumpRef.value ? jumpRef.value : null,
+    'preload': isPreload.value === true ? true : null
   });
   
   if (props.line.annotation !== annotationString) {
@@ -172,7 +175,7 @@ const updateAnnotations = () => {
   }
 };
 
-watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, selectedChannelId, endBehaviour, loopCount, jumpRef], () => {
+watch([volume, balance, panStart, panEnd, isDynamicPan, startTime, endTime, fadeIn, fadeOut, selectedChannelId, endBehaviour, loopCount, jumpRef, isPreload], () => {
   updateAnnotations();
 }, { deep: true });
 
@@ -273,6 +276,13 @@ onBeforeUnmount(() => {
     <div class="section-column">
       <!-- Stop Behaviour handled by BaseCuePanel logic but UI included here for grouping -->
       <BaseCuePanel :line="props.line" style="padding: 0;" />
+
+      <div class="input-group">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="preload-toggle" v-model="isPreload" />
+          <label for="preload-toggle" style="margin:0; cursor: pointer; font-size: 12px; font-weight: 600;">Pre-load (Keep Loaded)</label>
+        </div>
+      </div>
 
       <div class="input-group">
         <label>End Behaviour</label>

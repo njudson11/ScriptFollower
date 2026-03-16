@@ -21,6 +21,7 @@
 - Vertical list of all visible script lines.
 - **Filtering**: Integration with `LineTypeFilter` to show/hide specific types.
 - **Active Line Tracking**: Visual highlighting of the current line or the nearest visible neighbor.
+- **Modular Widgets**: Compact feature-provided controls (e.g., mini-progress bars, toggle buttons).
 - **Overall Progress**: Sidebar progress bar indicating the active position relative to the document.
 - **Context Rendering**: Simplified line rendering for narrow column display.
 

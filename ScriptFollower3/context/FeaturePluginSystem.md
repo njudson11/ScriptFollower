@@ -22,6 +22,7 @@ export interface FeaturePlugin {
   getKeybindings?(): KeyBinding[];
   getAnnotations?(): Annotation[];
   registerHighlightTypes?(registry: HighlightTypeRegistry): void;
+  getLineWidgets?(line: ScriptLineBase, view: 'main' | 'sidebar'): LineWidget[];
 }
 ```
 

@@ -4,9 +4,9 @@
 
 ScriptFollower 3 Phase 1+ implements a **modular, event-driven architecture** with a plugin system for extensibility. The foundation supports theater production scripting with configurable ODT document parsing, line-based navigation with LineSubType classification, and a flexible feature framework.
 
-**Status:** ✅ Architecture validated, implementation complete with enhanced ODT parsing, ready for testing
+**Status:** ✅ Architecture validated, implementation complete with modular widget system, ready for testing
 
-**Version:** 0.2.0 - Style-only line type detection with content analysis in metadata
+**Version:** 0.3.0 - Modular Widget System and CSS Consolidation
 
 ## Core Architecture Validation
 
@@ -42,6 +42,7 @@ ScriptFollower 3 Phase 1+ implements a **modular, event-driven architecture** wi
 - ✅ Feature lifecycle management
 - ✅ Keybinding and annotation registration
 - ✅ UI panel extensibility
+- ✅ **Modular Widget System**: Features provide self-contained line interaction logic
 
 ### 2. Separation of Concerns ✅
 
