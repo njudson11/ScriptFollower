@@ -121,7 +121,7 @@ export class KeybindingFeature implements FeaturePlugin {
 
           console.log(`[KeybindingFeature] Executing ${kb.actionType} for line ${context.currentLineId}`);
           this.actionController.dispatch({ type: kb.actionType, payload: payload });
-          return; 
+          return; // Stop at first active match
         }
       }
     }

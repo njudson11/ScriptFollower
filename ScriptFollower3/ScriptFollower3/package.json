@@ -1,7 +1,7 @@
 {
   "name": "script-follower-3",
   "private": true,
-"version": "3.22.1",
+"version": "3.22.3T",
   "type": "module",
   "scripts": {
     "dev": "vite",

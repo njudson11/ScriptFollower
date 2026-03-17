@@ -13,8 +13,9 @@ const formattedTime = computed(() => {
   const absoluteTime = Math.abs(time)
   const minutes = Math.floor(absoluteTime / 60)
   const seconds = Math.floor(absoluteTime % 60)
+  const ms = Math.floor((absoluteTime % 1) * 100)
   const sign = time < 0 ? '-' : ''
-  return `${sign}${minutes}:${seconds.toString().padStart(2, '0')}`
+  return `${sign}${minutes}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
 })
 </script>
 

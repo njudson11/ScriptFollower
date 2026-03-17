@@ -210,23 +210,25 @@ export class SoundFeature extends BaseCueFeature {
           }
         });
 
-        if (isPlaying && player) {
+        if (isLoaded && player) {
           const start = cue.startOffsetSeconds || 0;
           const duration = (cue.endOffsetSeconds && cue.endOffsetSeconds > 0)
               ? cue.endOffsetSeconds 
               : player.duration;
           
-          const remaining = Math.max(0, duration - player.currentTime);
+          const displayTime = isPlaying ? player.currentTime : start;
+          const remaining = Math.max(0, duration - displayTime);
           const mins = Math.floor(remaining / 60);
           const secs = Math.floor(remaining % 60);
-          const remainingText = `${mins}:${secs.toString().padStart(2, '0')}`;
+          const ms = Math.floor((remaining % 1) * 100);
+          const remainingText = `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 
           if (view === 'main') {
             widgets.push({
               type: 'timer',
               id: `${this.id}-timer-${line.id}`,
               props: {
-                currentTime: player.currentTime,
+                currentTime: displayTime,
                 duration: duration,
                 remaining: true
               }
@@ -236,10 +238,10 @@ export class SoundFeature extends BaseCueFeature {
               type: 'progress',
               id: `${this.id}-progress-${line.id}`,
               props: {
-                value: player.currentTime - start,
+                value: displayTime - start,
                 total: duration - start,
                 label: remainingText,
-                className: 'is-active'
+                className: isPlaying ? 'is-active' : 'is-ready'
               }
             });
           }

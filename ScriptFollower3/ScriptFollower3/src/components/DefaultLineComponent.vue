@@ -38,6 +38,12 @@ const hasAction = computed(() => {
 
 const handleTrigger = (e: MouseEvent) => {
   e.stopPropagation();
+
+  // Blur the button so that subsequent Space presses go to the global keybinding handler
+  if (e.currentTarget instanceof HTMLElement) {
+    e.currentTarget.blur()
+  }
+
   actionController.dispatch({
     type: ACTION_TYPES.TRIGGER_LINE_ACTION,
     payload: { lineId: props.line.id }

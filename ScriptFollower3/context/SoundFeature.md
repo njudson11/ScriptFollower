@@ -84,8 +84,9 @@ The feature supports fine-grained playback control via script annotations:
 
 The Sound Feature leverages the **Modular Widget System** instead of a standalone custom renderer:
 - **`WidgetToggle`**: Handles Play/Stop logic with professional monochrome icons (`Play`, `Square`, `Loader`, `Zap`).
-- **`WidgetTimer`**: Displays real-time time-remaining in the main Document Viewer.
+- **`WidgetTimer`**: Displays real-time time-remaining with **2-digit millisecond precision** (`M:SS.mm`) in the main Document Viewer.
 - **`WidgetProgress`**: Provides a compact progress bar with embedded time-remaining text for the Sidebar.
+- **Persistent Visibility**: Timer and Progress widgets are displayed as soon as a sound is **loaded**, providing a duration preview even when not playing.
 - **`SoundCuePanel.vue`**: Detailed settings panel in the right sidebar featuring controls for all parameters, including a checkbox for **Pre-load (Keep Loaded)**.
 - **Master Audio Panel**: Integrated mixing desk for global and per-channel volume, mute, hardware output device mapping, and ad-hoc audio playback testing.
 

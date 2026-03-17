@@ -176,17 +176,9 @@ class KeybindingManager {
 
 When multiple keybindings claim the same key:
 
-1. **Priority**: Use binding.priority (higher wins)
-2. **Specificity**: More specific context wins
-3. **Order**: First registered wins (tie-breaker)
-
-```typescript
-resolveConflict(bindings: KeyBinding[], context: any): KeyBinding | undefined {
-  // Sort by priority (if implemented)
-  // Use first active binding
-  return bindings[0]
-}
-```
+1. **Priority**: Use binding.priority (higher wins) - *Note: Priority not yet implemented*
+2. **Contextual Order**: The system processes all registered keybindings and executes the **first** one whose `isActive()` check returns true.
+3. **Implicit Mutual Exclusion**: Features (like `SoundFeature` and `BaseCueFeature`) coordinate their `isActive` logic to ensure that only one feature claims a key for a specific line type.
 
 **Emit Conflict Event** for user notification:
 

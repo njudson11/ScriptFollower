@@ -18,6 +18,12 @@ const actionController = inject('actionController') as ActionController
 
 const handleClick = (e: MouseEvent) => {
   e.stopPropagation()
+  
+  // Blur the button so that subsequent Space presses go to the global keybinding handler
+  if (e.currentTarget instanceof HTMLElement) {
+    e.currentTarget.blur()
+  }
+
   if (props.action) {
     actionController.dispatch(props.action)
   }

@@ -44,6 +44,11 @@ To maintain a clean codebase and support global theming:
     - `theme.css`: Core design system and variables.
 - **Variable-only colors**: No literal hex/rgb values are permitted in component-specific CSS files; they must use semantic variables from `theme.css`.
 
+### Browser Focus Management
+To ensure reliable keybinding performance:
+- **Automatic Blur**: Interactive widgets (buttons, toggles) automatically call `blur()` after a click or toggle action.
+- **Keybinding Integrity**: This prevents the browser's default "repeat-click on Space" behavior from stealing focus, ensuring that global shortcuts always target the `currentLineId` managed by the `LineSelectionManager`.
+
 ## Core Components
 
 ### App.vue
