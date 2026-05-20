@@ -206,7 +206,7 @@ interface SoundCue extends BaseCue {
   readonly id: string
   readonly url: string
   readonly name: string
-  readonly volume: number          // 0-100
+  readonly volume: number          // 0-150
   readonly pan: 'left' | 'right' | 'centre'
   readonly panStart?: number       // -1.0 to 1.0 (Dynamic start balance)
   readonly panEnd?: number         // -1.0 to 1.0 (Dynamic end balance)

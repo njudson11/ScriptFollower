@@ -4,10 +4,10 @@ import type { AudioPlaybackManager } from '@/core/AudioPlaybackManager';
 import type { IAudioPlayer, IVirtualChannel, IAudioOutputDevice } from '@/types/core';
 import type { AppStore } from '@/store/AppStore';
 import { EventBus } from '@/core/EventBus';
-import { AUDIO_EVENT_TYPES } from '@/types/core';
+import { AUDIO_EVENT_TYPES, LineType } from '@/types/core';
 import { AppConfig } from '@/config/AppConfig';
 import AudioWaveform from './AudioWaveform.vue';
-import { VolumeX, Volume2, RefreshCw, Info, X, Square, Plus } from 'lucide-vue-next';
+import { VolumeX, Volume2, RefreshCw, Info, X, Square, Plus, Play, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next';
 
 const audioPlaybackManager = inject('audioPlaybackManager') as AudioPlaybackManager;
 const appStore = inject('appStore') as AppStore;
@@ -15,6 +15,9 @@ const eventBus = inject('eventBus') as EventBus;
 
 // Detect multi-device support from manager
 const isMultiDeviceSupported = audioPlaybackManager.isMultiDeviceSupported;
+
+// Inventory State
+const inventoryUrls = new Map<string, string>();
 
 // Ad-hoc Audio State
 const audioUrl = ref('/audio-proxy/examples/mp3/SoundHelix-Song-1.mp3');
@@ -82,6 +85,61 @@ const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// --- Sound Inventory Computed ---
+const soundInventory = computed(() => {
+  const loadedFiles = appStore.state.loadedSounds;
+  const lines = appStore.getLines();
+  
+  return Object.entries(loadedFiles)
+    .map(([ref, file]) => {
+      const isMatched = lines.some(l => l.lineType === LineType.SOUND_CUE && l.metadata.soundRef === ref);
+      
+      // Find if this sound is currently playing (via any cue or inventory player)
+      const activePlayer = activePlayers.value.find(p => {
+        if (p.id === `inv-${ref}`) return true;
+        const lineId = p.id.replace('cue_', '');
+        const line = appStore.getLineById(lineId);
+        return line?.metadata.soundRef === ref;
+      });
+
+      // Get loading status from inventory player if it exists
+      const status = audioPlaybackManager.getPlayerStatus(`inv-${ref}`);
+      const loadStatus = status?.loadStatus || 'idle';
+
+      return {
+        ref,
+        fileName: file.name,
+        file,
+        isMatched,
+        activePlayer,
+        isPlaying: !!activePlayer?.isPlaying,
+        loadStatus,
+        progress: activePlayer ? (activePlayer.currentTime / activePlayer.duration) * 100 : 0
+      };
+    })
+    .sort((a, b) => a.fileName.localeCompare(b.fileName, undefined, { numeric: true, sensitivity: 'base' }));
+});
+
+const toggleInventoryPlayback = async (item: any) => {
+  if (item.isPlaying && item.activePlayer) {
+    audioPlaybackManager.stopCues([item.activePlayer.id]);
+    return;
+  }
+
+  let url = inventoryUrls.get(item.ref);
+  if (!url) {
+    url = URL.createObjectURL(item.file);
+    inventoryUrls.set(item.ref, url);
+  }
+
+  const player = audioPlaybackManager.getPlayer(`inv-${item.ref}`, url, AppConfig.audio.baseChannelId);
+  if (!player.isLoaded) {
+    await player.load();
+  }
+  player.volume = 0.8;
+  await player.play();
 };
 
 // --- Ad-hoc Methods ---
@@ -207,6 +265,10 @@ const getChannelName = (channelId?: string) => {
 
 const getPlayerLabel = (player: IAudioPlayer) => {
   if (player.id === 'adhoc-test-player') return loadedFileName.value || 'Ad-hoc';
+  if (player.id.startsWith('inv-')) {
+    const ref = player.id.replace('inv-', '');
+    return appStore.state.loadedSounds[ref]?.name || ref;
+  }
   
   const lineId = player.id.replace('cue_', '');
   const line = appStore.getLineById(lineId);
@@ -249,12 +311,51 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (stateUpdateInterval) clearInterval(stateUpdateInterval);
   if (unregisterDeviceUpdate) unregisterDeviceUpdate();
+  
+  // Clean up inventory URLs
+  inventoryUrls.forEach(url => URL.revokeObjectURL(url));
+  inventoryUrls.clear();
 });
 </script>
 
 <template>
   <div class="master-audio-panel">
     
+    <!-- Sound Inventory (NOW AT TOP) -->
+    <div class="section sound-inventory">
+      <h3>Sound Inventory</h3>
+      <div v-if="soundInventory.length === 0" class="empty-state-mini">
+        No sound files loaded
+      </div>
+      <div v-else class="inventory-list">
+        <div v-for="item in soundInventory" :key="item.ref" class="inventory-item" :class="{ 'is-playing': item.isPlaying }">
+          <div class="item-main">
+            <div class="item-info">
+              <span class="item-ref">[{{ item.ref }}]</span>
+              <span class="item-name" :title="item.fileName">{{ item.fileName }}</span>
+            </div>
+            <div class="item-status">
+              <CheckCircle2 v-if="item.isMatched" :size="14" class="status-icon matched" title="Matched to script cue" />
+              <AlertCircle v-else :size="14" class="status-icon unmatched" title="No matching script cue" />
+              
+              <span class="load-badge" :class="item.loadStatus">
+                <Loader2 v-if="item.loadStatus === 'loading' || item.loadStatus === 'decoding'" :size="10" class="spin" />
+                {{ item.loadStatus.toUpperCase() }}
+              </span>
+            </div>
+            <button class="btn btn-mini btn-play-stop" @click="toggleInventoryPlayback(item)">
+              <component :is="item.isPlaying ? Square : Play" :size="12" :fill="item.isPlaying ? 'currentColor' : 'none'" />
+            </button>
+          </div>
+          <div v-if="item.isPlaying" class="item-progress-container">
+            <div class="item-progress-bar">
+              <div class="progress-fill" :style="{ width: item.progress + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Master Bus (Global Controls) -->
     <div class="section master-controls">
       <div class="section-header">
@@ -270,7 +371,7 @@ onBeforeUnmount(() => {
             <button class="btn btn-icon" @click="toggleMasterMute" :title="isMuted ? 'Unmute' : 'Mute'">
               <component :is="isMuted ? VolumeX : Volume2" :size="20" />
             </button>
-            <input type="range" min="0" max="1" step="0.01" v-model="masterVolume" />
+            <input type="range" min="0" max="1.5" step="0.01" v-model="masterVolume" />
           </div>
         </div>
         
@@ -288,7 +389,6 @@ onBeforeUnmount(() => {
             </button>
           </div>
           
-          <!-- Informative message about browser limitations -->
           <div v-if="!isMultiDeviceSupported" class="limitation-box">
             <span class="info-icon"><Info :size="16" /></span>
             <p>Your browser supports output to one device at a time. Multi-device routing will be available in the desktop app.</p>
@@ -333,7 +433,7 @@ onBeforeUnmount(() => {
             <input 
               type="range" 
               orient="vertical" 
-              min="0" max="1" step="0.01" 
+              min="0" max="1.5" step="0.01" 
               :value="channel.isMuted ? 0 : channel.volume" 
               @input="e => updateChannelVolume(channel.id, parseFloat((e.target as HTMLInputElement).value))" 
             />
@@ -345,31 +445,6 @@ onBeforeUnmount(() => {
           >
             MUTE
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Currently Playing Sounds -->
-    <div class="section playing-sounds">
-      <h3>Now Playing</h3>
-      <div v-if="activePlayers.length === 0" class="empty-state-mini">
-        No active playback
-      </div>
-      <div v-else class="active-players-list">
-        <div v-for="player in activePlayers" :key="player.id" class="active-player-item">
-          <div class="player-info">
-            <span class="player-name" :title="player.url">{{ getPlayerLabel(player) }}</span>
-            <span class="player-channel">{{ getChannelName(player.channelId) }}</span>
-          </div>
-          <div class="player-progress-container">
-            <div class="player-progress-bar">
-              <div class="progress-fill" :style="{ width: getPlayerProgress(player) + '%' }"></div>
-            </div>
-            <span class="time-display">{{ formatTime(player.currentTime) }}</span>
-            <button class="btn btn-mini" @click="stopPlayer(player.id)" title="Stop">
-              <Square :size="10" fill="currentColor" />
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -408,4 +483,132 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @import '../css/MasterAudioPanel.css';
+
+/* New Inventory Styles */
+.sound-inventory {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.inventory-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--palette-gray-700);
+  border-radius: 4px;
+  background: var(--palette-black);
+}
+
+.inventory-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--palette-gray-800);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventory-item:last-child {
+  border-bottom: none;
+}
+
+.inventory-item.is-playing {
+  background: rgba(33, 150, 243, 0.2);
+}
+
+.item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.item-ref {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--palette-blue-300);
+  font-weight: bold;
+}
+
+.item-name {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--palette-gray-100);
+}
+
+.item-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-icon.matched {
+  color: var(--palette-green-500);
+}
+
+.status-icon.unmatched {
+  color: var(--palette-gray-500);
+}
+
+.load-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--palette-gray-700);
+  color: var(--palette-white);
+}
+
+.load-badge.loaded {
+  background: var(--palette-blue-700);
+  color: var(--palette-white);
+}
+
+.load-badge.loading, .load-badge.decoding {
+  background: var(--palette-orange-700);
+  color: var(--palette-white);
+}
+
+.btn-play-stop {
+  padding: 4px;
+  color: var(--palette-gray-300);
+}
+
+.btn-play-stop:hover {
+  color: var(--palette-white);
+}
+
+.item-progress-container {
+  height: 2px;
+  background: var(--palette-gray-800);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.item-progress-bar {
+  height: 100%;
+  width: 100%;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 </style>

@@ -155,11 +155,23 @@ export class AudioPlaybackManager {
     return player;
   }
 
+  /**
+   * Returns the load status of a specific player if it exists.
+   */
+  getPlayerStatus(id: string): { isLoaded: boolean, loadStatus: string } | null {
+    const player = this.audioPlayers.get(id);
+    if (!player) return null;
+    return {
+      isLoaded: player.isLoaded,
+      loadStatus: player.loadStatus
+    };
+  }
+
   setChannelVolume(channelId: string, volume: number): void {
     const devCtx = this.getDeviceContextForChannel(channelId);
     const gainNode = devCtx.channelGains.get(channelId);
     if (gainNode) {
-      gainNode.gain.setTargetAtTime(Math.max(0, Math.min(volume, 1)), devCtx.context.currentTime, 0.01);
+      gainNode.gain.setTargetAtTime(Math.max(0, Math.min(volume, 1.5)), devCtx.context.currentTime, 0.01);
     }
   }
 
@@ -189,7 +201,7 @@ export class AudioPlaybackManager {
   getGlobalVolume(): number { return this._globalVolume.value; }
 
   setGlobalVolume(volume: number): void {
-    this._globalVolume.value = Math.max(0, Math.min(volume, 1));
+    this._globalVolume.value = Math.max(0, Math.min(volume, 1.5));
     const targetVol = this._isMuted.value ? 0 : this._globalVolume.value;
     
     this.deviceContexts.forEach(devCtx => {

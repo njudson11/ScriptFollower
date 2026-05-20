@@ -340,7 +340,10 @@ onBeforeUnmount(() => {
     <div class="section-column">
       <div class="input-group">
         <label>Volume: {{ volume }}%</label>
-        <input type="range" min="0" max="100" v-model.number="volume" />
+        <div class="slider-row">
+          <input type="range" min="0" max="150" v-model.number="volume" />
+          <button @click="volume = 100" class="btn-reset">100%</button>
+        </div>
       </div>
       
       <div class="input-group">

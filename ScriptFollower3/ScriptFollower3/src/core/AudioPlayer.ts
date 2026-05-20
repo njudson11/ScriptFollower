@@ -66,7 +66,7 @@ export class AudioPlayer implements IAudioPlayer {
 
   get volume() { return this._volume; }
   set volume(value: number) {
-    this._volume = Math.max(0, Math.min(value, 1));
+    this._volume = Math.max(0, Math.min(value, 1.5));
     this.gainNode.gain.setTargetAtTime(this._volume, this.audioContext.currentTime, 0.01);
   }
 

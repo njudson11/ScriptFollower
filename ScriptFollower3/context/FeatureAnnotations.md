@@ -74,11 +74,11 @@ getAnnotations(): Annotation[] {
   return [
     {
       name: 'volume',
-      description: 'Sound volume (0-100)',
+      description: 'Sound volume (0-150)',
       type: 'number',
       defaultValue: 100,
       parseValue: (val) => parseFloat(val),
-      validateValue: (val) => val >= 0 && val <= 100
+      validateValue: (val) => val >= 0 && val <= 150
     },
     {
         name: 'pan',

@@ -23,7 +23,7 @@ interface SoundCue {
   readonly id: string;
   readonly url: string;
   readonly name: string;
-  readonly volume: number; // 0-100
+  readonly volume: number; // 0-150
   readonly pan: 'left' | 'right' | 'centre';
   readonly panStart?: number; // -1.0 to 1.0, optional override for start balance
   readonly panEnd?: number;   // -1.0 to 1.0, optional override for end balance
@@ -39,8 +39,8 @@ interface SoundCue {
 
 ### 1. Script-Based Sound Matching
 Sound cues are automatically associated with audio files based on a numerical prefix matching strategy:
-- **ODT Extraction**: The parser extracts the leading numerical ID from a `SOUND_CUE` line (e.g., `"SOUND A	0001 – PreShow House.mp3"` extracts `soundRef: "0001"`).
-- **Audio Filenames**: Audio files are mapped by their leading numerical/alphanumeric part (e.g., `"0001 PreShow.mp3"` is mapped to key `"0001"`).
+- **ODT Extraction**: The parser extracts the leading numerical ID from a `SOUND_CUE` line. It supports various delimiters including spaces, hyphens (`-`), en-dashes (`–`), and em-dashes (`—`).
+- **Audio Filenames**: Audio files are mapped by their leading alphanumeric part. The extraction logic ensures that files with name formats like `0401-Creaking Noise.mp3` or `0401 — Wind.wav` correctly associate with the script reference `0401`.
 - **Automatic Association**: When a project folder is loaded, the feature matches these IDs to link playback controls to script lines.
 
 ### 2. Multi-Channel Routing
@@ -64,7 +64,7 @@ The system can trigger specific actions when a sound effect reaches the end of i
 
 ### 5. Comprehensive Annotations
 The feature supports fine-grained playback control via script annotations:
-- `volume`: `0-100`
+- `volume`: `0-150` (Supports headroom up to 150%)
 - `pan`: `-1` to `1`, or `left/centre/right` (Static balance)
 - `pan-start`: `-1` to `1` (Dynamic start position)
 - `pan-end`: `-1` to `1` (Dynamic end position)

@@ -29,7 +29,7 @@ interface AudioPlayOptions {
 interface IAudioPlayer {
   // ... properties (id, url, isLoaded, duration, etc.)
   currentTime: number;
-  volume: number;   // 0.0 to 1.0
+  volume: number;   // 0.0 to 1.5
   balance: number;  // -1.0 to 1.0 (static override)
 
   load(): Promise<void>;
@@ -51,7 +51,7 @@ The system implements a hierarchical mixing structure that can span multiple har
 interface IVirtualChannel {
   readonly id: string;
   readonly name: string;
-  readonly volume: number; // 0.0 to 1.0
+  readonly volume: number; // 0.0 to 1.5
   readonly isMuted: boolean;
   readonly outputDeviceId: string; // Target hardware device ID
 }

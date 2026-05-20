@@ -59,12 +59,12 @@ export class SoundFeature extends BaseCueFeature {
       ...super.getAnnotations(),
       {
         name: 'volume',
-        description: 'Sound volume (0-100)',
+        description: 'Sound volume (0-150)',
         type: 'number',
         defaultValue: 100,
-        constraints: { min: 0, max: 100 },
+        constraints: { min: 0, max: 150 },
         parseValue: (val) => parseFloat(val),
-        validateValue: (val) => val >= 0 && val <= 100
+        validateValue: (val) => val >= 0 && val <= 150
       },
       {
         name: 'pan',
